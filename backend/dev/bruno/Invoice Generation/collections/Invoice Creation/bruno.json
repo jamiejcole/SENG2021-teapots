@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Invoice Creation",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
