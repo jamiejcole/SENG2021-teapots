@@ -1,4 +1,5 @@
 import express from "express";
+import xmlparser from "express-xml-bodyparser";
 import v1Router from "./api/v1";
 import { errorMiddleware } from "./middleware/error.middleware";
 
@@ -7,6 +8,12 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// XML Parsing
+app.use(xmlparser({
+  explicitArray: false,
+  trim: true
+}))
 
 // API Routes
 app.use("/api/v1", v1Router);
