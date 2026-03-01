@@ -1,13 +1,14 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import * as service from "./invoices.service";
-import { validateCreateInvoice } from "./invoices.validation";
+import { validateUBL } from "./invoices.validation";
 
 export async function createInvoice(req: Request, res: Response) {
     try {
-        const orderObj = req.body;
-        validateCreateInvoice(orderObj);
+        const orderXML: string = req.body;
 
-        const invoiceXml = await service.createInvoiceObj(orderObj);
+        validateUBL(orderXML, "Order");
+
+        const invoiceXml = await service.createInvoiceObj(orderXML);
 
         res.set("Content-Type", "application/xml");
         res.status(201).send(invoiceXml);

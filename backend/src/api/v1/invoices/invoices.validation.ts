@@ -1,34 +1,22 @@
-// TODO: Handle proper validation
 import * as path from 'path';
 import * as fs from 'fs';
-const { Schema } = require('node-schematron');
+import libxml from 'libxmljs2';
 
-export function validateCreateInvoice(orderObj: any) {
-    const schemaPath = path.join(__dirname, '../../../utils/ubl_validation.xml');
-    const schemaContent = fs.readFileSync(schemaPath, 'utf-8');
-    const schema = Schema.fromString(schemaContent);
+export function validateUBL(xmlString: string, schemaType: 'Order' | 'Invoice') {
+    const schemaPath = path.join(__dirname, `../../../schemas/ubl2.4/xsd/maindoc/UBL-${schemaType}-2.4.xsd`);
+    const schemaSource = fs.readFileSync(schemaPath, 'utf8');
+    
+    const xsdDoc = libxml.parseXml(schemaSource, {
+        baseUrl: schemaPath
+    });
+    const xmlDoc = libxml.parseXml(xmlString);
 
-    const results = schema.validateString(
-	`<xml foo="err">
-	<thunder foo="bar" />
-</xml>`,
-	{ debug: true }
-);
+    const isValid = xmlDoc.validate(xsdDoc);
 
-    console.log(results, "\n\n");
-
-    let lines = orderObj.order?.['cac:orderline'];
-    if (!lines) {
-        throw new Error("At least one order line is required to generate invoice");
+    if (!isValid) {
+        const errors = xmlDoc.validationErrors.map(e => e.message).join(', ');
+        throw new Error("XSD Validation Failed: " + errors);
     }
 
-    if (!Array.isArray(lines)) {
-        lines = [lines];
-    }
-
-    if (lines.length === 0) {
-        throw new Error("At least one order line is required to generate invoice");
-    }
-
-    return lines;
+    return true;
 }
