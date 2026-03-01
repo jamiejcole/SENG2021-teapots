@@ -1,0 +1,14 @@
+opencollection: 1.0.0
+info:
+  name: "Invoice Generation"
+  type: workspace
+
+collections:
+  - name: "Invoice Creation"
+    path: "collections\\Invoice Creation"
+  - name: "Invoice Creation"
+    path: "collections/Invoice Creation"
+
+specs:
+
+docs: ''
