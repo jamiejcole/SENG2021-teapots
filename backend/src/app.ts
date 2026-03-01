@@ -10,12 +10,6 @@ app.use(express.json());
 app.use(express.text({ type: 'application/xml' }));
 app.use(express.urlencoded({ extended: true }));
 
-// XML Parsing
-// app.use(xmlparser({
-//   explicitArray: false,
-//   trim: true
-// }))
-
 // API Routes
 app.use("/api/v1", v1Router);
 

@@ -20,3 +20,12 @@ export async function createInvoice(req: Request, res: Response) {
         });
     }
 }
+
+export async function validateInvoice(req: Request, res: Response) {
+    const orderXML: string = req.body;
+    validateUBL(orderXML, "Order");
+
+    res.status(200).json({
+        message: "UBL Order is valid!"
+    });
+}

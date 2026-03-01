@@ -1,8 +1,8 @@
 import { Router } from "express";
-const { Invoice } = require("ubl-builder");
 import * as controller from "./invoices.controller";
 const router = Router();
 
 router.post("/", controller.createInvoice);
+router.post("/validate", controller.validateInvoice);
 
 export default router;
