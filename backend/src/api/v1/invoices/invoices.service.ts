@@ -51,6 +51,23 @@ function mapElementToJson(element: libxml.Element): any {
 }
 
 export function convertJsonToUblInvoice(orderData: OrderData) {
+    /**
+     * ## TODO ##
+     * Parties:
+     * - handle PartyTaxScheme
+     * 
+     * General:
+     * - handle PaymentMeans
+     * - handle AllowanceCharge
+     * - handle TaxTotal
+     * - handle LegalMonetaryTotal
+     * 
+     * InvoiceLines:
+     * - handle OrderLineReference
+     * - handle ClassifiedTaxCategory in Item
+     * 
+     */
+
     const invoice = create({ version: '1.0', encoding: 'UTF-8' })
         .ele('Invoice', {
             'xmlns': 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2',
@@ -88,16 +105,24 @@ export function convertJsonToUblInvoice(orderData: OrderData) {
         const iLine = invoice.ele('cac:InvoiceLine');
         
         iLine.ele('cbc:ID').txt(item.ID).up();
-        iLine.ele('cbc:InvoicedQuantity', { unitCode: item.Quantity?.['@unitCode'] || 'EA' }).txt(item.Quantity?.value || item.Quantity).up();
-        iLine.ele('cbc:LineExtensionAmount', { currencyID: 'USD' }).txt(item.LineExtensionAmount?.value || '0.00').up();
+
+        iLine.ele('cbc:InvoicedQuantity', {
+            unitCode: item.Quantity?.['@unitCode'] || 'EA'
+        }).txt(item.Quantity?.value || item.Quantity).up();
+
+        iLine.ele('cbc:LineExtensionAmount', {
+            currencyID: item.LineExtensionAmount?.['@currencyID'] || 'AUD'
+        }).txt(item.LineExtensionAmount?.value || '0.00').up(); // TODO: Handle 0.00
         
         const cacItem = iLine.ele('cac:Item');
         cacItem.ele('cbc:Name').txt(item.Item?.Name).up();
         cacItem.up();
 
         iLine.ele('cac:Price')
-            .ele('cbc:PriceAmount', { currencyID: 'USD' }).txt(item.Price?.PriceAmount?.value || '0.00').up()
-        .up();
+            .ele('cbc:PriceAmount', {currencyID: item.Price?.PriceAmount?.['@currencyID'] || 'AUD' })
+            .txt(item.Price?.PriceAmount?.value || '0.00') // TODO: Handle 0.00
+            .up() 
+            .up();
         
         iLine.up();
     });
