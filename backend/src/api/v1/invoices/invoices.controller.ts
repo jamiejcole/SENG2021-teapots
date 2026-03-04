@@ -5,7 +5,6 @@ import { validateUBL } from "./invoices.validation";
 export async function createInvoice(req: Request, res: Response) {
     try {
         const orderXML: string = req.body;
-
         validateUBL(orderXML, "Order");
 
         const invoiceXml = await service.createInvoiceObj(orderXML);
