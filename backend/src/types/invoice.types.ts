@@ -1,7 +1,7 @@
 export default interface InvoiceSupplement {
-    invoiceNumber: string;
-    issueDate: string;
-    dueDate: string;
+    invoiceNumber?: string;
+    issueDate?: string;
+    dueDate?: string;
     currencyCode: string;
     taxRate: number;
     taxScheme: {
