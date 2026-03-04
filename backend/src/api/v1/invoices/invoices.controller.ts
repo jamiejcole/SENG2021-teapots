@@ -1,24 +1,18 @@
 import { Request, Response } from "express";
 import * as service from "./invoices.service";
 import { validateUBL } from "./invoices.validation";
+import { asyncHandler } from "../../../utils/asyncHandler";
 
-export async function createInvoice(req: Request, res: Response) {
-    try {
-        const orderXML: string = req.body;
-        validateUBL(orderXML, "Order");
+export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
+    const orderXML: string = req.body;
+    validateUBL(orderXML, "Order");
 
-        const invoiceXml = await service.createInvoiceObj(orderXML);
+    const orderObj = (await service.createFullUblObject(orderXML)).data;
+    const invoiceXml = await service.convertJsonToUblInvoice(orderObj);
 
-        res.set("Content-Type", "application/xml");
-        res.status(201).send(invoiceXml);
-    } catch (err: any) {
-        console.error(err);
-        res.status(500).json({
-            error: "INTERNAL_ERROR",
-            message: err.message || "Unexpected server error",
-        });
-    }
-}
+    // res.set("Content-Type", "application/xml");
+    res.status(201).send(invoiceXml);
+});
 
 export async function validateInvoice(req: Request, res: Response) {
     const orderXML: string = req.body;

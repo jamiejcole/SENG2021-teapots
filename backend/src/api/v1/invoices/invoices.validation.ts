@@ -38,8 +38,9 @@ export function validateUBL(xmlString: string, schemaType: 'Order' | 'Invoice') 
     const isValid = xmlDoc.validate(xsdDoc);
 
     if (!isValid) {
-        const errors = xmlDoc.validationErrors.map(e => e.message).join(', ');
-        throw new HttpError(400, `UBL XSD Validation Failed: ${errors}`);
+        // Removes long extensions from UBL types (deletes all chars inbetween open/close squiggly brackets '{blah}'...)
+        const errors = xmlDoc.validationErrors.map(e => e.message.replace(/\s*\{[^}]*\}\s*/g, ""));
+        throw new HttpError(400, `UBL XSD Validation Failed:\n${errors}`);
     }
 
     return true;

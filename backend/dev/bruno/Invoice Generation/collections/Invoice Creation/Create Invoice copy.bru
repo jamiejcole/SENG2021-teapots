@@ -1,7 +1,7 @@
 meta {
-  name: Create Invoice
+  name: Create Invoice copy
   type: http
-  seq: 1
+  seq: 4
 }
 
 post {
@@ -72,9 +72,9 @@ body:xml {
   
       <cac:AnticipatedMonetaryTotal>
           <cbc:LineExtensionAmount currencyID="AUD">21500.00</cbc:LineExtensionAmount>
-          <cbc:AllowanceTotalAmount currencyID="AUD">500.00</cbc:AllowanceTotalAmount>
           <cbc:TaxExclusiveAmount currencyID="AUD">21000.00</cbc:TaxExclusiveAmount>
           <cbc:TaxInclusiveAmount currencyID="AUD">23100.00</cbc:TaxInclusiveAmount>
+          <cbc:AllowanceTotalAmount currencyID="AUD">500.00</cbc:AllowanceTotalAmount>
           <cbc:PayableAmount currencyID="AUD">23100.00</cbc:PayableAmount>
       </cac:AnticipatedMonetaryTotal>
   
@@ -83,15 +83,15 @@ body:xml {
               <cbc:ID>1</cbc:ID>
               <cbc:Quantity unitCode="EA">10</cbc:Quantity>
               <cbc:LineExtensionAmount currencyID="AUD">15000.00</cbc:LineExtensionAmount>
+              <cac:Price>
+                  <cbc:PriceAmount currencyID="AUD">1500.00</cbc:PriceAmount>
+              </cac:Price>
               <cac:Item>
                   <cbc:Name>ProBook Laptop 15-inch</cbc:Name>
                   <cac:SellersItemIdentification>
                       <cbc:ID>HW-LP-15</cbc:ID>
                   </cac:SellersItemIdentification>
               </cac:Item>
-              <cac:Price>
-                  <cbc:PriceAmount currencyID="AUD">1500.00</cbc:PriceAmount>
-              </cac:Price>
           </cac:LineItem>
       </cac:OrderLine>
   
@@ -100,15 +100,15 @@ body:xml {
               <cbc:ID>2</cbc:ID>
               <cbc:Quantity unitCode="EA">20</cbc:Quantity>
               <cbc:LineExtensionAmount currencyID="AUD">6000.00</cbc:LineExtensionAmount>
+              <cac:Price>
+                  <cbc:PriceAmount currencyID="AUD">300.00</cbc:PriceAmount>
+              </cac:Price>
               <cac:Item>
                   <cbc:Name>UltraSharp 27-inch Monitor</cbc:Name>
                   <cac:SellersItemIdentification>
                       <cbc:ID>HW-MON-27</cbc:ID>
                   </cac:SellersItemIdentification>
               </cac:Item>
-              <cac:Price>
-                  <cbc:PriceAmount currencyID="AUD">300.00</cbc:PriceAmount>
-              </cac:Price>
           </cac:LineItem>
       </cac:OrderLine>
   
@@ -117,15 +117,15 @@ body:xml {
               <cbc:ID>3</cbc:ID>
               <cbc:Quantity unitCode="EA">1</cbc:Quantity>
               <cbc:LineExtensionAmount currencyID="AUD">500.00</cbc:LineExtensionAmount>
+              <cac:Price>
+                  <cbc:PriceAmount currencyID="AUD">500.00</cbc:PriceAmount>
+              </cac:Price>
               <cac:Item>
                   <cbc:Name>On-site Hardware Installation</cbc:Name>
                   <cac:SellersItemIdentification>
                       <cbc:ID>SRV-INST-01</cbc:ID>
                   </cac:SellersItemIdentification>
               </cac:Item>
-              <cac:Price>
-                  <cbc:PriceAmount currencyID="AUD">500.00</cbc:PriceAmount>
-              </cac:Price>
           </cac:LineItem>
       </cac:OrderLine>
   </Order>
