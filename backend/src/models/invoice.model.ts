@@ -46,8 +46,8 @@ const InvoiceSchema = new Schema(
         },
 
         parties: {
-            supplier: { type: PartySchema },
-            customer: { type: PartySchema },
+            buyer: { type: PartySchema },
+            seller: { type: PartySchema },
         },
 
         totals: {
