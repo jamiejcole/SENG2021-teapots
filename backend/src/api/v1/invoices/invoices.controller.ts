@@ -2,12 +2,13 @@ import { Request, Response } from "express";
 import * as service from "./invoices.service";
 import { validateUBL } from "./invoices.validation";
 import { asyncHandler } from "../../../utils/asyncHandler";
+import { OrderData } from "../../../types/order.types";
 
 export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
     const orderXML: string = req.body;
     validateUBL(orderXML, "Order");
 
-    const orderObj = (await service.createFullUblObject(orderXML)).data;
+    const orderObj = (await service.createFullUblObject(orderXML)).data as OrderData;
     const invoiceXml = await service.convertJsonToUblInvoice(orderObj);
 
     // res.set("Content-Type", "application/xml");
