@@ -2,7 +2,7 @@ import * as libxml from 'libxmljs2';
 import { create } from 'xmlbuilder2';
 import { OrderData } from '../../../types/order.types';
 import { mapElementToJson, mapParty } from '../../../utils/jsonUblTransformer';
-import InvoiceSupplement from '../../../types/invoice.types';
+import { InvoiceSupplement, INVOICE_CUSTOMIZATION_ID, INVOICE_PROFILE_ID, INVOICE_TYPE_CODE } from '../../../types/invoice.types';
 
 /**
  * Returns a JSON obj based on a UBL XML String.
@@ -26,12 +26,12 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
      * - handle PartyTaxScheme
      * 
      * General:
-     * - handle DueDate
-     * - handle IssueDate
+     * - handle DueDate                         DONE
+     * - handle IssueDate                       DONE
      * - handle PaymentMeans
      * - handle AllowanceCharge - LOW
-     * - handle TaxTotal
-     * - handle LegalMonetaryTotal
+     * - handle TaxTotal                        DONE?
+     * - handle LegalMonetaryTotal              DONE?
      * 
      * InvoiceLines:
      * - handle OrderLineReference
@@ -56,13 +56,24 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
 
     const issueDate = invoiceSupplement.issueDate ?? new Date().toISOString().split('T')[0];
 
-    // Define Header Info
+    // Defining Header Info
     invoice.ele('cbc:UBLVersionID').txt('2.1').up()
-           .ele('cbc:CustomizationID').txt('urn:oasis:names:specification:ubl:xpath:Invoice-2.1').up()
+           .ele('cbc:CustomizationID').txt(INVOICE_CUSTOMIZATION_ID).up()
+           .ele('cbc:ProfileID').txt(INVOICE_PROFILE_ID).up()
            .ele('cbc:ID').txt(`INV-${invoiceSupplement.invoiceNumber ?? Date.now()}`).up()
            .ele('cbc:IssueDate').txt(issueDate).up()
-           .ele('cbc:InvoiceTypeCode').txt('380').up()
-           .ele('cbc:DocumentCurrencyCode').txt(effectiveCurrency).up();
+
+    if (invoiceSupplement.dueDate) {
+        invoice.ele('cbc:DueDate').txt(invoiceSupplement.dueDate).up();
+    }
+
+    invoice.ele('cbc:InvoiceTypeCode').txt(INVOICE_TYPE_CODE).up()
+
+    if (invoiceSupplement.note) {
+        invoice.ele('cbc:Note').txt(invoiceSupplement.note).up()
+    }
+
+    invoice.ele('cbc:DocumentCurrencyCode').txt(effectiveCurrency).up();
 
     // Link to order ID
     if (orderData.ID) {
@@ -115,6 +126,40 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
         
         iLine.up();
     });
+
+    // Handle TaxTotal Block after invoice lines
+    const totalLineAmount = orderLines.reduce((sum: number, line: any) => 
+        sum + parseFloat(line.LineItem.LineExtensionAmount?.value || line.LineItem.LineExtensionAmount || 0), 0);
+
+    const totalTaxAmount = totalLineAmount * invoiceSupplement.taxRate;
+
+    const taxTotal = invoice.ele('cac:TaxTotal');
+    taxTotal.ele('cbc:TaxAmount', { currencyID: invoiceSupplement.currencyCode })
+            .txt(totalTaxAmount.toFixed(2)).up();
+
+    // Subtotal by category
+    taxTotal.ele('cac:TaxSubtotal')
+        .ele('cbc:TaxableAmount', { currencyID: invoiceSupplement.currencyCode }).txt(totalLineAmount.toFixed(2)).up()
+        .ele('cbc:TaxAmount', { currencyID: invoiceSupplement.currencyCode }).txt(totalTaxAmount.toFixed(2)).up()
+        .ele('cac:TaxCategory')
+            .ele('cbc:ID').txt('S').up()
+            .ele('cbc:Percent').txt((invoiceSupplement.taxRate * 100).toString()).up()
+            .ele('cac:TaxScheme')
+                .ele('cbc:ID').txt(invoiceSupplement.taxScheme.id).up()
+            .up()
+        .up()
+    .up();
+    taxTotal.up();
+
+    // LegalMonetaryTotal Block
+    const payableAmount = totalLineAmount + totalTaxAmount;
+
+    const monetaryTotal = invoice.ele('cac:LegalMonetaryTotal');
+    monetaryTotal.ele('cbc:LineExtensionAmount', { currencyID: invoiceSupplement.currencyCode }).txt(totalLineAmount.toFixed(2)).up();
+    monetaryTotal.ele('cbc:TaxExclusiveAmount', { currencyID: invoiceSupplement.currencyCode }).txt(totalLineAmount.toFixed(2)).up();
+    monetaryTotal.ele('cbc:TaxInclusiveAmount', { currencyID: invoiceSupplement.currencyCode }).txt(payableAmount.toFixed(2)).up();
+    monetaryTotal.ele('cbc:PayableAmount', { currencyID: invoiceSupplement.currencyCode }).txt(payableAmount.toFixed(2)).up();
+    monetaryTotal.up();
 
     return invoice.end({ prettyPrint: true });
 }

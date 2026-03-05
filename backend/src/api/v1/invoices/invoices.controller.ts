@@ -3,7 +3,7 @@ import * as service from "./invoices.service";
 import { validateUBL } from "./invoices.validation";
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
-import InvoiceSupplement from "../../../types/invoice.types";
+import { InvoiceSupplement } from "../../../types/invoice.types";
 
 export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
     const orderXML: string = req.body;
@@ -16,7 +16,7 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
         issueDate: "2026-01-01",
         dueDate: "2026-01-01",
         currencyCode: "AUD",
-        taxRate: 0.69,
+        taxRate: 0.1,
         taxScheme: {
             id: "GST",
             taxTypeCode: "GST"
