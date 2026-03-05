@@ -17,6 +17,9 @@ export interface InvoiceSupplement {
             branchId?: string;
         }
     };
+    paymentTerms?: {
+        note: string;
+    };
     customizationId: string;
     profileId: string;
 };

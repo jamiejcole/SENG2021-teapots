@@ -29,6 +29,9 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
                 branchId: "6969"
             }
         },
+        paymentTerms: {
+            note: "30 days omg"
+        },
         customizationId: "urn:www.cenbii.eu:transaction:biicoretrdm001:ver1.0",
         profileId: "urn:www.cenbii.eu:profile:BII01:ver1.0"
     }

@@ -28,7 +28,7 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
      * General:
      * - handle DueDate                         DONE
      * - handle IssueDate                       DONE
-     * - handle PaymentMeans
+     * - handle PaymentMeans                    DONE
      * - handle AllowanceCharge - LOW
      * - handle TaxTotal                        DONE?
      * - handle LegalMonetaryTotal              DONE?
@@ -88,59 +88,47 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
     mapParty(invoice.ele('cac:AccountingSupplierParty'), orderData.SellerSupplierParty?.Party);
     mapParty(invoice.ele('cac:AccountingCustomerParty'), orderData.BuyerCustomerParty?.Party);
 
-    // Map OrderLines to InvoiceLines
-    const orderLines = Array.isArray(orderData.OrderLine) ? orderData.OrderLine : [orderData.OrderLine];
-    
-    orderLines.forEach((line: any) => {
-        const item = line.LineItem;
-        const lineExtensionAmount = item.LineExtensionAmount?.value || item.LineExtensionAmount || '0';
-        const iLine = invoice.ele('cac:InvoiceLine');
+    // PaymentMeans block
+    if (invoiceSupplement.paymentMeans) {
+        const paymentMeansEle = invoice.ele('cac:PaymentMeans');
+        paymentMeansEle.ele('cbc:PaymentMeansCode').txt(invoiceSupplement.paymentMeans.code).up();
         
-        iLine.ele('cbc:ID').txt(item.ID).up();
-
-        iLine.ele('cbc:InvoicedQuantity', {
-            unitCode: item.Quantity?.['@unitCode'] || 'EA'
-        }).txt(item.Quantity?.value || item.Quantity).up();
-
-        iLine.ele('cbc:LineExtensionAmount', {
-            currencyID: effectiveCurrency
-        }).txt(lineExtensionAmount).up(); // TODO: Handle 0.00
+        const account = invoiceSupplement.paymentMeans.payeeFinancialAccount;
+        const pfa = paymentMeansEle.ele('cac:PayeeFinancialAccount');
+        pfa.ele('cbc:ID').txt(account.id).up();
+        pfa.ele('cbc:Name').txt(account.name).up();
         
-        const cacItem = iLine.ele('cac:Item');
-        cacItem.ele('cbc:Name').txt(item.Item?.Name).up();
-
-        cacItem.ele('cac:ClassifiedTaxCategory')
-            .ele('cbc:ID').txt('S').up() // TODO: Handle other tax codes https://docs.peppol.eu/poacc/billing/3.0/codelist/UNCL5305/
-            .ele('cbc:Percent').txt((invoiceSupplement.taxRate * 100).toString()).up()
-            .ele('cac:TaxScheme')
-                .ele('cbc:ID').txt(invoiceSupplement.taxScheme.id).up()
-            .up()
-        .up();
-        cacItem.up();
-
-        iLine.ele('cac:Price')
-            .ele('cbc:PriceAmount', {currencyID: effectiveCurrency })
-            .txt(item.Price?.PriceAmount?.value || '0.00') // TODO: Handle 0.00
-            .up() 
+        if (account.branchId) {
+            pfa.ele('cac:FinancialInstitutionBranch')
+               .ele('cbc:ID').txt(account.branchId).up()
             .up();
-        
-        iLine.up();
-    });
+        }
+        pfa.up();
+        paymentMeansEle.up();
+    }
 
-    // Handle TaxTotal Block after invoice lines
+    // PaymentTerms block
+    if (invoiceSupplement.paymentTerms) {
+        const paymentTermsEle = invoice.ele('cac:PaymentTerms');
+        paymentTermsEle.ele('cbc:Note').txt(invoiceSupplement.paymentTerms.note).up();
+        paymentTermsEle.up();
+    }
+
+    // TODO: Handle AllowanceCharges
+
+    // Tax Totals
+    const orderLines = Array.isArray(orderData.OrderLine) ? orderData.OrderLine : [orderData.OrderLine];
     const totalLineAmount = orderLines.reduce((sum: number, line: any) => 
         sum + parseFloat(line.LineItem.LineExtensionAmount?.value || line.LineItem.LineExtensionAmount || 0), 0);
 
     const totalTaxAmount = totalLineAmount * invoiceSupplement.taxRate;
 
     const taxTotal = invoice.ele('cac:TaxTotal');
-    taxTotal.ele('cbc:TaxAmount', { currencyID: invoiceSupplement.currencyCode })
-            .txt(totalTaxAmount.toFixed(2)).up();
+    taxTotal.ele('cbc:TaxAmount', { currencyID: effectiveCurrency }).txt(totalTaxAmount.toFixed(2)).up();
 
-    // Subtotal by category
     taxTotal.ele('cac:TaxSubtotal')
-        .ele('cbc:TaxableAmount', { currencyID: invoiceSupplement.currencyCode }).txt(totalLineAmount.toFixed(2)).up()
-        .ele('cbc:TaxAmount', { currencyID: invoiceSupplement.currencyCode }).txt(totalTaxAmount.toFixed(2)).up()
+        .ele('cbc:TaxableAmount', { currencyID: effectiveCurrency }).txt(totalLineAmount.toFixed(2)).up()
+        .ele('cbc:TaxAmount', { currencyID: effectiveCurrency }).txt(totalTaxAmount.toFixed(2)).up()
         .ele('cac:TaxCategory')
             .ele('cbc:ID').txt('S').up()
             .ele('cbc:Percent').txt((invoiceSupplement.taxRate * 100).toString()).up()
@@ -151,15 +139,46 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
     .up();
     taxTotal.up();
 
-    // LegalMonetaryTotal Block
+    // LegalMonetaryTotals block
     const payableAmount = totalLineAmount + totalTaxAmount;
 
     const monetaryTotal = invoice.ele('cac:LegalMonetaryTotal');
-    monetaryTotal.ele('cbc:LineExtensionAmount', { currencyID: invoiceSupplement.currencyCode }).txt(totalLineAmount.toFixed(2)).up();
-    monetaryTotal.ele('cbc:TaxExclusiveAmount', { currencyID: invoiceSupplement.currencyCode }).txt(totalLineAmount.toFixed(2)).up();
-    monetaryTotal.ele('cbc:TaxInclusiveAmount', { currencyID: invoiceSupplement.currencyCode }).txt(payableAmount.toFixed(2)).up();
-    monetaryTotal.ele('cbc:PayableAmount', { currencyID: invoiceSupplement.currencyCode }).txt(payableAmount.toFixed(2)).up();
+    monetaryTotal.ele('cbc:LineExtensionAmount', { currencyID: effectiveCurrency }).txt(totalLineAmount.toFixed(2)).up();
+    monetaryTotal.ele('cbc:TaxExclusiveAmount', { currencyID: effectiveCurrency }).txt(totalLineAmount.toFixed(2)).up();
+    monetaryTotal.ele('cbc:TaxInclusiveAmount', { currencyID: effectiveCurrency }).txt(payableAmount.toFixed(2)).up();
+    monetaryTotal.ele('cbc:PayableAmount', { currencyID: effectiveCurrency }).txt(payableAmount.toFixed(2)).up();
     monetaryTotal.up();
+
+    // Invoice Lines
+    orderLines.forEach((line: any, index: number) => {
+        const item = line.LineItem;
+        const lineExtensionAmount = item.LineExtensionAmount?.value || item.LineExtensionAmount || '0';
+        const iLine = invoice.ele('cac:InvoiceLine');
+        
+        iLine.ele('cbc:ID').txt((index + 1).toString()).up();
+        iLine.ele('cbc:InvoicedQuantity', { unitCode: item.Quantity?.['@unitCode'] || 'EA' })
+             .txt(item.Quantity?.value || item.Quantity).up();
+        iLine.ele('cbc:LineExtensionAmount', { currencyID: effectiveCurrency }).txt(lineExtensionAmount).up();
+
+        const cacItem = iLine.ele('cac:Item');
+        cacItem.ele('cbc:Name').txt(item.Item?.Name).up();
+
+        cacItem.ele('cac:ClassifiedTaxCategory')
+            .ele('cbc:ID').txt('S').up()
+            .ele('cbc:Percent').txt((invoiceSupplement.taxRate * 100).toString()).up()
+            .ele('cac:TaxScheme')
+                .ele('cbc:ID').txt(invoiceSupplement.taxScheme.id).up()
+            .up()
+        .up();
+        cacItem.up();
+
+        iLine.ele('cac:Price')
+            .ele('cbc:PriceAmount', { currencyID: effectiveCurrency })
+            .txt(item.Price?.PriceAmount?.value || '0.00').up()
+        .up();
+        
+        iLine.up();
+    });
 
     return invoice.end({ prettyPrint: true });
 }
