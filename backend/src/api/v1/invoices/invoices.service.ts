@@ -34,4 +34,3 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
         .addInvoiceLines()
         .build();
 }
-

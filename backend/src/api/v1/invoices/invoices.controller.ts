@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import * as service from "./invoices.service";
-import { validateUBL } from "./invoices.validation";
+import { generateInvoicePdf, validateUBL } from "./invoices.validation";
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
 import { InvoiceSupplement } from "../../../types/invoice.types";
@@ -34,10 +34,11 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
         }
     }
     const invoiceXml = await service.convertJsonToUblInvoice(orderObj, invSup);
+    const doc = await generateInvoicePdf(invoiceXml);
     
 
-    // res.set("Content-Type", "application/xml");
-    res.status(201).send(invoiceXml);
+    res.set("Content-Type", "application/pdf");
+    res.status(201).send(doc);
 
     const val = validateUBL(invoiceXml, 'Invoice');
     console.log(`* GENERATED UBL INVOICE VALIDATION STATUS: ${val}`);
