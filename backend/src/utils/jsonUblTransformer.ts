@@ -1,4 +1,6 @@
 import * as libxml from 'libxmljs2';
+import { DEFAULT_PARTY_TAX_SCHEME } from '../types/invoice.types';
+import { PartyTaxScheme } from '../types/invoice.types';
 
 /**
  * Recursively convert a XML Element to a JSON obj.
@@ -36,10 +38,36 @@ export function mapElementToJson(element: libxml.Element): any {
 /**
  * Helper to map Party details
  */
-export function mapParty(parent: any, partyData: any) {
+export function mapParty(parent: any, partyData: any, taxSchemeOverride?: PartyTaxScheme) {
     if (!partyData) return;
+    
     const party = parent.ele('cac:Party');
-    autoMapUbl(party, partyData);
+
+    const earlyKeys = ['EndpointID', 'PartyIdentification', 'PartyName', 'PostalAddress', 'PhysicalLocation'];
+    const earlyData = Object.fromEntries(
+        Object.entries(partyData).filter(([key]) => earlyKeys.includes(key))
+    );
+    autoMapUbl(party, earlyData);
+
+    const endpointId = partyData.EndpointID?.value || partyData.EndpointID;
+    const companyId = taxSchemeOverride?.companyId ?? endpointId;
+    const taxSchemeId = taxSchemeOverride?.taxSchemeId ?? DEFAULT_PARTY_TAX_SCHEME.taxSchemeId;
+
+    if (companyId) {
+        const pts = party.ele('cac:PartyTaxScheme');
+        pts.ele('cbc:CompanyID').txt(companyId).up();
+        pts.ele('cac:TaxScheme')
+           .ele('cbc:ID').txt(taxSchemeId).up()
+        .up();
+        pts.up();
+    }
+
+    const lateKeys = ['PartyLegalEntity', 'Contact', 'Person'];
+    const lateData = Object.fromEntries(
+        Object.entries(partyData).filter(([key]) => lateKeys.includes(key))
+    );
+    autoMapUbl(party, lateData);
+
     party.up();
 }
 
@@ -52,14 +80,13 @@ function autoMapUbl(parent: any, data: any) {
     for (const [key, value] of Object.entries(data)) {
         if (key === 'value' || key.startsWith('@')) continue;
 
-        const isAggregate = typeof value === 'object' && value !== null;
-        const prefix = isAggregate ? 'cac' : 'cbc';
+        const isCbc = typeof value !== 'object' || (value !== null && 'value' in (value as any));
+        const prefix = isCbc ? 'cbc' : 'cac';
         const tagName = `${prefix}:${key}`;
 
         const instances = Array.isArray(value) ? value : [value];
 
         instances.forEach((item) => {
-            // Get attributes for this specific instance
             const attrs: any = {};
             if (typeof item === 'object' && item !== null) {
                 Object.keys(item).forEach(k => {
@@ -71,7 +98,7 @@ function autoMapUbl(parent: any, data: any) {
 
             if (typeof item === 'object' && item !== null) {
                 if ('value' in item) {
-                    node.txt(item.value);
+                    node.txt(String(item.value));
                 } else {
                     autoMapUbl(node, item);
                 }

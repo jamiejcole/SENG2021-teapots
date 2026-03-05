@@ -31,14 +31,16 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
         },
         paymentTerms: {
             note: "30 days omg"
-        },
-        customizationId: "urn:www.cenbii.eu:transaction:biicoretrdm001:ver1.0",
-        profileId: "urn:www.cenbii.eu:profile:BII01:ver1.0"
+        }
     }
     const invoiceXml = await service.convertJsonToUblInvoice(orderObj, invSup);
+    
 
     // res.set("Content-Type", "application/xml");
     res.status(201).send(invoiceXml);
+
+    const val = validateUBL(invoiceXml, 'Invoice');
+    console.log(`* GENERATED UBL INVOICE VALIDATION STATUS: ${val}`);
 });
 
 export async function validateInvoice(req: Request, res: Response) {

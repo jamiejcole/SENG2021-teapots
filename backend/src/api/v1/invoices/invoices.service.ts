@@ -34,8 +34,8 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
      * - handle LegalMonetaryTotal              DONE?
      * 
      * InvoiceLines:
-     * - handle OrderLineReference
-     * - handle ClassifiedTaxCategory in Item - DONE???
+     * - handle OrderLineReference              DONE
+     * - handle ClassifiedTaxCategory in Item - DONE
      * 
      */
 
@@ -85,8 +85,16 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
     // Map Parties
     // SellerSupplierParty -> AccountingSupplierParty
     // BuyerCustomerParty -> AcountingCustomerParty
-    mapParty(invoice.ele('cac:AccountingSupplierParty'), orderData.SellerSupplierParty?.Party);
-    mapParty(invoice.ele('cac:AccountingCustomerParty'), orderData.BuyerCustomerParty?.Party);
+    mapParty(
+        invoice.ele('cac:AccountingSupplierParty'),
+        orderData.SellerSupplierParty?.Party,
+        invoiceSupplement.supplierPartyTaxScheme
+    );
+    mapParty(
+        invoice.ele('cac:AccountingCustomerParty'),
+        orderData.BuyerCustomerParty?.Party,
+        invoiceSupplement.customerPartyTaxScheme
+    );
 
     // PaymentMeans block
     if (invoiceSupplement.paymentMeans) {
@@ -159,6 +167,9 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
         iLine.ele('cbc:InvoicedQuantity', { unitCode: item.Quantity?.['@unitCode'] || 'EA' })
              .txt(item.Quantity?.value || item.Quantity).up();
         iLine.ele('cbc:LineExtensionAmount', { currencyID: effectiveCurrency }).txt(lineExtensionAmount).up();
+
+        iLine.ele('cac:OrderLineReference')
+            .ele('cbc:LineID').txt((index + 1).toString()).up().up();
 
         const cacItem = iLine.ele('cac:Item');
         cacItem.ele('cbc:Name').txt(item.Item?.Name).up();
