@@ -15,16 +15,20 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
     const invoiceXml = await service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
 
     validateUBL(invoiceXml, 'Invoice');
+    res.contentType("application/xml");
     res.status(201).send(invoiceXml);
 });
 
 export async function validateInvoice(req: Request, res: Response) {
     const { orderXml } = req.body;
+    console.log(orderXml);
     
     if (!orderXml || typeof orderXml !== 'string' || !orderXml.trim()) {
         throw new HttpError(400, "Request body must include 'orderXml' as a non-empty string");
     }
     
+    res.contentType("application/json");
+
     validateUBL(orderXml, "Order");
 
     res.status(200).json({
