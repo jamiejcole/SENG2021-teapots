@@ -21,8 +21,7 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
 
 export async function validateInvoice(req: Request, res: Response) {
     const { orderXml } = req.body;
-    console.log(orderXml);
-    
+        
     if (!orderXml || typeof orderXml !== 'string' || !orderXml.trim()) {
         throw new HttpError(400, "Request body must include 'orderXml' as a non-empty string");
     }
