@@ -1,29 +1,34 @@
 import { Request, Response } from "express";
 import * as service from "./invoices.service";
-import { validateUBL } from "./invoices.validation";
+import { validateUBL, validateCreateInvoiceRequest } from "./invoices.validation";
+import { asyncHandler } from "../../../utils/asyncHandler";
+import { OrderData } from "../../../types/order.types";
+import { HttpError } from "../../../errors/HttpError";
 
-export async function createInvoice(req: Request, res: Response) {
-    try {
-        const orderXML: string = req.body;
+export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
+    validateCreateInvoiceRequest(req.body);
+    const { orderXml, invoiceSupplement } = req.body;
 
-        validateUBL(orderXML, "Order");
+    validateUBL(orderXml, "Order");
 
-        const invoiceXml = await service.createInvoiceObj(orderXML);
+    const orderObj = (await service.createFullUblObject(orderXml)).data as OrderData;
+    const invoiceXml = await service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
 
-        res.set("Content-Type", "application/xml");
-        res.status(201).send(invoiceXml);
-    } catch (err: any) {
-        console.error(err);
-        res.status(500).json({
-            error: "INTERNAL_ERROR",
-            message: err.message || "Unexpected server error",
-        });
-    }
-}
+    validateUBL(invoiceXml, 'Invoice');
+    res.contentType("application/xml");
+    res.status(201).send(invoiceXml);
+});
 
 export async function validateInvoice(req: Request, res: Response) {
-    const orderXML: string = req.body;
-    validateUBL(orderXML, "Order");
+    const { orderXml } = req.body;
+        
+    if (!orderXml || typeof orderXml !== 'string' || !orderXml.trim()) {
+        throw new HttpError(400, "Request body must include 'orderXml' as a non-empty string");
+    }
+    
+    res.contentType("application/json");
+
+    validateUBL(orderXml, "Order");
 
     res.status(200).json({
         message: "UBL Order is valid!"

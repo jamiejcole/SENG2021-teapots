@@ -1,35 +1,37 @@
-import { validateCreateInvoice } from "./invoices.validation";
-const { Invoice } = require("ubl-builder");
-import { create } from "xmlbuilder2";
+import * as libxml from 'libxmljs2';
+import { OrderData } from '../../../types/order.types';
+import { mapElementToJson } from '../../../utils/jsonUblTransformer';
+import { InvoiceSupplement } from '../../../types/invoice.types';
+import { InvoiceBuilder } from '../../../domain/InvoiceBuilder';
 
-export async function createInvoiceObj(orderObj: any) {
-    // TODO: Handle all UBL2.4 fields
-    // const orderId = orderObj.Order?.cbc?.ID || "UNKNOWN_ORDER";
+/**
+ * Returns a JSON obj based on a UBL XML String.
+ */
+export async function createFullUblObject(orderXml: string) {
+    const xmlDoc = libxml.parseXml(orderXml.trim());
+    const root = xmlDoc.root() as libxml.Element;
 
-    // const lines = validateCreateInvoice(orderObj);
-    // const invoiceObj = {
-    //     Invoice: {
-    //         "@xmlns": "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
-    //         "@xmlns:cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
-    //         "@xmlns:cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
-    //         "cbc:ID": `INV-${orderObj.Order?.['cbc:id'] || 'UNKNOWN'}`,
-    //         "cbc:IssueDate": new Date().toISOString().split("T")[0],
-    //         "cac:AccountingSupplierParty": orderObj.Order?.['cac:sellersupplierparty'] || {},
-    //         "cac:AccountingCustomerParty": orderObj.Order?.['cac:buyercustomerparty'] || {},
-    //         "cac:LegalMonetaryTotal": {
-    //             "cbc:PayableAmount": orderObj.Order?.['cac:anticipatedmonetarytotal']?.['cbc:payableamount'] || "0.00"
-    //         },
-    //         "cac:InvoiceLine": lines.map((line: any, idx: number) => ({
-    //             "cbc:ID": idx + 1,
-    //             "cbc:Note": line['cbc:note'],
-    //             "cac:Item": line['cac:lineitem']
-    //         }))
-    //     }
-    // };
+    if (!root) throw new Error("Invalid XML: No root element found.");
 
-    const xml = create({ version: "1.0", encoding: "UTF-8" })
-        // .ele(invoiceObj)
-        .end({ prettyPrint: true });
-
-    return xml;
+    return {
+        rootName: root.name(),
+        data: mapElementToJson(root)
+    };
 }
+
+/**
+ * Converts parsed order data and invoice supplement into a UBL 2.1 Invoice XML string.
+ */
+export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement: InvoiceSupplement): string {
+    return new InvoiceBuilder(orderData, invoiceSupplement)
+        .addHeader()
+        .addOrderReference()
+        .addParties()
+        .addPaymentMeans()
+        .addPaymentTerms()
+        .addTaxTotal()
+        .addLegalMonetaryTotal()
+        .addInvoiceLines()
+        .build();
+}
+
