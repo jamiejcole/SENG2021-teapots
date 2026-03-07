@@ -2,6 +2,8 @@ import { Router } from "express";
 import * as controller from "./invoices.controller";
 const router = Router();
 
+router.post("/pdf", controller.createPdf);
+
 /**
  * @openapi
  * /api/v1/invoices:

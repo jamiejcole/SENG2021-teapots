@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import * as service from "./invoices.service";
-import { validateUBL, validateCreateInvoiceRequest } from "./invoices.validation";
+import { validateUBL, validateCreateInvoiceRequest, generateInvoicePdf } from "./invoices.validation";
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
 import { HttpError } from "../../../errors/HttpError";
@@ -33,4 +33,13 @@ export async function validateInvoice(req: Request, res: Response) {
     res.status(200).json({
         message: "UBL Order is valid!"
     });
+}
+
+export async function createPdf(req: Request, res: Response) {
+    const invoiceXml = req.body;
+    
+    const doc = await generateInvoicePdf(invoiceXml);
+
+    res.set("Content-Type", "application/pdf");
+    res.status(201).send(doc);
 }

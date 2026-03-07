@@ -129,7 +129,7 @@ import SaxonJS from 'saxon-js';
 import puppeteer from 'puppeteer';
 
 export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
-    const sefPath = path.join(__dirname, '../../../schemas/ubl2.4/xslt/s3.sef.json');
+    const sefPath = path.join(__dirname, '../../../schemas/ubl2.4/xslt/s4.sef.json');
 
     const result = SaxonJS.transform({
         stylesheetLocation: sefPath,
