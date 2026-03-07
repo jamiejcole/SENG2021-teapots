@@ -1,72 +1,131 @@
-import mongoose, { Schema , InferSchemaType, Model } from 'mongoose';
+import mongoose, { Schema, InferSchemaType, Model } from "mongoose";
 
-const MoneySchema = new Schema(
+const AddressSchema = new Schema(
     {
-        value: { type: Number, required: true },
-        currency: { type: String, required: true },
+        street: { type: String, required: true, trim: true },
+        city: { type: String, required: true, trim: true },
+        postalCode: { type: String, required: true, trim: true },
+        country: { type: String, required: true, trim: true },
     },
-
-    {_id: false}
-)
+    { _id: false }
+);
 
 const PartySchema = new Schema(
     {
-        name: { type: String},
-        ids: { type: [String], default: undefined},
+        name: { type: String, required: true, trim: true },
+        id: { type: String, trim: true },
+        email: { type: String, trim: true, lowercase: true },
+        address: { type: AddressSchema, required: true },
     },
-    {_id: false}
-)
+    { _id: false }
+);
+
+const OrderLineSchema = new Schema(
+    {
+        lineId: { type: String, required: true, trim: true },
+        description: { type: String, required: true, trim: true },
+        quantity: { type: Number, required: true, min: 0.000001 },
+        unitCode: { type: String, trim: true },
+        unitPrice: { type: Number, required: true, min: 0 },
+        taxRate: { type: Number, default: 0, min: 0 },
+    },
+    { _id: false }
+);
+
+const MoneySchema = new Schema(
+    {
+        subTotal: { type: Number, required: true, min: 0 },
+        taxTotal: { type: Number, required: true, min: 0 },
+        payableAmount: { type: Number, required: true, min: 0 },
+    },
+    { _id: false }
+);
 
 const OrderSchema = new Schema(
     {
-        createdAt: { type: Date, default: () => new Date(), index: true},
-
-        status: { 
-            type: String, 
-            enum: ['received', 'invoiced', 'rejected'],
-            default: 'received',
+        status: {
+            type: String,
+            enum: ["RECEIVED", "INVOICED", "REJECTED"],
+            default: "RECEIVED",
+            required: true,
             index: true,
         },
 
-        ubl: {
-            version: { type: String, default: "2.4" },
-            documentType: { type: String, default: "Order" },
-            orderId: { type: String, index: true },
-            issueDate: { type: String }, // YYYY-MM-DD
-            customizationId: { type: String },
-            profileId: { type: String },
+        orderId: {
+            type: String,
+            required: true,
+            trim: true,
+            unique: true,
+            index: true,
         },
 
-        parties: {
-            buyer: { type: PartySchema },
-            seller: { type: PartySchema },
+        issueDate: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
+        currency: {
+            type: String,
+            required: true,
+            trim: true,
+            uppercase: true,
+        },
+
+        buyer: {
+            type: PartySchema,
+            required: true,
+        },
+
+        seller: {
+            type: PartySchema,
+            required: true,
+        },
+
+        lines: {
+            type: [OrderLineSchema],
+            required: true,
+            validate: {
+                validator: (lines: unknown[]) =>
+                    Array.isArray(lines) && lines.length > 0,
+                message: "At least one order line is required",
+            },
+        },
+
+        customizationId: {
+            type: String,
+            trim: true,
+        },
+
+        profileId: {
+            type: String,
+            trim: true,
         },
 
         totals: {
-            payableAmount: { type: MoneySchema, required: true },
+            type: MoneySchema,
+            required: true,
         },
 
-        validation: {
-            xsd: {
-                valid: { type: Boolean, default: false },
-                errors: { type: [String], default: [] },
-            },
-
-            schematron: {
-                valid: { type: Boolean },
-                errors: { type: [String], default: undefined },
-            }
+        orderXml: {
+            type: String,
+            required: true,
         },
 
-        raw: {
-            xml: { type: String, required: true },
-            sha256: { type: String, required: true, unique: true },
-        }
+        xmlSha256: {
+            type: String,
+            required: true,
+            unique: true,
+            index: true,
+        },
     },
-
-    { collection: 'orders' },
-)
+    {
+        collection: "orders",
+        timestamps: true,
+    }
+);
 
 export type OrderDocument = InferSchemaType<typeof OrderSchema>;
+
 export const OrderModel: Model<OrderDocument> =
     mongoose.models.Order ?? mongoose.model("Order", OrderSchema);
