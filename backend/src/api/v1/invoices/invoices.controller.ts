@@ -1,51 +1,31 @@
 import { Request, Response } from "express";
 import * as service from "./invoices.service";
-import { validateUBL } from "./invoices.validation";
+import { validateUBL, validateCreateInvoiceRequest } from "./invoices.validation";
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
-import { InvoiceSupplement } from "../../../types/invoice.types";
+import { HttpError } from "../../../errors/HttpError";
 
 export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
-    const orderXML: string = req.body;
-    validateUBL(orderXML, "Order");
+    validateCreateInvoiceRequest(req.body);
+    const { orderXml, invoiceSupplement } = req.body;
 
-    const orderObj = (await service.createFullUblObject(orderXML)).data as OrderData;
-    
-    const invSup: InvoiceSupplement = {
-        invoiceNumber: "123",
-        issueDate: "2026-01-01",
-        dueDate: "2026-01-01",
-        currencyCode: "AUD",
-        taxRate: 0.1,
-        taxScheme: {
-            id: "GST",
-            taxTypeCode: "GST"
-        },
-        paymentMeans: {
-            code: "30",
-            payeeFinancialAccount: {
-                id: "123",
-                name: "Joe Mama",
-                branchId: "6969"
-            }
-        },
-        paymentTerms: {
-            note: "30 days omg"
-        }
-    }
-    const invoiceXml = await service.convertJsonToUblInvoice(orderObj, invSup);
-    
+    validateUBL(orderXml, "Order");
 
-    // res.set("Content-Type", "application/xml");
+    const orderObj = (await service.createFullUblObject(orderXml)).data as OrderData;
+    const invoiceXml = await service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
+
+    validateUBL(invoiceXml, 'Invoice');
     res.status(201).send(invoiceXml);
-
-    const val = validateUBL(invoiceXml, 'Invoice');
-    console.log(`* GENERATED UBL INVOICE VALIDATION STATUS: ${val}`);
 });
 
 export async function validateInvoice(req: Request, res: Response) {
-    const orderXML: string = req.body;
-    validateUBL(orderXML, "Order");
+    const { orderXml } = req.body;
+    
+    if (!orderXml || typeof orderXml !== 'string' || !orderXml.trim()) {
+        throw new HttpError(400, "Request body must include 'orderXml' as a non-empty string");
+    }
+    
+    validateUBL(orderXml, "Order");
 
     res.status(200).json({
         message: "UBL Order is valid!"
