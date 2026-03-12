@@ -37,6 +37,9 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
         .build();
 }
 
+/**
+ * Finds the requested Invoice in the database and deletes invoice and returns deleted invoice document or null if not found or invalid ID.
+ */
 export async function deleteInvoiceById(invoiceId: string) {
     if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
         return null;
