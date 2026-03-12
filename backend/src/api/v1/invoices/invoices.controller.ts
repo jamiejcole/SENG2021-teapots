@@ -34,3 +34,13 @@ export async function validateInvoice(req: Request, res: Response) {
         message: "UBL Order is valid!"
     });
 }
+
+export async function deleteInvoice(req: Request, res: Response) {
+    
+    // 1. Validate invoiceId format
+    // 2. Call service to find and delete from MongoDB
+    // 3. If not found, throw HttpError(404, "Invoice not found")
+    // 4. Return 204 No Content on success
+    
+    res.status(404).send();
+}
