@@ -4,6 +4,8 @@ import { validateUBL, validateCreateInvoiceRequest } from "./invoices.validation
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
 import { HttpError } from "../../../errors/HttpError";
+import { persistInvoiceRequest } from "../../../db/persistInvoiceRequest";
+
 
 export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
     validateCreateInvoiceRequest(req.body);
@@ -12,9 +14,12 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
     validateUBL(orderXml, "Order");
 
     const orderObj = (await service.createFullUblObject(orderXml)).data as OrderData;
+
     const invoiceXml = await service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
 
     validateUBL(invoiceXml, 'Invoice');
+
+    await persistInvoiceRequest({ orderXml, orderObj, invoiceXml, invoiceSupplement });
     res.contentType("application/xml");
     res.status(201).send(invoiceXml);
 });

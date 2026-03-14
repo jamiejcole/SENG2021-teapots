@@ -72,12 +72,12 @@ const InvoiceSchema = new Schema(
             uppercase: true,
         },
 
-        supplier: {
+        seller: {
             type: PartySchema,
             required: true,
         },
 
-        customer: {
+        buyer: {
             type: PartySchema,
             required: true,
         },
