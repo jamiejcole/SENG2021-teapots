@@ -1,8 +1,12 @@
 import app from "./app";
+import dotenv from "dotenv";
+import {connectDB} from "./db/mongo"
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+dotenv.config();
 
-function startServer() {
+async function startServer() {
+  await connectDB();
+  const PORT = Number(process.env.PORT ?? 3000);
   app.listen(PORT, () => {
     console.log(`* API running on http://localhost:${PORT}`);
   });

@@ -9,8 +9,8 @@ import { loggerMiddleware } from "./middleware/logger.middleware";
 const app = express();
 
 // Middleware
-app.use(express.json());
-app.use(express.text({ type: 'application/xml' }));
+app.use(express.json({ limit: "50mb"}));
+app.use(express.text({ type: 'application/xml' , limit: "5mb"}));
 app.use(express.urlencoded({ extended: true }));
 app.use(loggerMiddleware);
 
