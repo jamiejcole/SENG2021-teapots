@@ -24,24 +24,24 @@ describe('InvoiceCalculator', () => {
         lineId: 1,
         quantity: '2',
         unitPrice: '10.00',
-        lineExtensionAmount: '0.20',
-        lineTaxAmount: '0.02',
+        lineExtensionAmount: '20.00',
+        lineTaxAmount: '2.00',
       },
       {
         lineId: 2,
         quantity: '3',
         unitPrice: '5.50',
-        lineExtensionAmount: '0.17',
-        lineTaxAmount: '0.02',
+        lineExtensionAmount: '16.50',
+        lineTaxAmount: '1.65',
       },
     ]);
 
     expect(calc.summary).toEqual({
-      lineExtensionTotal: '0.37',
-      taxTotal: '0.04',
-      taxExclusiveAmount: '0.37',
-      taxInclusiveAmount: '0.41',
-      payableAmount: '0.41',
+      lineExtensionTotal: '36.50',
+      taxTotal: '3.65',
+      taxExclusiveAmount: '36.50',
+      taxInclusiveAmount: '40.15',
+      payableAmount: '40.15',
     });
   });
 
@@ -64,5 +64,10 @@ describe('InvoiceCalculator', () => {
     expect(InvoiceCalculator.toDecimal(1234)).toBe('12.34');
     expect(InvoiceCalculator.toCents('-1.20')).toBe(-120);
     expect(InvoiceCalculator.toDecimal(-120)).toBe('-1.20');
+  });
+
+  it('computes line extension cents with decimal quantity', () => {
+    expect(InvoiceCalculator.computeLineExtensionCents('1.5', '10.00')).toBe(1500);
+    expect(InvoiceCalculator.computeLineExtensionCents('0.25', '8.00')).toBe(200);
   });
 });
