@@ -5,6 +5,8 @@ import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
 import { HttpError } from "../../../errors/HttpError";
 import { deleteInvoiceById } from "./invoices.service";
+import { persistInvoiceRequest } from "../../../db/persistInvoiceRequest";
+
 
 export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
     validateCreateInvoiceRequest(req.body);
@@ -13,9 +15,12 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
     validateUBL(orderXml, "Order");
 
     const orderObj = (await service.createFullUblObject(orderXml)).data as OrderData;
+
     const invoiceXml = await service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
 
     validateUBL(invoiceXml, 'Invoice');
+
+    await persistInvoiceRequest({ orderXml, orderObj, invoiceXml, invoiceSupplement });
     res.contentType("application/xml");
     res.status(201).send(invoiceXml);
 });
@@ -46,7 +51,7 @@ export async function deleteInvoice(req: Request, res: Response) {
     const deletedInvoiceObj = await deleteInvoiceById(invoiceId)
 
     if (!deletedInvoiceObj) {
-        throw new HttpError(400, "Invoice not found")
+        throw new HttpError(404, "Invoice not found")
     }
 
     res.status(404).send();
