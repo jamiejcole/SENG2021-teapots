@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import v1Router from "./api/v1";
 import { swaggerSpec } from "./config/swagger";
@@ -8,6 +9,21 @@ import { loggerMiddleware } from "./middleware/logger.middleware";
 const app = express();
 
 // Middleware
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      // Allow non-browser clients (no Origin header)
+      if (!origin) return cb(null, true);
+
+      // Dev: allow Vite's changing localhost ports (5173, 5174, 5175, etc)
+      if (/^http:\/\/localhost:\d+$/.test(origin)) return cb(null, true);
+
+      return cb(new Error(`CORS blocked origin: ${origin}`));
+    },
+    methods: ["GET", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Accept"],
+  })
+);
 app.use(express.json({ limit: "50mb"}));
 app.use(express.text({ type: 'application/xml' , limit: "5mb"}));
 app.use(express.urlencoded({ extended: true }));
