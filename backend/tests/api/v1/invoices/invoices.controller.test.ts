@@ -1,21 +1,21 @@
-import { HttpError } from '../../../errors/HttpError';
-import { createInvoice, validateInvoice, deleteInvoice } from './invoices.controller';
-import * as validation from './invoices.validation';
-import * as service from './invoices.service';
-import * as persist from '../../../db/persistInvoiceRequest';
+import { HttpError } from '../../../../src/errors/HttpError';
+import { createInvoice, validateInvoice, deleteInvoice } from '../../../../src/api/v1/invoices/invoices.controller';
+import * as validation from '../../../../src/api/v1/invoices/invoices.validation';
+import * as service from '../../../../src/api/v1/invoices/invoices.service';
+import * as persist from '../../../../src/db/persistInvoiceRequest';
 
-jest.mock('./invoices.validation', () => ({
+jest.mock('../../../../src/api/v1/invoices/invoices.validation', () => ({
   validateUBL: jest.fn(),
   validateCreateInvoiceRequest: jest.fn(),
 }));
 
-jest.mock('./invoices.service', () => ({
+jest.mock('../../../../src/api/v1/invoices/invoices.service', () => ({
   createFullUblObject: jest.fn(),
   convertJsonToUblInvoice: jest.fn(),
   deleteInvoiceById: jest.fn(),
 }));
 
-jest.mock('../../../db/persistInvoiceRequest', () => ({
+jest.mock('../../../../src/db/persistInvoiceRequest', () => ({
   persistInvoiceRequest: jest.fn(),
 }));
 

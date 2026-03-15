@@ -1,17 +1,17 @@
-import { persistInvoiceRequest } from './persistInvoiceRequest';
-import { OrderModel } from '../models/order.model';
-import { InvoiceModel } from '../models/invoice.model';
-import type { OrderData } from '../types/order.types';
-import type { InvoiceSupplement } from '../types/invoice.types';
+import { persistInvoiceRequest } from '../../src/db/persistInvoiceRequest';
+import { OrderModel } from '../../src/models/order.model';
+import { InvoiceModel } from '../../src/models/invoice.model';
+import type { OrderData } from '../../src/types/order.types';
+import type { InvoiceSupplement } from '../../src/types/invoice.types';
 
-jest.mock('../models/order.model', () => ({
+jest.mock('../../src/models/order.model', () => ({
   OrderModel: {
     findOne: jest.fn(),
     create: jest.fn(),
   },
 }));
 
-jest.mock('../models/invoice.model', () => ({
+jest.mock('../../src/models/invoice.model', () => ({
   InvoiceModel: {
     findOne: jest.fn(),
     create: jest.fn(),

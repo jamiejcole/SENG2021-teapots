@@ -1,4 +1,4 @@
-import { InvoiceCalculator, InvoiceIntegrityError } from './InvoiceCalculator';
+import { InvoiceCalculator, InvoiceIntegrityError } from '../../src/domain/InvoiceCalculator';
 
 describe('InvoiceCalculator', () => {
   const orderLines = [

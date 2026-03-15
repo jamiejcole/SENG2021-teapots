@@ -1,5 +1,5 @@
-import { validateCreateInvoiceRequest, validateUBL } from './invoices.validation';
-import { HttpError } from '../../../errors/HttpError';
+import { validateCreateInvoiceRequest, validateUBL } from '../../../../src/api/v1/invoices/invoices.validation';
+import { HttpError } from '../../../../src/errors/HttpError';
 
 describe('validateCreateInvoiceRequest', () => {
   const validBody = {

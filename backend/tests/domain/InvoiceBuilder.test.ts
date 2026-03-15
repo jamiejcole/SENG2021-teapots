@@ -1,6 +1,6 @@
-import { InvoiceBuilder } from './InvoiceBuilder';
-import type { OrderData } from '../types/order.types';
-import type { InvoiceSupplement } from '../types/invoice.types';
+import { InvoiceBuilder } from '../../src/domain/InvoiceBuilder';
+import type { OrderData } from '../../src/types/order.types';
+import type { InvoiceSupplement } from '../../src/types/invoice.types';
 
 function makeOrder(overrides: Partial<OrderData> = {}): OrderData {
   return {

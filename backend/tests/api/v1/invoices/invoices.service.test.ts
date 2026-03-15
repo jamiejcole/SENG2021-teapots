@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
-import * as service from './invoices.service';
-import { InvoiceModel } from '../../../models/invoice.model';
-import type { OrderData } from '../../../types/order.types';
-import type { InvoiceSupplement } from '../../../types/invoice.types';
+import * as service from '../../../../src/api/v1/invoices/invoices.service';
+import { InvoiceModel } from '../../../../src/models/invoice.model';
+import type { OrderData } from '../../../../src/types/order.types';
+import type { InvoiceSupplement } from '../../../../src/types/invoice.types';
 
-jest.mock('../../../models/invoice.model', () => ({
+jest.mock('../../../../src/models/invoice.model', () => ({
   InvoiceModel: {
     findByIdAndDelete: jest.fn(),
   },

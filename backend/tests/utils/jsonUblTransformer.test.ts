@@ -1,6 +1,6 @@
 import { create } from 'xmlbuilder2';
 import * as libxml from 'libxmljs2';
-import { mapElementToJson, mapParty } from './jsonUblTransformer';
+import { mapElementToJson, mapParty } from '../../src/utils/jsonUblTransformer';
 
 describe('jsonUblTransformer', () => {
   it('maps XML elements with attributes and repeated children to JSON', () => {

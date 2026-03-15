@@ -1,4 +1,4 @@
-import { sha256 } from './hash';
+import { sha256 } from '../../src/models/hash';
 
 describe('sha256', () => {
   it('returns a deterministic hash for same input', () => {

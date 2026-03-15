@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { connectDB } from './mongo';
+import { connectDB } from '../../src/db/mongo';
 
 jest.mock('mongoose', () => ({
   __esModule: true,

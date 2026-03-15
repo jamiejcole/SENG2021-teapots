@@ -1,5 +1,5 @@
-import { errorMiddleware } from './error.middleware';
-import { HttpError } from '../errors/HttpError';
+import { errorMiddleware } from '../../src/middleware/error.middleware';
+import { HttpError } from '../../src/errors/HttpError';
 
 describe('errorMiddleware', () => {
   let errorSpy: jest.SpyInstance;

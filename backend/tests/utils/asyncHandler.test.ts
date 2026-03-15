@@ -1,4 +1,4 @@
-import { asyncHandler } from './asyncHandler';
+import { asyncHandler } from '../../src/utils/asyncHandler';
 
 describe('asyncHandler', () => {
   it('forwards resolved handlers without calling next with error', async () => {
