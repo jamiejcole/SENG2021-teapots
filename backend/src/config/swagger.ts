@@ -13,6 +13,10 @@ const swaggerDefinition = {
   },
   servers: [
     {
+      url: "https://seng2021.jamiecole.dev",
+      description: "Production",
+    },
+    {
       url: "http://localhost:3000",
       description: "localhost",
     },
