@@ -2,6 +2,44 @@ import { Router } from "express";
 import * as controller from "./invoices.controller";
 const router = Router();
 
+/**
+ * @openapi
+ * /api/v1/invoices/pdf:
+ *   post:
+ *     summary: Create a PDF from a UBL XML Invoice Document
+ *     tags: [Invoices]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/xml:
+ *           schema:
+ *             type: string
+ *           example: |
+ *             <?xml version="1.0" encoding="UTF-8"?>
+ *             <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2">
+ *               <cbc:ID xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">INV-001</cbc:ID>
+ *             </Invoice>
+ *     responses:
+ *       201:
+ *         description: PDF generated successfully
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       400:
+ *         description: Invalid invoice XML payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post("/pdf", controller.createPdf);
 
 /**
