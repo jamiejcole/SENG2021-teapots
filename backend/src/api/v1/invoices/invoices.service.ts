@@ -49,4 +49,3 @@ export async function deleteInvoiceById(invoiceId: string) {
 
     return deletedInvoiceObj;
 }
-

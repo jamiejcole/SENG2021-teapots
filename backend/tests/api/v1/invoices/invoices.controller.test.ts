@@ -1,5 +1,5 @@
 import { HttpError } from '../../../../src/errors/HttpError';
-import { createInvoice, validateInvoice, deleteInvoice } from '../../../../src/api/v1/invoices/invoices.controller';
+import { createInvoice, validateInvoice, createPdf, deleteInvoice } from '../../../../src/api/v1/invoices/invoices.controller';
 import * as validation from '../../../../src/api/v1/invoices/invoices.validation';
 import * as service from '../../../../src/api/v1/invoices/invoices.service';
 import * as persist from '../../../../src/db/persistInvoiceRequest';
@@ -7,6 +7,7 @@ import * as persist from '../../../../src/db/persistInvoiceRequest';
 jest.mock('../../../../src/api/v1/invoices/invoices.validation', () => ({
   validateUBL: jest.fn(),
   validateCreateInvoiceRequest: jest.fn(),
+  generateInvoicePdf: jest.fn(),
 }));
 
 jest.mock('../../../../src/api/v1/invoices/invoices.service', () => ({
@@ -95,5 +96,40 @@ describe('invoices.controller', () => {
 
     expect(res.status).toHaveBeenCalledWith(204);
     expect(res.send).toHaveBeenCalled();
+  });
+
+  it('createPdf generates and returns PDF with 201', async () => {
+    const req = { body: '<Invoice />' } as any;
+    const pdfBuffer = Buffer.from('pdf-binary');
+    const res = {
+      set: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    } as any;
+
+    (validation.generateInvoicePdf as jest.Mock).mockResolvedValue(pdfBuffer);
+
+    await createPdf(req, res);
+
+    expect(validation.generateInvoicePdf).toHaveBeenCalledWith('<Invoice />');
+    expect(res.set).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.send).toHaveBeenCalledWith(pdfBuffer);
+  });
+
+  it('createPdf propagates error when PDF generation fails', async () => {
+    const req = { body: '<Invoice />' } as any;
+    const res = {
+      set: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    } as any;
+
+    (validation.generateInvoicePdf as jest.Mock).mockRejectedValue(new Error('PDF generation failed'));
+
+    await expect(createPdf(req, res)).rejects.toThrow('PDF generation failed');
+    expect(res.set).not.toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.send).not.toHaveBeenCalled();
   });
 });

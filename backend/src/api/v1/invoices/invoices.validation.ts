@@ -123,3 +123,27 @@ export function validateUBL(xmlString: string, schemaType: 'Order' | 'Invoice') 
 
     return true;
 }
+
+// @ts-expect-error no-types-for-this-file
+import SaxonJS from 'saxon-js';
+import puppeteer from 'puppeteer';
+
+export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
+    const sefPath = path.join(__dirname, '../../../schemas/ubl2.4/xslt/s4.sef.json');
+
+    const result = SaxonJS.transform({
+        stylesheetLocation: sefPath,
+        sourceText: xmlString,
+        destination: "serialized"
+    }, "sync");
+
+    const htmlResult = result.principalResult;
+
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+    const page = await browser.newPage();
+    await page.setContent(htmlResult, { waitUntil: 'networkidle0' });
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+    await browser.close();
+
+    return Buffer.from(pdfBuffer);
+}
