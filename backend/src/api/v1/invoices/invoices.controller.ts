@@ -4,6 +4,7 @@ import { validateUBL, validateCreateInvoiceRequest } from "./invoices.validation
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
 import { HttpError } from "../../../errors/HttpError";
+import { deleteInvoiceById } from "./invoices.service";
 import { persistInvoiceRequest } from "../../../db/persistInvoiceRequest";
 
 
@@ -38,4 +39,20 @@ export async function validateInvoice(req: Request, res: Response) {
     res.status(200).json({
         message: "UBL Order is valid!"
     });
+}
+
+export async function deleteInvoice(req: Request, res: Response) {
+    const { invoiceId } = req.params
+
+    if (!invoiceId || typeof invoiceId !== 'string') {
+        throw new HttpError(400, "Invoice ID is required as a non-empty string");
+    }
+    
+    const deletedInvoiceObj = await deleteInvoiceById(invoiceId)
+
+    if (!deletedInvoiceObj) {
+        throw new HttpError(404, "Invoice not found")
+    }
+
+    res.status(404).send();
 }

@@ -3,6 +3,8 @@ import { OrderData } from '../../../types/order.types';
 import { mapElementToJson } from '../../../utils/jsonUblTransformer';
 import { InvoiceSupplement } from '../../../types/invoice.types';
 import { InvoiceBuilder } from '../../../domain/InvoiceBuilder';
+import mongoose from 'mongoose';
+import { InvoiceModel } from '../../../models/invoice.model';
 
 /**
  * Returns a JSON obj based on a UBL XML String.
@@ -34,3 +36,17 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
         .addInvoiceLines()
         .build();
 }
+
+/**
+ * Finds the requested Invoice in the database and deletes invoice and returns deleted invoice document or null if not found or invalid ID.
+ */
+export async function deleteInvoiceById(invoiceId: string) {
+    if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
+        return null;
+    }
+
+    const deletedInvoiceObj = await InvoiceModel.findByIdAndDelete(invoiceId);
+
+    return deletedInvoiceObj;
+}
+
