@@ -1,6 +1,5 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
-// import xmlparser from "express-xml-bodyparser";
 import v1Router from "./api/v1";
 import { swaggerSpec } from "./config/swagger";
 import { errorMiddleware } from "./middleware/error.middleware";

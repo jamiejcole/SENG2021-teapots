@@ -9,8 +9,8 @@ type LogPayload = {
   ip: string;
 };
 
-const writeLog = (payload: LogPayload): void => {
-  console.log("* Incoming request:", payload);
+const writeLog = (_payload: LogPayload): void => {
+  // console.log("* Incoming request:", payload);
 };
 
 export const loggerMiddleware = (
