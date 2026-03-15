@@ -67,8 +67,8 @@ describe('invoices.controller', () => {
     await expect(validateInvoice({ body: {} } as any, {} as any)).rejects.toThrow(HttpError);
   });
 
-  it('validateInvoice returns success for valid orderXml', async () => {
-    const req = { body: { orderXml: '<Order />' } } as any;
+  it('validateInvoice returns success for valid invoiceXml', async () => {
+    const req = { body: { invoiceXml: '<Invoice />' } } as any;
     const res = {
       contentType: jest.fn().mockReturnThis(),
       status: jest.fn().mockReturnThis(),
@@ -77,9 +77,9 @@ describe('invoices.controller', () => {
 
     await validateInvoice(req, res);
 
-    expect(validation.validateUBL).toHaveBeenCalledWith('<Order />', 'Order');
+    expect(validation.validateUBL).toHaveBeenCalledWith('<Invoice />', 'Invoice');
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ message: 'UBL Order is valid!' });
+    expect(res.json).toHaveBeenCalledWith({ message: 'UBL Invoice is valid!' });
   });
 
   it('deleteInvoice throws 404 when service returns null', async () => {

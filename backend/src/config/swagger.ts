@@ -24,8 +24,16 @@ const swaggerDefinition = {
   tags: [
     { name: "Health", description: "Service health checks" },
     { name: "Invoices", description: "Invoice generation and validation" },
+    { name: "Orders", description: "Order validation" },
   ],
   components: {
+    securitySchemes: {
+      ApiKeyAuth: {
+        type: "apiKey",
+        in: "header",
+        name: "x-api-key",
+      },
+    },
     schemas: {
       CreateInvoiceRequest: {
         type: "object",
@@ -44,6 +52,16 @@ const swaggerDefinition = {
       },
       ...invoiceSupplementSchemas,
       ValidateInvoiceRequest: {
+        type: "object",
+        required: ["orderXml"],
+        properties: {
+          orderXml: {
+            type: "string",
+            description: "UBL Order XML string",
+          },
+        },
+      },
+      ValidateOrderRequest: {
         type: "object",
         required: ["orderXml"],
         properties: {

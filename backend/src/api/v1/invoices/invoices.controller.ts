@@ -26,18 +26,18 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export async function validateInvoice(req: Request, res: Response) {
-    const { orderXml } = req.body;
+    const { invoiceXml } = req.body;
         
-    if (!orderXml || typeof orderXml !== 'string' || !orderXml.trim()) {
-        throw new HttpError(400, "Request body must include 'orderXml' as a non-empty string");
+    if (!invoiceXml || typeof invoiceXml !== 'string' || !invoiceXml.trim()) {
+        throw new HttpError(400, "Request body must include 'invoiceXml' as a non-empty string");
     }
     
     res.contentType("application/json");
 
-    validateUBL(orderXml, "Order");
+    validateUBL(invoiceXml, "Invoice");
 
     res.status(200).json({
-        message: "UBL Order is valid!"
+        message: "UBL Invoice is valid!"
     });
 }
 
