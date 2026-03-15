@@ -9,7 +9,7 @@ type LogPayload = {
   ip: string;
 };
 
-const writeLog = (payload: LogPayload): void => {
+const writeLog = (_payload: LogPayload): void => {
   // console.log("* Incoming request:", payload);
 };
 
