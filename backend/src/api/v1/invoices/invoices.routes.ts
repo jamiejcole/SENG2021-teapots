@@ -122,6 +122,8 @@ router.post("/validate", controller.validateInvoice);
  *   put:
  *     summary: Update an invoice by ID
  *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: invoiceId
