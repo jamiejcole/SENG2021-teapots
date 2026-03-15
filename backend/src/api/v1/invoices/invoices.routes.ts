@@ -72,4 +72,41 @@ router.post("/", controller.createInvoice);
  */
 router.post("/validate", controller.validateInvoice);
 
+/**
+ * @openapi
+ * /api/v1/invoices/{invoiceId}:
+ *   delete:
+ *     summary: Delete an invoice by ID
+ *     tags: [Invoices]
+ *     parameters:
+ *       - in: path
+ *         name: invoiceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the invoice to delete
+ *     responses:
+ *       204:
+ *         description: Invoice successfully deleted
+ *       400:
+ *         description: Invalid invoice ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Invoice not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.delete("/:invoiceId", controller.deleteInvoice);
+
 export default router;
