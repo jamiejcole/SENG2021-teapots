@@ -73,6 +73,55 @@ router.post("/validate", controller.validateInvoice);
 /**
  * @openapi
  * /api/v1/invoices/{invoiceId}:
+ *   put:
+ *     summary: Update an invoice by ID
+ *     tags: [Invoices]
+ *     parameters:
+ *       - in: path
+ *         name: invoiceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the invoice to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateInvoiceRequest'
+ *     responses:
+ *       200:
+ *         description: Invoice successfully updated
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Invoice not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       422:
+ *         description: Business rule error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.put("/:invoiceId", controller.updateInvoice);
+
+/**
+ * @openapi
+ * /api/v1/invoices/{invoiceId}:
  *   delete:
  *     summary: Delete an invoice by ID
  *     tags: [Invoices]
