@@ -27,6 +27,13 @@ const swaggerDefinition = {
     { name: "Orders", description: "Order validation" },
   ],
   components: {
+    securitySchemes: {
+      ApiKeyAuth: {
+        type: "apiKey",
+        in: "header",
+        name: "x-api-key",
+      },
+    },
     schemas: {
       CreateInvoiceRequest: {
         type: "object",

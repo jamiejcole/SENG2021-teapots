@@ -8,6 +8,8 @@ const router = Router();
  *   post:
  *     summary: Create a PDF from a UBL XML Invoice Document
  *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -48,6 +50,8 @@ router.post("/pdf", controller.createPdf);
  *   post:
  *     summary: Create an invoice from UBL Order XML
  *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -82,6 +86,8 @@ router.post("/", controller.createInvoice);
  *   post:
  *     summary: Validate UBL Order XML payload
  *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -116,6 +122,8 @@ router.post("/validate", controller.validateInvoice);
  *   delete:
  *     summary: Delete an invoice by ID
  *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: invoiceId

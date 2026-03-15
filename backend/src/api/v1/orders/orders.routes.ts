@@ -9,6 +9,8 @@ const router = Router();
  *   post:
  *     summary: Validate UBL Order XML payload
  *     tags: [Orders]
+ *     security:
+ *       - ApiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
