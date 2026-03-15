@@ -41,6 +41,43 @@ export async function validateInvoice(req: Request, res: Response) {
     });
 }
 
+
+export const updateInvoice = asyncHandler(async (req: Request, res: Response) => {
+    const { invoiceId } = req.params;
+
+    if (!invoiceId || typeof invoiceId !== 'string') {
+        throw new HttpError(400, "Invoice ID is required as a non-empty string");
+    }
+
+    validateCreateInvoiceRequest(req.body);
+
+    const { orderXml, invoiceSupplement } = req.body;
+
+    validateUBL(orderXml, "Order");
+
+    const orderObj = (await service.createFullUblObject(orderXml)).data as OrderData;
+
+    const invoiceXml = service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
+
+    validateUBL(invoiceXml, "Invoice");
+
+    const updatedInvoice = await service.updateInvoiceById(
+        invoiceId,
+        orderXml,
+        orderObj,
+        invoiceXml,
+        invoiceSupplement
+    );
+
+    if (!updatedInvoice) {
+        throw new HttpError(404, "Invoice not found");
+    }
+
+    res.contentType("application/xml");
+    res.status(200).send(invoiceXml);
+});
+
+
 export async function createPdf(req: Request, res: Response) {
     const invoiceXml = req.body;
     
@@ -49,6 +86,7 @@ export async function createPdf(req: Request, res: Response) {
     res.set("Content-Type", "application/pdf");
     res.status(201).send(doc);
 }
+
 export async function deleteInvoice(req: Request, res: Response) {
     const { invoiceId } = req.params
 
