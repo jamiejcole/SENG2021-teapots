@@ -58,9 +58,9 @@ export class InvoiceCalculator {
 
         // Rule 1: Each line extension must equal `qty x unitPrice`
         for (const lt of this.lineTotals) {
-            const expectedCents = InvoiceCalculator.mulCents(
-                InvoiceCalculator.toCents(lt.quantity),
-                InvoiceCalculator.toCents(lt.unitPrice),
+            const expectedCents = InvoiceCalculator.computeLineExtensionCents(
+                lt.quantity,
+                lt.unitPrice,
             );
             const actualCents = InvoiceCalculator.toCents(lt.lineExtensionAmount);
             if (expectedCents !== actualCents) {
@@ -153,10 +153,7 @@ export class InvoiceCalculator {
         const quantity = String(item.Quantity?.value ?? item.Quantity ?? '0');
         const unitPrice = String(item.Price?.PriceAmount?.value ?? '0.00');
 
-        const qtyCents = InvoiceCalculator.toCents(quantity);
-        const priceCents = InvoiceCalculator.toCents(unitPrice);
-
-        const lineExtCents = InvoiceCalculator.mulCents(qtyCents, priceCents);
+        const lineExtCents = InvoiceCalculator.computeLineExtensionCents(quantity, unitPrice);
         const lineTaxCents = InvoiceCalculator.applyRate(lineExtCents, this.taxRate);
 
         return {
@@ -211,10 +208,32 @@ export class InvoiceCalculator {
     }
 
     /**
-     * Multiply two cent values
+     * Parse a decimal string/number into an integer with fixed precision scale.
      */
-    static mulCents(aCents: number, bCents: number): number {
-        return Math.round((aCents * bCents) / 10000);
+    private static toScaledInt(value: string | number, scale: number): number {
+        const str = typeof value === 'number' ? value.toString() : value;
+        const trimmed = str.trim();
+        const isNegative = trimmed.startsWith('-');
+        const unsigned = isNegative ? trimmed.slice(1) : trimmed;
+
+        const [whole = '0', frac = ''] = unsigned.split('.');
+        const wholePart = parseInt(whole || '0', 10);
+        const fracPart = parseInt((frac + '0'.repeat(scale)).slice(0, scale), 10);
+
+        const result = (Number.isNaN(wholePart) ? 0 : wholePart) * Math.pow(10, scale)
+            + (Number.isNaN(fracPart) ? 0 : fracPart);
+
+        return isNegative ? -result : result;
+    }
+
+    /**
+     * Compute line extension amount in cents from quantity × unit price.
+     */
+    static computeLineExtensionCents(quantity: string | number, unitPrice: string | number): number {
+        const quantityScale = 4;
+        const quantityScaledInt = InvoiceCalculator.toScaledInt(quantity, quantityScale);
+        const unitPriceCents = InvoiceCalculator.toCents(unitPrice);
+        return Math.round((quantityScaledInt * unitPriceCents) / Math.pow(10, quantityScale));
     }
 
     /**
