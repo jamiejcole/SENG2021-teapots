@@ -54,5 +54,5 @@ export async function deleteInvoice(req: Request, res: Response) {
         throw new HttpError(404, "Invoice not found")
     }
 
-    res.status(404).send();
+    res.status(204).send();
 }
