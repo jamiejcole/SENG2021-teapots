@@ -49,3 +49,28 @@ export async function deleteInvoiceById(invoiceId: string) {
 
     return deletedInvoiceObj;
 }
+
+export async function updateInvoiceById(
+    invoiceId: string,
+    orderXml: string,
+    orderObj: OrderData,
+    invoiceXml: string,
+    invoiceSupplement: InvoiceSupplement
+) {
+    if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
+        return null;
+    }
+
+    const updatedInvoice = await InvoiceModel.findByIdAndUpdate(
+        invoiceId,
+        {
+            orderXml,
+            orderObj,
+            invoiceXml,
+            invoiceSupplement
+        },
+        { new: true }
+    );
+
+    return updatedInvoice;
+}
