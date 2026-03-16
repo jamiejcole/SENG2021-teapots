@@ -9,12 +9,16 @@ const swaggerDefinition = {
   info: {
     title: "UBL Invoice Generator API",
     version: "1.0.0",
-    description: "API for Invoice Generation and UBL validation.",
+    description: "API for Invoice Generation and UBL validation. Made by the SENG2021 26T1 W11A Teapots Team.",
   },
   servers: [
     {
+      url: "http://100.48.200.166:3000",
+      description: "Production Server",
+    },
+    {
       url: "https://seng2021.jamiecole.dev",
-      description: "Production",
+      description: "Production Server (Backup)",
     },
     {
       url: "http://localhost:3000",
