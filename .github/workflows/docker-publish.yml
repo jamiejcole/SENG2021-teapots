@@ -68,8 +68,9 @@ jobs:
           context: .
           file: Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          # tags: ${{ steps.meta.outputs.tags }} Should we keep this
-          tags: 'ghcr.io/jamiejcole/seng2021-teapots:latest,${{ steps.meta.outputs.tags }}'
+          tags: |
+            ghcr.io/jamiejcole/seng2021-teapots:latest
+            ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

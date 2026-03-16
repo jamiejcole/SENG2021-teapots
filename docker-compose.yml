@@ -13,12 +13,14 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
   watchtower:
     image: containrrr/watchtower:latest
     container_name: seng2021-teapots-watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: app-dev-api
+    command: --label-enable --interval 300 seng2021-teapots-api
     restart: unless-stopped
     environment:
       WATCHTOWER_CLEANUP: true
