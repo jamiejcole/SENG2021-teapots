@@ -1,14 +1,25 @@
 services:
-  api:
-    build: ./backend
+  app-dev-api:
+    image: ghcr.io/jamiejcole/seng2021-teapots:latest
+    container_name: seng2021-teapots-api
+    restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:
       - ./backend/.env
-    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/v1/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: seng2021-teapots-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: app-dev-api
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_CLEANUP: true
+      DOCKER_API_VERSION: 1.49
