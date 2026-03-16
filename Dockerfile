@@ -18,7 +18,8 @@ WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY src/types/ ./src/types/
+COPY --from=builder /app/src/types ./src/types
+COPY --from=builder /app/src/schemas ./dist/schemas
 
 EXPOSE 3000
 
