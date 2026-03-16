@@ -6,7 +6,7 @@ on:
     paths:
       - 'server/**/**'
       - '.github/workflows/docker-publish.yml'
-      - 'DockerFile'
+      - 'Dockerfile'
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -71,7 +71,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: DockerFile
+          file: Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           # tags: ${{ steps.meta.outputs.tags }} Should we keep this
           tags: 'ghcr.io/jamiejcole/seng2021-teapots:latest,${{ steps.meta.outputs.tags }}'
