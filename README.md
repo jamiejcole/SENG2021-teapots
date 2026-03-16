@@ -12,6 +12,10 @@ Repo for SENG2021 26T1 Project
 - Pushing directly to `main` is blocked such to enforce best git practices
 - When working on a feature, make sure to checkout to a branch and create a PR when you're ready to merge into `main`.
 
+## Testing
+- Testing can be done by running `npm run test`, and code coverage with `npm run test:coverage`.
+- Please ensure when making a PR, that the overall project test coverage remains >85%. 
+
 ## Deploying
 - Auto deploy configurations are setup when merging branches into main. This rebuilds a docker image used for backup API deployment
 
