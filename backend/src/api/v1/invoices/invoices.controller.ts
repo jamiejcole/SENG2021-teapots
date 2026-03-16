@@ -4,7 +4,7 @@ import { validateUBL, validateCreateInvoiceRequest, generateInvoicePdf } from ".
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
 import { HttpError } from "../../../errors/HttpError";
-import { deleteInvoiceById } from "./invoices.service";
+import { deleteInvoiceById, getAllInvoices, getInvoiceById } from "./invoices.service";
 import { persistInvoiceRequest } from "../../../db/persistInvoiceRequest";
 
 
@@ -101,4 +101,30 @@ export async function deleteInvoice(req: Request, res: Response) {
     }
 
     res.status(204).send();
+}
+
+export async function getInvoice(req: Request, res: Response) {
+    const { invoiceId } = req.params
+
+    if (!invoiceId || typeof invoiceId !== 'string') {
+        throw new HttpError(400, "Invoice ID is required as a non-empty string");
+    }
+    
+    const fetchedInvoiceObj = await getInvoiceById(invoiceId)
+
+    if (!fetchedInvoiceObj) {
+        throw new HttpError(404, "Invoice not found")
+    }
+    res.set("Content-Type", "application/json");
+    res.status(200).send(fetchedInvoiceObj);
+}
+
+export async function listInvoices(req: Request, res: Response) {
+    const fetchedInvoices = await getAllInvoices()
+
+    if (!fetchedInvoices) {
+        throw new HttpError(404, "Invoices not found")
+    }
+    res.set("Content-Type", "application/json");
+    res.status(200).send(fetchedInvoices);
 }

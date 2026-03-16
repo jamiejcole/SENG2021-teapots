@@ -50,6 +50,28 @@ export async function deleteInvoiceById(invoiceId: string) {
     return deletedInvoiceObj;
 }
 
+/**
+ * Finds the requested Invoice in the database and returns it.
+ */
+export async function getInvoiceById(invoiceId: string) {
+    if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
+        return null;
+    }
+
+    const fetchedInvoiceObj = await InvoiceModel.findById(invoiceId);
+
+    return fetchedInvoiceObj;
+}
+
+/**
+ * Retrieves all Invoices in the database.
+ */
+export async function getAllInvoices() {
+    const fetchedInvoices = await InvoiceModel.find();
+
+    return fetchedInvoices;
+}
+
 export async function updateInvoiceById(
     invoiceId: string,
     orderXml: string,
