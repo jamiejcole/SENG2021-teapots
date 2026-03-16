@@ -53,11 +53,11 @@ const swaggerDefinition = {
       ...invoiceSupplementSchemas,
       ValidateInvoiceRequest: {
         type: "object",
-        required: ["orderXml"],
+        required: ["invoiceXml"],
         properties: {
-          orderXml: {
+          invoiceXml: {
             type: "string",
-            description: "UBL Order XML string",
+            description: "UBL Invoice XML string",
           },
         },
       },
@@ -110,6 +110,78 @@ const swaggerDefinition = {
           },
         },
         required: ["status", "service", "version", "uptimeSeconds"],
+      },
+      InvoiceRecord: {
+        type: "object",
+        description: "Stored invoice record",
+        properties: {
+          _id: {
+            type: "string",
+          },
+          status: {
+            type: "string",
+            enum: ["GENERATED", "UPDATED"],
+          },
+          invoiceId: {
+            type: "string",
+          },
+          issueDate: {
+            type: "string",
+          },
+          currency: {
+            type: "string",
+          },
+          seller: {
+            type: "object",
+            additionalProperties: true,
+          },
+          buyer: {
+            type: "object",
+            additionalProperties: true,
+          },
+          lines: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: true,
+            },
+          },
+          orderReference: {
+            type: "object",
+            additionalProperties: true,
+          },
+          despatchReference: {
+            type: "object",
+            additionalProperties: true,
+          },
+          paymentTerms: {
+            type: "string",
+          },
+          totals: {
+            type: "object",
+            additionalProperties: true,
+          },
+          invoiceXml: {
+            type: "string",
+          },
+          xmlSha256: {
+            type: "string",
+          },
+          createdAt: {
+            type: "string",
+            format: "date-time",
+          },
+          updatedAt: {
+            type: "string",
+            format: "date-time",
+          },
+        },
+      },
+      InvoiceListResponse: {
+        type: "array",
+        items: {
+          $ref: "#/components/schemas/InvoiceRecord",
+        },
       },
     },
   },
