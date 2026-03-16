@@ -25,7 +25,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run tests
         run: npm test
@@ -46,5 +46,5 @@ jobs:
             cd /home/ec2-user/SENG2021-teapots
             git pull origin main
             cd backend
-            npm install
+            npm ci
             pm2 restart seng-backend --update-env
