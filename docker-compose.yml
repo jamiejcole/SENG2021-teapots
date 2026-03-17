@@ -1,4 +1,27 @@
 services:
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:latest
+    restart: always
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [all]
+    security_opt: [no-new-privileges:true]
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - DOMAINS=api.teapotinvoicing.app
+      - PROXIED=false
+      - IP6_PROVIDER=none
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
   app-dev-api:
     image: ghcr.io/jamiejcole/seng2021-teapots:latest
     container_name: seng2021-teapots-api
@@ -26,3 +49,7 @@ services:
       WATCHTOWER_CLEANUP: true
       DOCKER_API_VERSION: 1.49
       WATCHTOWER_POLL_INTERVAL: 300
+
+volumes:
+  caddy_data:
+  caddy_config:
