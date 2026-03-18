@@ -1,5 +1,4 @@
 import { Outlet } from 'react-router-dom'
-import { Sparkles } from 'lucide-react'
 
 export function AuthLayout() {
   return (
@@ -10,9 +9,7 @@ export function AuthLayout() {
           <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-white to-yellow-50 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20" />
           <div className="relative flex h-full flex-col justify-between p-12">
             <div className="inline-flex items-center gap-3">
-              <div className="grid size-12 place-items-center rounded-2xl bg-amber-400 text-slate-900 shadow-lg shadow-amber-400/25">
-                <Sparkles className="size-6" />
-              </div>
+              <img src="/logo.png" alt="Teapots" className="size-12 rounded-2xl object-contain" />
               <div>
                 <div className="font-display text-xl font-semibold tracking-tight">Teapots</div>
                 <div className="text-sm text-slate-500 dark:text-slate-400">Fintech-grade invoicing</div>

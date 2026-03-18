@@ -26,15 +26,18 @@ export function TopNav({ onOpenMobileNav }: TopNavProps) {
         Skip to content
       </a>
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="focus-ring md:hidden"
-          onClick={onOpenMobileNav}
-          aria-label="Open navigation menu"
-        >
-          <Menu className="size-4" />
-        </Button>
+        <div className="flex items-center gap-2 md:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="focus-ring"
+            onClick={onOpenMobileNav}
+            aria-label="Open navigation menu"
+          >
+            <Menu className="size-4" />
+          </Button>
+          <img src="/logo.png" alt="Teapots" className="size-8 rounded-lg object-contain" />
+        </div>
 
         <div className="relative hidden flex-1 md:block">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

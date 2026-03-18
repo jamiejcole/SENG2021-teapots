@@ -1,5 +1,4 @@
-import { Link } from 'react-router-dom'
-import { ArrowUpRight, Coins, ReceiptText, ShieldCheck, Sparkles } from 'lucide-react'
+import { Coins, ReceiptText, ShieldCheck, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatCard } from '@/components/dashboard/StatCard'
@@ -9,27 +8,15 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity'
 export function DashboardPage() {
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
-            <Sparkles className="size-3.5" />
-            Premium preview
-          </div>
-          <h1 className="text-balance font-display text-3xl tracking-tight sm:text-4xl">Overview</h1>
-          <p className="max-w-prose text-sm text-muted-foreground">
-            Generate invoices from UBL Orders, validate payloads, and monitor recent activity.
-          </p>
+      <div className="space-y-1">
+        <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+          <Sparkles className="size-3.5" />
+          Premium preview
         </div>
-        <div className="flex gap-2">
-          <Button asChild className="rounded-xl bg-amber-400 font-semibold text-slate-900 shadow-md shadow-amber-400/25 hover:bg-amber-500">
-            <Link to="/generate">
-              Generate invoice <ArrowUpRight className="ml-1.5 size-4" />
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="rounded-xl">
-            <Link to="/validate">Validate</Link>
-          </Button>
-        </div>
+        <h1 className="text-balance font-display text-3xl tracking-tight sm:text-4xl">Overview</h1>
+        <p className="max-w-prose text-sm text-muted-foreground">
+          Generate invoices from UBL Orders, validate payloads, and monitor recent activity.
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -40,7 +27,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="surface lg:col-span-2">
+        <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 lg:col-span-2 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
           <CardHeader className="flex-row items-start justify-between space-y-0">
             <div className="space-y-1">
               <CardTitle className="text-base">Invoice throughput</CardTitle>
@@ -56,6 +43,7 @@ export function DashboardPage() {
         </Card>
 
         <RecentActivity
+          className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20"
           items={[
             { id: 'a1', title: 'Invoice generated', meta: 'ORDER-1 • 2m ago', amount: '$236.50', status: 'success' },
             { id: 'a2', title: 'Order validated', meta: 'AEG012345 • 9m ago', status: 'success' },
@@ -65,24 +53,6 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Link to="/generate" className="block">
-          <Card className="surface surface-hover">
-            <CardHeader>
-              <CardTitle className="text-base">Generate Invoice</CardTitle>
-              <CardDescription>Paste an Order XML and generate Invoice XML.</CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-        <Link to="/validate" className="block">
-          <Card className="surface surface-hover">
-            <CardHeader>
-              <CardTitle className="text-base">Validate Order</CardTitle>
-              <CardDescription>Run UBL XSD validation for an Order XML.</CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-      </div>
     </div>
   )
 }

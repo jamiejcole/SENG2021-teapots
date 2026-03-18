@@ -17,11 +17,11 @@
     --popover-foreground: 222 33% 9%;
 
     /* Brand: CommBank-like sunshine yellow */
-    --brand: 47 100% 55%;
+    --brand: 47 100% 58%;
     --brand-foreground: 222 33% 10%;
     --brand-muted: 47 100% 96%;
 
-    /* Semantic tokens (shadcn) */
+    /* Semantic tokens */
     --primary: 47 100% 55%;
     --primary-foreground: 222 33% 10%;
     --secondary: 220 15% 96%;
@@ -34,7 +34,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 90%;
     --input: 220 13% 90%;
-    --ring: 47 100% 55%;
+    --ring: 47 100% 58%;
 
     --shadow: 222 30% 12%;
     --radius: 0.9rem;
@@ -74,7 +74,7 @@
   }
 
   body {
-    @apply bg-background font-sans text-foreground antialiased;
+    @apply bg-amber-50/30 font-sans text-foreground antialiased dark:bg-slate-950;
     text-rendering: geometricPrecision;
   }
 }

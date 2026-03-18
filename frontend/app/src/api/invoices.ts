@@ -23,6 +23,14 @@ export async function validateOrder(orderXml: string) {
   })
 }
 
+/** Validate UBL Invoice XML – backend endpoint to be added */
+export async function validateInvoice(invoiceXml: string) {
+  return await apiJson<{ message: string }>('/invoices/validate-invoice', {
+    method: 'POST',
+    body: JSON.stringify({ invoiceXml }),
+  })
+}
+
 export async function createInvoice(orderXml: string, invoiceSupplement: InvoiceSupplement) {
   return await apiText('/invoices', {
     method: 'POST',

@@ -1,40 +1,125 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
-import { validateOrder } from '@/api/invoices'
+import { validateOrder, validateInvoice } from '@/api/invoices'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { XmlUploadButton } from '@/components/XmlUploadButton'
 import { toast } from 'sonner'
 
+type ValidationSectionProps = {
+  title: string
+  description: string
+  xml: string
+  setXml: (v: string) => void
+  onValidate: () => void
+  isLoading: boolean
+  result: { ok: boolean; message: string } | null
+}
+
+function ValidationSection({
+  title,
+  description,
+  xml,
+  setXml,
+  onValidate,
+  isLoading,
+  result,
+}: ValidationSectionProps) {
+  const canSubmit = xml.trim().length > 0 && !isLoading
+
+  return (
+    <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base">{title}</CardTitle>
+            <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+          </div>
+          <XmlUploadButton onUpload={setXml} className="rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40" />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label>XML</Label>
+          <Textarea
+            value={xml}
+            onChange={(e) => setXml(e.target.value)}
+            placeholder="XML"
+            className="min-h-36 rounded-xl font-mono text-xs"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={onValidate}
+            disabled={!canSubmit}
+            className="rounded-lg bg-amber-400 font-semibold text-slate-900 shadow-md shadow-amber-400/25 hover:bg-amber-500"
+          >
+            {isLoading ? 'Validating…' : 'Validate'}
+          </Button>
+          <Button variant="outline" onClick={() => setXml('')} disabled={isLoading} className="rounded-lg">
+            Clear
+          </Button>
+        </div>
+        {isLoading && <Skeleton className="h-12 w-full rounded-xl" />}
+        {!isLoading && result && (
+          <Alert variant={result.ok ? 'default' : 'destructive'} className={result.ok ? 'border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/30' : ''}>
+            <AlertTitle>{result.ok ? 'Valid' : 'Invalid'}</AlertTitle>
+            <AlertDescription className="whitespace-pre-wrap">{result.message}</AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function ValidateOrderPage() {
+  const location = useLocation()
+  const stateInvoice = (location.state as { invoiceXml?: string } | null)?.invoiceXml
   const [orderXml, setOrderXml] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [invoiceXml, setInvoiceXml] = useState(stateInvoice ?? '')
+  const [orderLoading, setOrderLoading] = useState(false)
+  const [invoiceLoading, setInvoiceLoading] = useState(false)
+  const [orderResult, setOrderResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [invoiceResult, setInvoiceResult] = useState<{ ok: boolean; message: string } | null>(null)
 
-  const canSubmit = useMemo(() => orderXml.trim().length > 0 && !isLoading, [orderXml, isLoading])
-
-  async function onValidate() {
+  async function onValidateOrder() {
     const trimmed = orderXml.trim()
-    if (!trimmed) {
-      setResult({ ok: false, message: 'Order XML cannot be empty.' })
-      return
-    }
-
-    setIsLoading(true)
-    setResult(null)
+    if (!trimmed) return
+    setOrderLoading(true)
+    setOrderResult(null)
     try {
       const res = await validateOrder(trimmed)
-      setResult({ ok: true, message: res.message ?? 'UBL Order is valid.' })
+      setOrderResult({ ok: true, message: res.message ?? 'UBL Order is valid.' })
       toast.success('Order is valid')
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Validation failed'
-      setResult({ ok: false, message: msg })
+      setOrderResult({ ok: false, message: msg })
       toast.error('Validation failed', { description: msg })
     } finally {
-      setIsLoading(false)
+      setOrderLoading(false)
+    }
+  }
+
+  async function onValidateInvoice() {
+    const trimmed = invoiceXml.trim()
+    if (!trimmed) return
+    setInvoiceLoading(true)
+    setInvoiceResult(null)
+    try {
+      const res = await validateInvoice(trimmed)
+      setInvoiceResult({ ok: true, message: res.message ?? 'UBL Invoice is valid.' })
+      toast.success('Invoice is valid')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Validation failed'
+      setInvoiceResult({ ok: false, message: msg })
+      toast.error('Validation failed', { description: msg })
+    } finally {
+      setInvoiceLoading(false)
     }
   }
 
@@ -46,46 +131,33 @@ export function ValidateOrderPage() {
             <ShieldCheck className="size-3.5" />
             Validation
           </div>
-          <h1 className="font-display text-3xl tracking-tight">Validate Order</h1>
-          <p className="text-sm text-muted-foreground">Runs UBL XSD validation against your Order XML.</p>
+          <h1 className="font-display text-3xl tracking-tight">Validate</h1>
+          <p className="text-sm text-muted-foreground">
+            Validate UBL Order or Invoice XML against XSD schemas.
+          </p>
         </div>
       </div>
 
-      <Card className="surface">
-        <CardHeader>
-          <CardTitle className="text-base">Order XML</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="orderXml">Paste UBL Order XML</Label>
-            <Textarea
-              id="orderXml"
-              value={orderXml}
-              onChange={(e) => setOrderXml(e.target.value)}
-              placeholder={'<?xml version="1.0" encoding="UTF-8"?>\n<Order>...</Order>'}
-              className="min-h-64 rounded-2xl font-mono text-xs"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={onValidate} disabled={!canSubmit} className="rounded-xl bg-amber-400 font-semibold text-slate-900 shadow-md shadow-amber-400/25 hover:bg-amber-500">
-              {isLoading ? 'Validating…' : 'Validate'}
-            </Button>
-            <Button variant="secondary" onClick={() => setOrderXml('')} disabled={isLoading} className="rounded-full">
-              Clear
-            </Button>
-          </div>
-
-          {isLoading && <Skeleton className="h-16 w-full rounded-2xl" />}
-
-          {!isLoading && result && (
-            <Alert variant={result.ok ? 'default' : 'destructive'}>
-              <AlertTitle>{result.ok ? 'Valid' : 'Invalid'}</AlertTitle>
-              <AlertDescription className="whitespace-pre-wrap">{result.message}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ValidationSection
+          title="Validate Order XML"
+          description="UBL Order XSD validation"
+          xml={orderXml}
+          setXml={setOrderXml}
+          onValidate={onValidateOrder}
+          isLoading={orderLoading}
+          result={orderResult}
+        />
+        <ValidationSection
+          title="Validate Invoice XML"
+          description="UBL Invoice XSD validation"
+          xml={invoiceXml}
+          setXml={setInvoiceXml}
+          onValidate={onValidateInvoice}
+          isLoading={invoiceLoading}
+          result={invoiceResult}
+        />
+      </div>
     </div>
   )
 }
-

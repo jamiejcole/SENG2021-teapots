@@ -11,7 +11,7 @@ export type StatCardProps = {
 
 export function StatCard({ label, value, change, tone = 'neutral', icon: Icon }: StatCardProps) {
   return (
-    <Card className="surface surface-hover">
+    <Card className="surface-hover border-amber-200/50 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/10">
       <CardHeader className="flex-row items-start justify-between space-y-0">
         <div className="space-y-1">
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
@@ -29,8 +29,8 @@ export function StatCard({ label, value, change, tone = 'neutral', icon: Icon }:
             className={cn(
               'text-xs font-medium',
               tone === 'neutral' && 'text-muted-foreground',
-              tone === 'positive' && 'text-emerald-600 dark:text-emerald-400',
-              tone === 'negative' && 'text-red-600 dark:text-red-400',
+              tone === 'positive' && 'text-amber-700 dark:text-amber-300',
+              tone === 'negative' && 'text-amber-800 dark:text-amber-200',
             )}
           >
             {change}

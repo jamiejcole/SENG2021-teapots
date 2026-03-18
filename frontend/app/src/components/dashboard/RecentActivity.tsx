@@ -11,14 +11,14 @@ export type ActivityItem = {
 }
 
 const tones: Record<ActivityItem['status'], string> = {
-  success: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  pending: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200',
-  failed: 'bg-red-500/10 text-red-700 dark:text-red-300',
+  success: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200',
+  pending: 'bg-amber-100/70 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
+  failed: 'bg-amber-200/50 text-amber-900 dark:bg-amber-900/50 dark:text-amber-100',
 }
 
-export function RecentActivity({ items }: { items: ActivityItem[] }) {
+export function RecentActivity({ items, className }: { items: ActivityItem[]; className?: string }) {
   return (
-    <Card className="surface">
+    <Card className={cn('surface', className)}>
       <CardHeader>
         <CardTitle className="text-base">Recent activity</CardTitle>
       </CardHeader>
