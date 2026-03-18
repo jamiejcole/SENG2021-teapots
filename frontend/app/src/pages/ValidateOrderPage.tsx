@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
+import { ShieldCheck } from 'lucide-react'
 import { validateOrder } from '@/api/invoices'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 
@@ -38,14 +40,20 @@ export function ValidateOrderPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Validate Order</h1>
-        <p className="text-sm text-muted-foreground">POSTs to the backend at `/invoices/validate`.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+            <ShieldCheck className="size-3.5" />
+            Validation
+          </div>
+          <h1 className="font-display text-3xl tracking-tight">Validate Order</h1>
+          <p className="text-sm text-muted-foreground">Runs UBL XSD validation against your Order XML.</p>
+        </div>
       </div>
 
-      <Card>
+      <Card className="surface">
         <CardHeader>
-          <CardTitle>Order XML</CardTitle>
+          <CardTitle className="text-base">Order XML</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -55,19 +63,21 @@ export function ValidateOrderPage() {
               value={orderXml}
               onChange={(e) => setOrderXml(e.target.value)}
               placeholder={'<?xml version="1.0" encoding="UTF-8"?>\n<Order>...</Order>'}
-              className="min-h-64 font-mono text-xs"
+              className="min-h-64 rounded-2xl font-mono text-xs"
             />
           </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={onValidate} disabled={!canSubmit}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={onValidate} disabled={!canSubmit} className="rounded-xl bg-amber-400 font-semibold text-slate-900 shadow-md shadow-amber-400/25 hover:bg-amber-500">
               {isLoading ? 'Validating…' : 'Validate'}
             </Button>
-            <Button variant="secondary" onClick={() => setOrderXml('')} disabled={isLoading}>
+            <Button variant="secondary" onClick={() => setOrderXml('')} disabled={isLoading} className="rounded-full">
               Clear
             </Button>
           </div>
 
-          {result && (
+          {isLoading && <Skeleton className="h-16 w-full rounded-2xl" />}
+
+          {!isLoading && result && (
             <Alert variant={result.ok ? 'default' : 'destructive'}>
               <AlertTitle>{result.ok ? 'Valid' : 'Invalid'}</AlertTitle>
               <AlertDescription className="whitespace-pre-wrap">{result.message}</AlertDescription>

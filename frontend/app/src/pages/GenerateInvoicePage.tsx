@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { ReceiptText } from 'lucide-react'
 import { createInvoice, createInvoicePdf, type InvoiceSupplement } from '@/api/invoices'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 
@@ -122,8 +124,12 @@ export function GenerateInvoicePage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Generate Invoice</h1>
-          <p className="text-sm text-muted-foreground">POSTs to the backend at `/invoices` and returns Invoice XML.</p>
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+            <ReceiptText className="size-3.5" />
+            Generation
+          </div>
+          <h1 className="font-display text-3xl tracking-tight">Generate Invoice</h1>
+          <p className="text-sm text-muted-foreground">Generate Invoice XML (and PDF) from a UBL Order.</p>
         </div>
         <Badge variant="secondary" className="w-fit">
           No Zod
@@ -131,9 +137,9 @@ export function GenerateInvoicePage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="surface">
           <CardHeader>
-            <CardTitle>Input</CardTitle>
+            <CardTitle className="text-base">Input</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -143,7 +149,7 @@ export function GenerateInvoicePage() {
                 value={orderXml}
                 onChange={(e) => setOrderXml(e.target.value)}
                 placeholder={'<?xml version="1.0" encoding="UTF-8"?>\n<Order>...</Order>'}
-                className="min-h-72 font-mono text-xs"
+                className="min-h-72 rounded-2xl font-mono text-xs"
               />
             </div>
 
@@ -179,7 +185,7 @@ export function GenerateInvoicePage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button onClick={onGenerate} disabled={!canGenerate}>
+              <Button onClick={onGenerate} disabled={!canGenerate} className="rounded-xl bg-amber-400 font-semibold text-slate-900 shadow-md shadow-amber-400/25 hover:bg-amber-500">
                 {isGenerating ? 'Generating…' : 'Generate invoice'}
               </Button>
               <Button
@@ -191,6 +197,7 @@ export function GenerateInvoicePage() {
                   setError(null)
                 }}
                 disabled={isGenerating}
+                className="rounded-full"
               >
                 Clear
               </Button>
@@ -205,9 +212,9 @@ export function GenerateInvoicePage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="surface">
           <CardHeader>
-            <CardTitle>Output</CardTitle>
+            <CardTitle className="text-base">Output</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {error && (
@@ -219,27 +226,32 @@ export function GenerateInvoicePage() {
 
             <div className="space-y-2">
               <Label htmlFor="invoiceXml">Invoice XML</Label>
-              <Textarea
-                id="invoiceXml"
-                value={invoiceXml ?? ''}
-                readOnly
-                placeholder="Generate an invoice to see the XML here."
-                className="min-h-72 font-mono text-xs"
-              />
+              {isGenerating ? (
+                <Skeleton className="h-72 w-full rounded-2xl" />
+              ) : (
+                <Textarea
+                  id="invoiceXml"
+                  value={invoiceXml ?? ''}
+                  readOnly
+                  placeholder="Generate an invoice to see the XML here."
+                  className="min-h-72 rounded-2xl font-mono text-xs"
+                />
+              )}
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button onClick={onCopy} disabled={!invoiceXml}>
+              <Button onClick={onCopy} disabled={!invoiceXml} className="rounded-xl bg-amber-400 font-semibold text-slate-900 shadow-md shadow-amber-400/25 hover:bg-amber-500">
                 Copy XML
               </Button>
               <Button
                 variant="secondary"
                 onClick={() => invoiceXml && downloadText('invoice.xml', invoiceXml, 'application/xml')}
                 disabled={!invoiceXml}
+                className="rounded-full"
               >
                 Download XML
               </Button>
-              <Button variant="secondary" onClick={onPdf} disabled={!invoiceXml || isPdfLoading}>
+              <Button variant="secondary" onClick={onPdf} disabled={!invoiceXml || isPdfLoading} className="rounded-full">
                 {isPdfLoading ? 'Creating PDF…' : 'Download PDF'}
               </Button>
             </div>

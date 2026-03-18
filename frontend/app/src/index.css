@@ -4,48 +4,69 @@
 
 @layer base {
   :root {
+    --font-sans: 'Plus Jakarta Sans';
+    --font-display: 'Fraunces';
+    --font-mono: ui-monospace;
+
+    /* Premium fintech neutrals */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 222 33% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 33% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.75rem;
+    --popover-foreground: 222 33% 9%;
+
+    /* Brand: CommBank-like sunshine yellow */
+    --brand: 47 100% 55%;
+    --brand-foreground: 222 33% 10%;
+    --brand-muted: 47 100% 96%;
+
+    /* Semantic tokens (shadcn) */
+    --primary: 47 100% 55%;
+    --primary-foreground: 222 33% 10%;
+    --secondary: 220 15% 96%;
+    --secondary-foreground: 222 33% 10%;
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 47 100% 96%;
+    --accent-foreground: 222 33% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 47 100% 55%;
+
+    --shadow: 222 30% 12%;
+    --radius: 0.9rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 222 28% 8%;
+    --foreground: 210 20% 98%;
+    --card: 222 26% 10%;
+    --card-foreground: 210 20% 98%;
+    --popover: 222 26% 10%;
+    --popover-foreground: 210 20% 98%;
+
+    --brand: 47 100% 60%;
+    --brand-foreground: 222 33% 10%;
+    --brand-muted: 47 35% 16%;
+
+    --primary: 47 100% 60%;
+    --primary-foreground: 222 33% 10%;
+    --secondary: 222 18% 16%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 222 18% 16%;
+    --muted-foreground: 215 14% 70%;
+    --accent: 47 35% 16%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 222 18% 18%;
+    --input: 222 18% 18%;
+    --ring: 47 100% 60%;
+
+    --shadow: 0 0% 0%;
   }
 
   * {
@@ -53,6 +74,28 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground antialiased;
+    text-rendering: geometricPrecision;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .surface {
+    @apply bg-card text-card-foreground shadow-soft;
+  }
+  .surface-hover {
+    @apply transition-shadow hover:shadow-lift;
+  }
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
   }
 }

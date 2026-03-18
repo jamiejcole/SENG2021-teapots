@@ -1,5 +1,3 @@
-import animate from 'tailwindcss-animate'
-
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ['class'],
@@ -13,6 +11,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['var(--font-sans)', 'system-ui', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-sans)', 'system-ui', 'serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'Consolas', 'monospace'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -47,28 +50,24 @@ export default {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        brand: {
+          DEFAULT: 'hsl(var(--brand))',
+          foreground: 'hsl(var(--brand-foreground))',
+          muted: 'hsl(var(--brand-muted))',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      keyframes: {
-        'accordion-down': {
-          from: { height: '0' },
-          to: { height: 'var(--radix-accordion-content-height)' },
-        },
-        'accordion-up': {
-          from: { height: 'var(--radix-accordion-content-height)' },
-          to: { height: '0' },
-        },
-      },
-      animation: {
-        'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out',
+      boxShadow: {
+        // No hard 1px "underline" — keep it soft/premium
+        soft: '0 1px 2px hsl(var(--shadow) / 0.10), 0 14px 30px -20px hsl(var(--shadow) / 0.30)',
+        lift: '0 2px 6px hsl(var(--shadow) / 0.14), 0 28px 60px -32px hsl(var(--shadow) / 0.40)',
       },
     },
   },
-  plugins: [animate],
+  plugins: [],
 }
 
