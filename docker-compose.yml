@@ -1,4 +1,34 @@
 services:
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:latest
+    restart: always
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [all]
+    security_opt: [no-new-privileges:true]
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - DOMAINS=api.teapotinvoicing.app
+      - PROXIED=false
+      - IP6_PROVIDER=none
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: "ap-southeast-2"
+        awslogs-group: "api-logs"
+        awslogs-create-group: "true"
+        awslogs-stream: "caddy"
   app-dev-api:
     image: ghcr.io/jamiejcole/seng2021-teapots:latest
     container_name: seng2021-teapots-api
@@ -15,6 +45,13 @@ services:
       start_period: 10s
     labels:
       - com.centurylinklabs.watchtower.enable=true
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: "ap-southeast-2"
+        awslogs-group: "api-logs"
+        awslogs-create-group: "true"
+        awslogs-stream: "caddy"
   watchtower:
     image: containrrr/watchtower:latest
     container_name: seng2021-teapots-watchtower
@@ -26,3 +63,7 @@ services:
       WATCHTOWER_CLEANUP: true
       DOCKER_API_VERSION: 1.49
       WATCHTOWER_POLL_INTERVAL: 300
+
+volumes:
+  caddy_data:
+  caddy_config:
