@@ -11,7 +11,7 @@ export function AuthLayout() {
             <div className="inline-flex items-center gap-3">
               <img src="/logo.png" alt="Teapots" className="size-12 rounded-2xl object-contain" />
               <div>
-                <div className="font-display text-xl font-semibold tracking-tight">Teapots</div>
+                <div className="font-display text-xl font-semibold tracking-tight">Teapots Invoicing</div>
                 <div className="text-sm text-slate-500 dark:text-slate-400">Fintech-grade invoicing</div>
               </div>
             </div>
@@ -21,12 +21,12 @@ export function AuthLayout() {
                 Build invoices with confidence.
               </h2>
               <p className="max-w-sm text-slate-600 dark:text-slate-400">
-                A polished admin dashboard for validating UBL orders and generating compliant invoices.
+                An all-in-one e-commerce platform for validating UBL orders and generating industry-compliant invoices.
               </p>
             </div>
 
             <div className="text-xs text-slate-500 dark:text-slate-400">
-              © {new Date().getFullYear()} Teapots
+              © {new Date().getFullYear()} Teapots Invoicing
             </div>
           </div>
         </div>

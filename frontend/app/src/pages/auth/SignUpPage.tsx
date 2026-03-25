@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { Loader } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,12 +8,15 @@ import { Label } from '@/components/ui/label'
 import { GoogleButton } from '@/components/auth/GoogleButton'
 import { PasswordField } from '@/components/auth/PasswordField'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/components/auth/AuthContext'
 
 function validateEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())
 }
 
 export function SignUpPage() {
+  const navigate = useNavigate()
+  const { signup, isLoading: authLoading, error: authError, setError: setAuthError } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -31,17 +35,38 @@ export function SignUpPage() {
     return e
   }, [name, email, password, confirm])
 
-  const canSubmit = Object.keys(errors).length === 0 && !isLoading
+  const canSubmit = Object.keys(errors).length === 0 && !isLoading && !authLoading
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setDidSubmit(true)
     setFormError(null)
+    setAuthError(null)
     if (!canSubmit) return
     setIsLoading(true)
     try {
-      await new Promise((r) => setTimeout(r, 700))
-      setFormError('Sign up is UI-only right now. Hook this to your backend when ready.')
+      // Parse name into first and last name
+      const nameParts = name.trim().split(' ')
+      const firstName = nameParts[0]
+      const lastName = nameParts.slice(1).join(' ') || nameParts[0]
+
+      const result = await signup({
+        email: email.trim(),
+        password,
+        firstName,
+        lastName,
+      })
+
+      // Redirect to 2FA verification page
+      navigate('/auth/verify-2fa', {
+        state: {
+          userId: result.userId,
+          email: email.trim(),
+        },
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sign up failed'
+      setFormError(message)
     } finally {
       setIsLoading(false)
     }
@@ -59,10 +84,10 @@ export function SignUpPage() {
       </div>
 
       <div className="mt-6 space-y-5">
-        {formError && (
-          <Alert className="border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30">
-            <AlertTitle>Info</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
+        {(formError || authError) && (
+          <Alert className="border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{formError || authError}</AlertDescription>
           </Alert>
         )}
 
@@ -148,7 +173,14 @@ export function SignUpPage() {
             className="w-full rounded-xl bg-amber-400 px-6 font-semibold text-slate-900 shadow-md shadow-amber-400/30 hover:bg-amber-500 disabled:opacity-50"
             disabled={!canSubmit}
           >
-            {isLoading ? 'Creating account…' : 'Create account'}
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader className="w-4 h-4 animate-spin" />
+                Creating account
+              </span>
+            ) : (
+              'Create account'
+            )}
           </Button>
         </form>
 
