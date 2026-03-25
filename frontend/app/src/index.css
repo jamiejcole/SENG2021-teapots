@@ -79,6 +79,45 @@
   }
 }
 
+@layer components {
+  /* Sonner shrinks custom icon slot; keep teapot GIFs readable */
+  [data-sonner-toast][data-type='success'] {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  [data-sonner-toast][data-type='success'] [data-icon] {
+    height: auto !important;
+    width: auto !important;
+    min-height: 5rem;
+    min-width: 5rem;
+    align-self: center !important;
+  }
+  [data-sonner-toast][data-type='error'] [data-icon] {
+    height: auto !important;
+    width: auto !important;
+    min-height: 5rem;
+    min-width: 5rem;
+    align-self: flex-start;
+  }
+  [data-sonner-toast][data-type='success'] [data-icon] img,
+  [data-sonner-toast][data-type='error'] [data-icon] img {
+    height: 5rem !important;
+    width: 5rem !important;
+    max-height: none;
+    max-width: none;
+    object-fit: contain;
+  }
+  [data-sonner-toast][data-type='success'] [data-content] {
+    align-items: center !important;
+  }
+  [data-sonner-toast][data-type='success'] [data-title],
+  [data-sonner-toast][data-type='success'] [data-description] {
+    text-align: center !important;
+    width: 100%;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

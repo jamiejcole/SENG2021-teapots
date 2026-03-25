@@ -4,6 +4,9 @@ import { cn } from '@/lib/utils'
 /** Served from `public/` (source: `frontend/media/teapot_gif.gif`). */
 export const TEAPOT_ERROR_GIF = '/teapot_gif.gif'
 
+/** Served from `public/` (source: `frontend/media/happy_teapot.gif`). */
+export const TEAPOT_SUCCESS_GIF = '/happy_teapot.gif'
+
 const frameSizes = {
   sm: 'size-14',
   md: 'size-[4.5rem]',
@@ -29,12 +32,27 @@ export function ErrorTeapot({
 
 export function ErrorTeapotToastIcon() {
   return (
-    <img
-      src={TEAPOT_ERROR_GIF}
-      alt=""
-      className="size-12 shrink-0 object-contain"
-      aria-hidden
-    />
+    <span className="flex h-20 w-20 shrink-0 items-center justify-center [&>img]:max-h-full [&>img]:max-w-full">
+      <img
+        src={TEAPOT_ERROR_GIF}
+        alt=""
+        className="h-20 w-20 object-contain"
+        aria-hidden
+      />
+    </span>
+  )
+}
+
+export function SuccessTeapotToastIcon() {
+  return (
+    <span className="flex h-20 w-20 shrink-0 items-center justify-center [&>img]:max-h-full [&>img]:max-w-full">
+      <img
+        src={TEAPOT_SUCCESS_GIF}
+        alt=""
+        className="h-20 w-20 object-contain"
+        aria-hidden
+      />
+    </span>
   )
 }
 

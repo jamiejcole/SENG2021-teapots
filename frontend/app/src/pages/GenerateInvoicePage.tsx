@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Copy, Download, Mail, ReceiptText, ShieldCheck } from 'lucide-react'
 import { createInvoice, createInvoicePdf, type InvoiceSupplement } from '@/api/invoices'
-import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -48,7 +47,6 @@ export function GenerateInvoicePage() {
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [invoiceXml, setInvoiceXml] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [isPdfLoading, setIsPdfLoading] = useState(false)
   const [emailTo, setEmailTo] = useState('')
   const [emailFormat, setEmailFormat] = useState<'pdf' | 'xml'>('pdf')
@@ -83,7 +81,6 @@ export function GenerateInvoicePage() {
     if (!trimmed || !supplement) return
 
     setIsGenerating(true)
-    setError(null)
     setInvoiceXml(null)
     try {
       const xml = await createInvoice(trimmed, supplement)
@@ -91,7 +88,6 @@ export function GenerateInvoicePage() {
       toast.success('Invoice XML generated')
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to generate invoice'
-      setError(msg)
       toast.error('Generation failed', { description: msg })
     } finally {
       setIsGenerating(false)
@@ -132,6 +128,19 @@ export function GenerateInvoicePage() {
     toast.info('Email will be sent when backend is connected', { description: `Would send as ${emailFormat.toUpperCase()} to ${emailTo}` })
   }
 
+  async function loadSampleUbl() {
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}sample-ubl-order.xml`)
+      if (!res.ok) throw new Error('Not found')
+      const text = await res.text()
+      setOrderXml(text)
+      setInvoiceXml(null)
+      toast.success('Sample UBL order loaded')
+    } catch {
+      toast.error('Could not load sample UBL file')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -141,7 +150,9 @@ export function GenerateInvoicePage() {
             Generation
           </div>
           <h1 className="font-display text-3xl tracking-tight">Generate Invoice</h1>
-          <p className="text-sm text-muted-foreground">Generate Invoice XML (and PDF) from a UBL Order.</p>
+          <p className="text-sm text-muted-foreground">
+            Generate Invoice XML (and PDF) from a <strong className="font-medium text-foreground">UBL 2.x Order</strong> — not plain custom XML.
+          </p>
         </div>
       </div>
 
@@ -155,7 +166,18 @@ export function GenerateInvoicePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="orderXml">Order XML</Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <Label htmlFor="orderXml">Order XML</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                  onClick={() => void loadSampleUbl()}
+                >
+                  Load sample UBL
+                </Button>
+              </div>
               <Textarea
                 id="orderXml"
                 value={orderXml}
@@ -203,7 +225,7 @@ export function GenerateInvoicePage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { setOrderXml(''); setInvoiceXml(null); setError(null) }}
+                onClick={() => { setOrderXml(''); setInvoiceXml(null) }}
                 disabled={isGenerating}
                 className="rounded-lg"
               >
@@ -211,11 +233,6 @@ export function GenerateInvoicePage() {
               </Button>
             </div>
 
-            {!supplement && (
-              <ErrorAlertWithTeapot variant="destructive" title="Invalid input">
-                Tax rate must be a number.
-              </ErrorAlertWithTeapot>
-            )}
           </CardContent>
         </Card>
 
@@ -239,12 +256,6 @@ export function GenerateInvoicePage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && (
-              <ErrorAlertWithTeapot variant="destructive" title="Generation failed">
-                <span className="whitespace-pre-wrap">{error}</span>
-              </ErrorAlertWithTeapot>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="invoiceXml">Invoice XML</Label>
               {isGenerating ? (
