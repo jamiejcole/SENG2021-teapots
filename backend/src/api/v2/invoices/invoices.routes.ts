@@ -57,6 +57,39 @@ router.post("/pdf", controller.createPdf);
 
 /**
  * @openapi
+ * /api/v2/invoices/email:
+ *   post:
+ *     summary: Send invoice email with public PDF link using Mailgun template
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [invoiceXml, to]
+ *             properties:
+ *               invoiceXml:
+ *                 type: string
+ *               to:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Invoice email sent successfully
+ *       400:
+ *         description: Invalid request payload
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/email", controller.emailInvoice);
+
+/**
+ * @openapi
  * /api/v2/invoices:
  *   post:
  *     summary: Create an invoice from UBL Order XML

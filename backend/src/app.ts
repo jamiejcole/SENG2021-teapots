@@ -6,6 +6,7 @@ import v2Router from "./api/v2";
 import { swaggerSpec } from "./config/swagger";
 import { errorMiddleware } from "./middleware/error.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
+import { getPublicInvoicePdf } from "./api/v2/invoices/invoices.controller";
 
 const app = express();
 
@@ -26,12 +27,16 @@ app.use(
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Accept", "Authorization"],
+    exposedHeaders: ["X-Invoice-Url", "Content-Disposition"],
   })
 );
 app.use(express.json({ limit: "50mb"}));
 app.use(express.text({ type: 'application/xml' , limit: "5mb"}));
 app.use(express.urlencoded({ extended: true }));
 app.use(loggerMiddleware);
+
+// Public invoice download route for email links.
+app.get("/invoices/:invoiceHash.pdf", getPublicInvoicePdf);
 
 // API Routes
 app.use("/api/v1", v1Router);

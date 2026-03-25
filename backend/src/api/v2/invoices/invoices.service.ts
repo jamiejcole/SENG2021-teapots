@@ -5,6 +5,8 @@ import { InvoiceSupplement } from '../../../types/invoice.types';
 import { InvoiceBuilder } from '../../../domain/InvoiceBuilder';
 import mongoose from 'mongoose';
 import { InvoiceModel } from '../../../models/invoice.model';
+import { InvoicePdfModel } from '../../../models/invoicePdf.model';
+import { sha256 } from '../../../models/hash';
 
 /**
  * Returns a JSON obj based on a UBL XML String.
@@ -48,4 +50,37 @@ export async function deleteInvoiceById(invoiceId: string) {
     const deletedInvoiceObj = await InvoiceModel.findByIdAndDelete(invoiceId);
 
     return deletedInvoiceObj;
+}
+
+function normalizeXml(xml: string): string {
+    return xml.trim().replace(/\r\n/g, "\n");
+}
+
+export async function storeInvoicePdf(invoiceXml: string, pdfData: Buffer): Promise<string> {
+    const invoiceHash = sha256(normalizeXml(invoiceXml));
+
+    await InvoicePdfModel.findOneAndUpdate(
+        { invoiceHash },
+        {
+            $set: {
+                invoiceHash,
+                contentType: "application/pdf",
+                pdfData,
+            },
+        },
+        { upsert: true, new: true }
+    ).exec();
+
+    return invoiceHash;
+}
+
+export async function findInvoicePdfByHash(invoiceHash: string) {
+    const normalizedHash = invoiceHash.trim().toLowerCase();
+    const isValidHash = /^[a-f0-9]{64}$/.test(normalizedHash);
+
+    if (!isValidHash) {
+        return null;
+    }
+
+    return InvoicePdfModel.findOne({ invoiceHash: normalizedHash }).exec();
 }
