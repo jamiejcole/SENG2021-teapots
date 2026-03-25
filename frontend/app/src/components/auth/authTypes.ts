@@ -2,6 +2,8 @@ import type { SignupRequest, LoginRequest } from '@/api/auth'
 
 export type User = {
   email: string
+  firstName?: string
+  lastName?: string
 }
 
 export type AuthContextType = {
@@ -12,7 +14,10 @@ export type AuthContextType = {
   signup: (data: SignupRequest) => Promise<{ userId: string }>
   login: (data: LoginRequest) => Promise<void>
   logout: () => void
-  handle2FAVerification: (tokens: { accessToken: string; refreshToken: string }, email: string) => void
+  handle2FAVerification: (
+    tokens: { accessToken: string; refreshToken: string },
+    userInfo: { email: string; firstName?: string; lastName?: string }
+  ) => void
   error: string | null
   setError: (error: string | null) => void
 }

@@ -62,6 +62,8 @@ export function SignUpPage() {
         state: {
           userId: result.userId,
           email: email.trim(),
+          firstName,
+          lastName,
         },
       })
     } catch (err) {

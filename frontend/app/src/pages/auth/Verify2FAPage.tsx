@@ -15,6 +15,8 @@ export function Verify2FAPage() {
   const { handle2FAVerification } = useAuth()
   const userId = (location.state as { userId?: string })?.userId
   const email = (location.state as { email?: string })?.email
+  const firstName = (location.state as { firstName?: string })?.firstName
+  const lastName = (location.state as { lastName?: string })?.lastName
   
   const [code, setCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -74,7 +76,7 @@ export function Verify2FAPage() {
       }
       handle2FAVerification(
         { accessToken: result.accessToken, refreshToken: result.refreshToken },
-        email
+        { email, firstName, lastName }
       )
       
       // Redirect to dashboard

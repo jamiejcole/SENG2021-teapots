@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as controller from "./auth.controller";
+import { authMiddleware } from "../../../middleware/auth.middleware";
 
 const router = Router();
 
@@ -228,5 +229,118 @@ router.post("/verify-2fa", controller.verify2FA);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post("/refresh-token", controller.refreshToken);
+
+/**
+ * @openapi
+ * /api/v2/auth/user:
+ *   get:
+ *     summary: Get current user profile
+ *     description: Returns the authenticated user's profile information
+ *     tags: [Auth]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                 firstName:
+ *                   type: string
+ *                 lastName:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get("/user", authMiddleware, controller.getUser);
+
+/**
+ * @openapi
+ * /api/v2/auth/user:
+ *   put:
+ *     summary: Update user profile
+ *     description: Update the authenticated user's firstName and/or lastName
+ *     tags: [Auth]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 example: Doe
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                 firstName:
+ *                   type: string
+ *                 lastName:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.put("/user", authMiddleware, controller.updateUser);
 
 export default router;

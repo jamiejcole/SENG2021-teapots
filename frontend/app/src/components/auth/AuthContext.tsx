@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null)
     try {
       const result = await apiLogin(data)
-      const userData: User = { email: data.email }
+      const userData: User = { email: data.email, firstName: result.firstName, lastName: result.lastName }
 
       setAccessToken(result.accessToken)
       setUser(userData)
@@ -72,8 +72,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(USER_KEY)
   }
 
-  const handle2FAVerification = (tokens: { accessToken: string; refreshToken: string }, email: string) => {
-    const userData: User = { email }
+  const handle2FAVerification = (
+    tokens: { accessToken: string; refreshToken: string },
+    userInfo: { email: string; firstName?: string; lastName?: string }
+  ) => {
+    const userData: User = {
+      email: userInfo.email,
+      firstName: userInfo.firstName,
+      lastName: userInfo.lastName,
+    }
     setAccessToken(tokens.accessToken)
     setUser(userData)
     localStorage.setItem(AUTH_TOKEN_KEY, tokens.accessToken)

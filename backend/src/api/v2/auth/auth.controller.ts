@@ -33,3 +33,25 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
 
   res.status(200).json(result);
 });
+
+export const getUser = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  const result = await authService.getUserProfile(req.user.userId);
+
+  res.status(200).json(result);
+});
+
+export const updateUser = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  const { firstName, lastName } = req.body;
+
+  const result = await authService.updateUserProfile(req.user.userId, firstName, lastName);
+
+  res.status(200).json(result);
+});
