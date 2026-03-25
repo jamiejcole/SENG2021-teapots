@@ -1,3 +1,4 @@
+import "./loadEnv";
 import express from "express";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
@@ -22,7 +23,7 @@ app.use(
       return cb(new Error(`CORS blocked origin: ${origin}`));
     },
     methods: ["GET", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Accept", "Authorization"],
+    allowedHeaders: ["Content-Type", "Accept", "Authorization", "x-api-key"],
   })
 );
 app.use(express.json({ limit: "50mb"}));
