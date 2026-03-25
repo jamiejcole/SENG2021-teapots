@@ -113,6 +113,8 @@ export async function loginUser(email: string, password: string) {
     refreshToken,
     firstName: user.firstName,
     lastName: user.lastName,
+    phone: user.phone,
+    company: user.company,
     message: "Login successful",
   };
 }
@@ -219,6 +221,8 @@ export async function getUserProfile(userId: string) {
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
+    phone: user.phone,
+    company: user.company,
     message: "User profile retrieved successfully",
   };
 }
@@ -226,7 +230,9 @@ export async function getUserProfile(userId: string) {
 export async function updateUserProfile(
   userId: string,
   firstName?: string,
-  lastName?: string
+  lastName?: string,
+  phone?: string,
+  company?: string
 ) {
   // Validate input
   if (!userId) {
@@ -246,6 +252,12 @@ export async function updateUserProfile(
   if (lastName !== undefined && lastName.trim()) {
     user.lastName = lastName.trim();
   }
+  if (phone !== undefined) {
+    user.phone = phone.trim() || null;
+  }
+  if (company !== undefined) {
+    user.company = company.trim() || null;
+  }
 
   // Save updated user
   const updatedUser = await user.save();
@@ -254,6 +266,8 @@ export async function updateUserProfile(
     email: updatedUser.email,
     firstName: updatedUser.firstName,
     lastName: updatedUser.lastName,
+    phone: updatedUser.phone,
+    company: updatedUser.company,
     message: "Profile updated successfully",
   };
 }

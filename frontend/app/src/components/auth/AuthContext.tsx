@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { signup as apiSignup, login as apiLogin, type SignupRequest, type LoginRequest } from '@/api/auth'
+import {
+  signup as apiSignup,
+  login as apiLogin,
+  getUserProfile as apiGetUserProfile,
+  type SignupRequest,
+  type LoginRequest,
+} from '@/api/auth'
 import { type User, type AuthContextType, AUTH_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY } from './authTypes'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -14,12 +20,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedToken = localStorage.getItem(AUTH_TOKEN_KEY)
     const storedUser = localStorage.getItem(USER_KEY)
-    
+    let parsedUser: User | null = null
+
     try {
       if (storedToken && storedUser) {
+        parsedUser = JSON.parse(storedUser) as User
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setAccessToken(storedToken)
-        setUser(JSON.parse(storedUser))
+        setUser(parsedUser)
       }
     } catch {
       // Invalid stored data, clear it
@@ -27,7 +35,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(REFRESH_TOKEN_KEY)
       localStorage.removeItem(USER_KEY)
     }
-    
+
+    if (storedToken && parsedUser && (parsedUser.phone === undefined || parsedUser.company === undefined)) {
+      void apiGetUserProfile()
+        .then((profile) => {
+          const hydratedUser: User = {
+            ...parsedUser,
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            phone: profile.phone,
+            company: profile.company,
+          }
+          setUser(hydratedUser)
+          localStorage.setItem(USER_KEY, JSON.stringify(hydratedUser))
+        })
+        .catch(() => {
+          // Keep existing local user data if profile hydration fails.
+        })
+    }
+
     // Set initializing to false after state prep is complete
     setIsInitializing(false)
   }, [])
@@ -48,7 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null)
     try {
       const result = await apiLogin(data)
-      const userData: User = { email: data.email, firstName: result.firstName, lastName: result.lastName }
+      const userData: User = {
+        email: data.email,
+        firstName: result.firstName,
+        lastName: result.lastName,
+        phone: result.phone,
+        company: result.company,
+      }
 
       setAccessToken(result.accessToken)
       setUser(userData)
@@ -88,6 +120,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(USER_KEY, JSON.stringify(userData))
   }
 
+  const handleUpdateUserProfile = (updates: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...updates }
+      setUser(updatedUser)
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
+    }
+  }
+
   const value: AuthContextType = {
     user,
     accessToken,
@@ -97,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login: handleLogin,
     logout: handleLogout,
     handle2FAVerification,
+    updateUserProfile: handleUpdateUserProfile,
     error,
     setError,
   }

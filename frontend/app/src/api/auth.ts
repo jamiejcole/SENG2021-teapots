@@ -23,6 +23,8 @@ export type LoginResponse = {
   refreshToken: string
   firstName?: string
   lastName?: string
+  phone?: string | null
+  company?: string | null
   message: string
 }
 
@@ -41,12 +43,16 @@ export type UserProfileResponse = {
   email: string
   firstName: string
   lastName: string
+  phone?: string | null
+  company?: string | null
   message: string
 }
 
 export type UpdateUserProfileRequest = {
   firstName?: string
   lastName?: string
+  phone?: string
+  company?: string
 }
 
 export async function signup(data: SignupRequest): Promise<SignupResponse> {

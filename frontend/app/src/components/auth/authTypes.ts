@@ -4,6 +4,8 @@ export type User = {
   email: string
   firstName?: string
   lastName?: string
+  phone?: string | null
+  company?: string | null
 }
 
 export type AuthContextType = {
@@ -18,6 +20,7 @@ export type AuthContextType = {
     tokens: { accessToken: string; refreshToken: string },
     userInfo: { email: string; firstName?: string; lastName?: string }
   ) => void
+  updateUserProfile: (updates: Partial<User>) => void
   error: string | null
   setError: (error: string | null) => void
 }

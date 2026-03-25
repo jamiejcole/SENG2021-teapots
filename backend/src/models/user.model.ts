@@ -34,6 +34,16 @@ const UserSchema = new Schema(
       required: true,
       trim: true,
     },
+    phone: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    company: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     twoFactor: {
       type: TwoFactorSchema,
       default: () => ({}),

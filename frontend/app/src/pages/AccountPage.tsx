@@ -8,27 +8,25 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 
 export function AccountPage() {
-  const { user } = useAuth()
+  const { user, updateUserProfile: updateUserContext } = useAuth()
 
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
   const email = user?.email ?? ''
-  const [phone, setPhone] = useState('')
-  const [company, setCompany] = useState('')
+  const [phone, setPhone] = useState(user?.phone ?? '')
+  const [company, setCompany] = useState(user?.company ?? '')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
-  // Sync name fields when user data changes (e.g., from auth context or localStorage)
+  // Sync profile fields when user data changes
   useEffect(() => {
-    if (user?.firstName) {
-      setFirstName(user.firstName)
-    }
-    if (user?.lastName) {
-      setLastName(user.lastName)
-    }
-  }, [user?.firstName, user?.lastName])
+    setFirstName(user?.firstName ?? '')
+    setLastName(user?.lastName ?? '')
+    setPhone(user?.phone ?? '')
+    setCompany(user?.company ?? '')
+  }, [user])
 
   const passwordMismatch = useMemo(() => {
     if (!newPassword || !confirmPassword) return false
@@ -47,7 +45,19 @@ export function AccountPage() {
 
     setIsSaving(true)
     try {
-      const result = await updateUserProfile({ firstName: firstName.trim(), lastName: lastName.trim() })
+      const result = await updateUserProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim(),
+        company: company.trim(),
+      })
+      // Update AuthContext and localStorage
+      updateUserContext({
+        firstName: result.firstName,
+        lastName: result.lastName,
+        phone: result.phone,
+        company: result.company,
+      })
       toast.success(`Profile updated! Welcome, ${result.firstName}.`)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update profile'
@@ -134,17 +144,13 @@ export function AccountPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-            <p>Phone and company fields are stored locally. Backend fields coming soon.</p>
-            <Button
-              type="button"
-              className="ml-4"
-              onClick={handleSaveProfile}
-              disabled={isSaving || !firstName.trim() || !lastName.trim()}
-            >
-              {isSaving ? 'Saving…' : 'Save profile changes'}
-            </Button>
-          </div>
+          <Button
+            type="button"
+            onClick={handleSaveProfile}
+            disabled={isSaving || !firstName.trim() || !lastName.trim()}
+          >
+            {isSaving ? 'Saving…' : 'Save profile changes'}
+          </Button>
         </CardContent>
       </Card>
 
