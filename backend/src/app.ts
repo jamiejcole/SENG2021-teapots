@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
 import v1Router from "./api/v1";
+import v2Router from "./api/v2";
 import { swaggerSpec } from "./config/swagger";
 import { errorMiddleware } from "./middleware/error.middleware";
 import { loggerMiddleware } from "./middleware/logger.middleware";
@@ -21,7 +22,7 @@ app.use(
       return cb(new Error(`CORS blocked origin: ${origin}`));
     },
     methods: ["GET", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Accept"],
+    allowedHeaders: ["Content-Type", "Accept", "Authorization"],
   })
 );
 app.use(express.json({ limit: "50mb"}));
@@ -31,6 +32,7 @@ app.use(loggerMiddleware);
 
 // API Routes
 app.use("/api/v1", v1Router);
+app.use("/api/v2", v2Router);
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/api/docs.json", (_, res) => {
   res.json(swaggerSpec);
