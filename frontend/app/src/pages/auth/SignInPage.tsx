@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -50,30 +50,19 @@ export function SignInPage() {
           Sign in
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Welcome back. Use your email, or continue with Google.
+          Welcome back. Sign in with email or continue with Google below.
         </p>
       </div>
 
       <div className="mt-6 space-y-5">
         {formError && (
-          <Alert className="border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30">
-            <AlertTitle>Info</AlertTitle>
-            <AlertDescription>{formError}</AlertDescription>
-          </Alert>
+          <ErrorAlertWithTeapot
+            title="Couldn’t sign in"
+            className="border-amber-200 bg-amber-50 text-slate-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-slate-100"
+          >
+            {formError}
+          </ErrorAlertWithTeapot>
         )}
-
-        <GoogleButton isLoading={isLoading} />
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-3 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-              or
-            </span>
-          </div>
-        </div>
 
         <form className="space-y-5" onSubmit={onSubmit} noValidate>
           <div className="space-y-2">
@@ -124,6 +113,19 @@ export function SignInPage() {
             </Button>
           </div>
         </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-3 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              or
+            </span>
+          </div>
+        </div>
+
+        <GoogleButton isLoading={isLoading} />
 
         <p className="text-center text-sm text-slate-500 dark:text-slate-400">
           New here?{' '}

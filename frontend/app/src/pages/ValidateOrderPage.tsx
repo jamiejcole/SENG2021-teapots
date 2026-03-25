@@ -3,13 +3,14 @@ import { useLocation } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
 import { validateOrder, validateInvoice } from '@/api/invoices'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { XmlUploadButton } from '@/components/XmlUploadButton'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 type ValidationSectionProps = {
   title: string
@@ -50,7 +51,7 @@ function ValidationSection({
             value={xml}
             onChange={(e) => setXml(e.target.value)}
             placeholder="XML"
-            className="min-h-36 rounded-xl font-mono text-xs"
+            className="min-h-24 rounded-xl font-mono text-xs resize-y"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -66,11 +67,16 @@ function ValidationSection({
           </Button>
         </div>
         {isLoading && <Skeleton className="h-12 w-full rounded-xl" />}
-        {!isLoading && result && (
-          <Alert variant={result.ok ? 'default' : 'destructive'} className={result.ok ? 'border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/30' : ''}>
-            <AlertTitle>{result.ok ? 'Valid' : 'Invalid'}</AlertTitle>
+        {!isLoading && result && result.ok && (
+          <Alert className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/30">
+            <AlertTitle>Valid</AlertTitle>
             <AlertDescription className="whitespace-pre-wrap">{result.message}</AlertDescription>
           </Alert>
+        )}
+        {!isLoading && result && !result.ok && (
+          <ErrorAlertWithTeapot variant="destructive" title="Invalid">
+            <span className="whitespace-pre-wrap">{result.message}</span>
+          </ErrorAlertWithTeapot>
         )}
       </CardContent>
     </Card>
