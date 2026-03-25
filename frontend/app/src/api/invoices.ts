@@ -17,15 +17,14 @@ export type InvoiceSupplement = {
 }
 
 export async function validateOrder(orderXml: string) {
-  return await apiJson<{ message: string }>('/invoices/validate', {
+  return await apiJson<{ message: string }>('/orders/validate', {
     method: 'POST',
     body: JSON.stringify({ orderXml }),
   })
 }
 
-/** Validate UBL Invoice XML – backend endpoint to be added */
 export async function validateInvoice(invoiceXml: string) {
-  return await apiJson<{ message: string }>('/invoices/validate-invoice', {
+  return await apiJson<{ message: string }>('/invoices/validate', {
     method: 'POST',
     body: JSON.stringify({ invoiceXml }),
   })

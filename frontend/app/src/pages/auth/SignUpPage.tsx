@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Loader } from 'lucide-react'
 import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
@@ -24,6 +24,7 @@ export function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [didSubmit, setDidSubmit] = useState(false)
+  const submitLockRef = useRef(false)
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {}
@@ -39,10 +40,12 @@ export function SignUpPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (submitLockRef.current) return
     setDidSubmit(true)
     setFormError(null)
     setAuthError(null)
     if (!canSubmit) return
+    submitLockRef.current = true
     setIsLoading(true)
     try {
       // Parse name into first and last name
@@ -70,6 +73,7 @@ export function SignUpPage() {
       const message = err instanceof Error ? err.message : 'Sign up failed'
       setFormError(message)
     } finally {
+      submitLockRef.current = false
       setIsLoading(false)
     }
   }

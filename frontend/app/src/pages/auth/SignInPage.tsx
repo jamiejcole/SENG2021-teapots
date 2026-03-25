@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Loader } from 'lucide-react'
 import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
@@ -22,6 +22,7 @@ export function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [didSubmit, setDidSubmit] = useState(false)
+  const submitLockRef = useRef(false)
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {}
@@ -35,10 +36,12 @@ export function SignInPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (submitLockRef.current) return
     setDidSubmit(true)
     setFormError(null)
     setAuthError(null)
     if (!canSubmit) return
+    submitLockRef.current = true
     setIsLoading(true)
     try {
       await login({ email: email.trim(), password })
@@ -47,6 +50,7 @@ export function SignInPage() {
       const message = err instanceof Error ? err.message : 'Sign in failed'
       setFormError(message)
     } finally {
+      submitLockRef.current = false
       setIsLoading(false)
     }
   }
@@ -72,7 +76,11 @@ export function SignInPage() {
           </ErrorAlertWithTeapot>
         )}
 
-        <form className="space-y-5" onSubmit={onSubmit} noValidate>
+        <form
+          className="space-y-5"
+          onSubmit={onSubmit}
+          noValidate
+        >
           <div className="space-y-2">
             <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">
               Email

@@ -18,7 +18,7 @@ function ProtectedRoute({ element }: { element: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
-    return null
+    return <LoadingSpinner />
   }
 
   if (!isAuthenticated) {
