@@ -19,9 +19,12 @@ app.use(
       // Dev: allow Vite's changing localhost ports (5173, 5174, 5175, etc)
       if (/^http:\/\/localhost:\d+$/.test(origin)) return cb(null, true);
 
+      // Allow WSL IP addresses from Windows
+      if (/^http:\/\/172\.\d+\.\d+\.\d+:\d+$/.test(origin)) return cb(null, true);
+
       return cb(new Error(`CORS blocked origin: ${origin}`));
     },
-    methods: ["GET", "POST", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Accept", "Authorization"],
   })
 );

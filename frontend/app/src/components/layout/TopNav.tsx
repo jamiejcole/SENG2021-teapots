@@ -1,4 +1,6 @@
 import { Bell, Menu, Search } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -11,12 +13,25 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { useAuth } from '@/components/auth/AuthContext'
 
 type TopNavProps = {
   onOpenMobileNav: () => void
 }
 
 export function TopNav({ onOpenMobileNav }: TopNavProps) {
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
+  const initials = (fullName.slice(0, 2) || user?.email?.slice(0, 2) || 'TA').toUpperCase()
+  const displayName = fullName || user?.email || 'Admin'
+
+  function handleSignOut() {
+    logout()
+    navigate('/auth/sign-in', { replace: true })
+  }
+
   return (
     <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <a
@@ -66,19 +81,19 @@ export function TopNav({ onOpenMobileNav }: TopNavProps) {
               <Button variant="ghost" className="focus-ring h-9 gap-2 rounded-full px-2">
                 <Avatar className="size-7">
                   <AvatarFallback className="bg-amber-100 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
-                    TA
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden text-sm font-medium md:inline">Admin</span>
+                <span className="hidden text-sm font-medium md:inline">{displayName}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuLabel>Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/account')}>Profile</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast.info('Billing settings are coming soon.')}>Billing</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Sign out</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
