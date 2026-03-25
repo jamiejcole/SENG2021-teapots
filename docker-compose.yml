@@ -1,0 +1,69 @@
+services:
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:latest
+    restart: always
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [all]
+    security_opt: [no-new-privileges:true]
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - DOMAINS=api.teapotinvoicing.app
+      - PROXIED=false
+      - IP6_PROVIDER=none
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: "ap-southeast-2"
+        awslogs-group: "api-logs"
+        awslogs-create-group: "true"
+        awslogs-stream: "caddy"
+  app-dev-api:
+    image: ghcr.io/jamiejcole/seng2021-teapots:latest
+    container_name: seng2021-teapots-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: "ap-southeast-2"
+        awslogs-group: "api-logs"
+        awslogs-create-group: "true"
+        awslogs-stream: "caddy"
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: seng2021-teapots-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --label-enable --interval 300 seng2021-teapots-api
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_CLEANUP: true
+      DOCKER_API_VERSION: 1.49
+      WATCHTOWER_POLL_INTERVAL: 300
+
+volumes:
+  caddy_data:
+  caddy_config:

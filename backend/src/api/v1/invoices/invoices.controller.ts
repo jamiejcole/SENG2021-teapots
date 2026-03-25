@@ -4,7 +4,7 @@ import { validateUBL, validateCreateInvoiceRequest, generateInvoicePdf } from ".
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
 import { HttpError } from "../../../errors/HttpError";
-import { deleteInvoiceById } from "./invoices.service";
+import { deleteInvoiceById, getAllInvoices, getInvoiceById } from "./invoices.service";
 import { persistInvoiceRequest } from "../../../db/persistInvoiceRequest";
 
 
@@ -26,20 +26,57 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export async function validateInvoice(req: Request, res: Response) {
-    const { orderXml } = req.body;
+    const { invoiceXml } = req.body;
         
-    if (!orderXml || typeof orderXml !== 'string' || !orderXml.trim()) {
-        throw new HttpError(400, "Request body must include 'orderXml' as a non-empty string");
+    if (!invoiceXml || typeof invoiceXml !== 'string' || !invoiceXml.trim()) {
+        throw new HttpError(400, "Request body must include 'invoiceXml' as a non-empty string");
     }
     
     res.contentType("application/json");
 
-    validateUBL(orderXml, "Order");
+    validateUBL(invoiceXml, "Invoice");
 
     res.status(200).json({
-        message: "UBL Order is valid!"
+        message: "UBL Invoice is valid!"
     });
 }
+
+
+export const updateInvoice = asyncHandler(async (req: Request, res: Response) => {
+    const { invoiceId } = req.params;
+
+    if (!invoiceId || typeof invoiceId !== 'string') {
+        throw new HttpError(400, "Invoice ID is required as a non-empty string");
+    }
+
+    validateCreateInvoiceRequest(req.body);
+
+    const { orderXml, invoiceSupplement } = req.body;
+
+    validateUBL(orderXml, "Order");
+
+    const orderObj = (await service.createFullUblObject(orderXml)).data as OrderData;
+
+    const invoiceXml = service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
+
+    validateUBL(invoiceXml, "Invoice");
+
+    const updatedInvoice = await service.updateInvoiceById(
+        invoiceId,
+        orderXml,
+        orderObj,
+        invoiceXml,
+        invoiceSupplement
+    );
+
+    if (!updatedInvoice) {
+        throw new HttpError(404, "Invoice not found");
+    }
+
+    res.contentType("application/xml");
+    res.status(200).send(invoiceXml);
+});
+
 
 export async function createPdf(req: Request, res: Response) {
     const invoiceXml = req.body;
@@ -49,6 +86,7 @@ export async function createPdf(req: Request, res: Response) {
     res.set("Content-Type", "application/pdf");
     res.status(201).send(doc);
 }
+
 export async function deleteInvoice(req: Request, res: Response) {
     const { invoiceId } = req.params
 
@@ -63,4 +101,30 @@ export async function deleteInvoice(req: Request, res: Response) {
     }
 
     res.status(204).send();
+}
+
+export async function getInvoice(req: Request, res: Response) {
+    const { invoiceId } = req.params
+
+    if (!invoiceId || typeof invoiceId !== 'string') {
+        throw new HttpError(400, "Invoice ID is required as a non-empty string");
+    }
+    
+    const fetchedInvoiceObj = await getInvoiceById(invoiceId)
+
+    if (!fetchedInvoiceObj) {
+        throw new HttpError(404, "Invoice not found")
+    }
+    res.set("Content-Type", "application/json");
+    res.status(200).send(fetchedInvoiceObj);
+}
+
+export async function listInvoices(req: Request, res: Response) {
+    const fetchedInvoices = await getAllInvoices()
+
+    if (!fetchedInvoices) {
+        throw new HttpError(404, "Invoices not found")
+    }
+    res.set("Content-Type", "application/json");
+    res.status(200).send(fetchedInvoices);
 }
