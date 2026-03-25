@@ -1,8 +1,9 @@
-import app from "./app";
 import dotenv from "dotenv";
 import {connectDB} from "./db/mongo"
 
 dotenv.config();
+
+import app from "./app";
 
 async function startServer() {
   await connectDB();

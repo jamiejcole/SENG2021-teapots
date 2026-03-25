@@ -1,0 +1,3 @@
+api.teapotinvoicing.app {
+  reverse_proxy app-dev-api:3000
+}
