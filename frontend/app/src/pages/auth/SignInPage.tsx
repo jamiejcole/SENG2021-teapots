@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { Loader } from 'lucide-react'
 import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,12 +8,15 @@ import { Label } from '@/components/ui/label'
 import { GoogleButton } from '@/components/auth/GoogleButton'
 import { PasswordField } from '@/components/auth/PasswordField'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/components/auth/AuthContext'
 
 function validateEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())
 }
 
 export function SignInPage() {
+  const navigate = useNavigate()
+  const { login, isLoading: authLoading, error: authError, setError: setAuthError } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -27,17 +31,21 @@ export function SignInPage() {
     return e
   }, [email, password])
 
-  const canSubmit = Object.keys(errors).length === 0 && !isLoading
+  const canSubmit = Object.keys(errors).length === 0 && !isLoading && !authLoading
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setDidSubmit(true)
     setFormError(null)
+    setAuthError(null)
     if (!canSubmit) return
     setIsLoading(true)
     try {
-      await new Promise((r) => setTimeout(r, 600))
-      setFormError('Auth is UI-only right now. Hook this to your backend when ready.')
+      await login({ email: email.trim(), password })
+      navigate('/')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sign in failed'
+      setFormError(message)
     } finally {
       setIsLoading(false)
     }
@@ -55,12 +63,12 @@ export function SignInPage() {
       </div>
 
       <div className="mt-6 space-y-5">
-        {formError && (
+        {(formError || authError) && (
           <ErrorAlertWithTeapot
             title="Couldn’t sign in"
             className="border-amber-200 bg-amber-50 text-slate-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-slate-100"
           >
-            {formError}
+            {formError || authError}
           </ErrorAlertWithTeapot>
         )}
 
@@ -109,7 +117,14 @@ export function SignInPage() {
               className="rounded-xl bg-amber-400 px-6 font-semibold text-slate-900 shadow-md shadow-amber-400/30 hover:bg-amber-500 disabled:opacity-50"
               disabled={!canSubmit}
             >
-              {isLoading ? 'Signing in…' : 'Sign in'}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Signing in
+                </span>
+              ) : (
+                'Sign in'
+              )}
             </Button>
           </div>
         </form>

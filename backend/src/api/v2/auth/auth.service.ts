@@ -111,6 +111,10 @@ export async function loginUser(email: string, password: string) {
   return {
     accessToken,
     refreshToken,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    phone: user.phone,
+    company: user.company,
     message: "Login successful",
   };
 }
@@ -199,4 +203,71 @@ export async function refreshAccessToken(refreshToken: string) {
     }
     throw new HttpError(401, "Invalid refresh token");
   }
+}
+
+export async function getUserProfile(userId: string) {
+  // Validate input
+  if (!userId) {
+    throw new HttpError(400, "User ID is required");
+  }
+
+  // Find user
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    throw new HttpError(404, "User not found");
+  }
+
+  return {
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    phone: user.phone,
+    company: user.company,
+    message: "User profile retrieved successfully",
+  };
+}
+
+export async function updateUserProfile(
+  userId: string,
+  firstName?: string,
+  lastName?: string,
+  phone?: string,
+  company?: string
+) {
+  // Validate input
+  if (!userId) {
+    throw new HttpError(400, "User ID is required");
+  }
+
+  // Find user
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    throw new HttpError(404, "User not found");
+  }
+
+  // Update fields if provided
+  if (firstName !== undefined && firstName.trim()) {
+    user.firstName = firstName.trim();
+  }
+  if (lastName !== undefined && lastName.trim()) {
+    user.lastName = lastName.trim();
+  }
+  if (phone !== undefined) {
+    user.phone = phone.trim() || null;
+  }
+  if (company !== undefined) {
+    user.company = company.trim() || null;
+  }
+
+  // Save updated user
+  const updatedUser = await user.save();
+
+  return {
+    email: updatedUser.email,
+    firstName: updatedUser.firstName,
+    lastName: updatedUser.lastName,
+    phone: updatedUser.phone,
+    company: updatedUser.company,
+    message: "Profile updated successfully",
+  };
 }

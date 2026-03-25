@@ -5,13 +5,16 @@ import './index.css'
 import App from './App.tsx'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
+import { AuthProvider } from '@/components/auth/AuthContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <BrowserRouter>
-        <App />
-        <Toaster />
+        <AuthProvider>
+          <App />
+          <Toaster />
+        </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   </StrictMode>,

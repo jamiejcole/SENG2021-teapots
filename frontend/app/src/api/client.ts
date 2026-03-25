@@ -33,6 +33,16 @@ async function readErrorBody(res: Response) {
   }
 }
 
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem('auth_access_token')
+  if (token) {
+    return {
+      Authorization: `Bearer ${token}`,
+    }
+  }
+  return {}
+}
+
 export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
@@ -40,6 +50,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
       ...defaultHeaders(),
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      ...getAuthHeaders(),
       ...(init?.headers ?? {}),
     },
   })
@@ -59,7 +70,11 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
 export async function apiText(path: string, init?: RequestInit): Promise<string> {
   const res = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
-    headers: { ...defaultHeaders(), ...(init?.headers ?? {}) },
+    headers: {
+      ...defaultHeaders(),
+      ...getAuthHeaders(),
+      ...(init?.headers ?? {}),
+    },
   })
 
   if (!res.ok) {
@@ -77,7 +92,11 @@ export async function apiText(path: string, init?: RequestInit): Promise<string>
 export async function apiBlob(path: string, init?: RequestInit): Promise<Blob> {
   const res = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
-    headers: { ...defaultHeaders(), ...(init?.headers ?? {}) },
+    headers: {
+      ...defaultHeaders(),
+      ...getAuthHeaders(),
+      ...(init?.headers ?? {}),
+    },
   })
 
   if (!res.ok) {
