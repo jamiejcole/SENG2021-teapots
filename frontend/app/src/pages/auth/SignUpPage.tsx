@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Loader } from 'lucide-react'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -81,30 +81,19 @@ export function SignUpPage() {
           Create your account
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Fintech-grade UI, integration-ready.
+          Register with email or continue with Google below.
         </p>
       </div>
 
       <div className="mt-6 space-y-5">
-        {(formError || authError) && (
-          <Alert className="border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{formError || authError}</AlertDescription>
-          </Alert>
-        )}
-
-        <GoogleButton isLoading={isLoading} />
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-3 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-              or
-            </span>
-          </div>
-        </div>
+      {(formError || authError) && (
+        <ErrorAlertWithTeapot
+          title="Couldn’t create account"
+          className="border-amber-200 bg-amber-50 text-slate-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-slate-100"
+        >
+          {formError || authError}
+        </ErrorAlertWithTeapot>
+      )}
 
         <form className="space-y-5" onSubmit={onSubmit} noValidate>
           <div className="space-y-2">
@@ -185,6 +174,19 @@ export function SignUpPage() {
             )}
           </Button>
         </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-3 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              or
+            </span>
+          </div>
+        </div>
+
+        <GoogleButton isLoading={isLoading} />
 
         <p className="text-center text-xs text-slate-500 dark:text-slate-400">
           By continuing, you agree to our terms and privacy policy.

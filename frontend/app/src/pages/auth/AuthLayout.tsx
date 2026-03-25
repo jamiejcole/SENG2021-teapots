@@ -1,8 +1,12 @@
 import { Outlet } from 'react-router-dom'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 export function AuthLayout() {
   return (
-    <div className="min-h-dvh bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="relative min-h-dvh bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <ThemeToggle />
+      </div>
       <div className="mx-auto grid min-h-dvh w-full max-w-6xl grid-cols-1 lg:grid-cols-2">
         {/* Left: Light hero panel - clean, bright, sunshine yellow accent */}
         <div className="relative hidden overflow-hidden lg:block">

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Copy, Download, Mail, ReceiptText, ShieldCheck } from 'lucide-react'
 import { createInvoice, createInvoicePdf, type InvoiceSupplement } from '@/api/invoices'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { XmlUploadButton } from '@/components/XmlUploadButton'
-import { toast } from 'sonner'
+import { toast } from '@/lib/toast'
 
 function downloadText(filename: string, text: string, mime: string) {
   const blob = new Blob([text], { type: mime })
@@ -161,7 +161,7 @@ export function GenerateInvoicePage() {
                 value={orderXml}
                 onChange={(e) => setOrderXml(e.target.value)}
                 placeholder="XML"
-                className="min-h-40 rounded-xl font-mono text-xs"
+                className="min-h-24 rounded-xl font-mono text-xs resize-y"
               />
             </div>
 
@@ -212,10 +212,9 @@ export function GenerateInvoicePage() {
             </div>
 
             {!supplement && (
-              <Alert variant="destructive">
-                <AlertTitle>Invalid input</AlertTitle>
-                <AlertDescription>Tax rate must be a number.</AlertDescription>
-              </Alert>
+              <ErrorAlertWithTeapot variant="destructive" title="Invalid input">
+                Tax rate must be a number.
+              </ErrorAlertWithTeapot>
             )}
           </CardContent>
         </Card>
@@ -241,23 +240,22 @@ export function GenerateInvoicePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {error && (
-              <Alert variant="destructive">
-                <AlertTitle>Generation failed</AlertTitle>
-                <AlertDescription className="whitespace-pre-wrap">{error}</AlertDescription>
-              </Alert>
+              <ErrorAlertWithTeapot variant="destructive" title="Generation failed">
+                <span className="whitespace-pre-wrap">{error}</span>
+              </ErrorAlertWithTeapot>
             )}
 
             <div className="space-y-2">
               <Label htmlFor="invoiceXml">Invoice XML</Label>
               {isGenerating ? (
-                <Skeleton className="h-40 w-full rounded-xl" />
+                <Skeleton className="h-24 w-full rounded-xl" />
               ) : (
                 <Textarea
                   id="invoiceXml"
                   value={invoiceXml ?? ''}
                   readOnly
                   placeholder="XML"
-                  className="min-h-40 rounded-xl font-mono text-xs"
+                  className="min-h-24 rounded-xl font-mono text-xs resize-y"
                 />
               )}
             </div>
@@ -295,13 +293,13 @@ export function GenerateInvoicePage() {
 
             <div className="space-y-3 rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
               <Label className="text-amber-900 dark:text-amber-100">Email invoice</Label>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex flex-col gap-3">
                 <Input
                   type="email"
                   placeholder="recipient@example.com"
                   value={emailTo}
                   onChange={(e) => setEmailTo(e.target.value)}
-                  className="h-9 flex-1 rounded-lg border-amber-300 bg-white dark:border-amber-700 dark:bg-slate-900"
+                  className="h-9 w-full rounded-lg border-amber-300 bg-white dark:border-amber-700 dark:bg-slate-900"
                 />
                 <div className="flex gap-2">
                   <button
