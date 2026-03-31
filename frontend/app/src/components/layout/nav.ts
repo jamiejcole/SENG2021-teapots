@@ -5,6 +5,9 @@ import {
   History,
   UserRound,
   Settings2,
+  CircleHelp,
+  Shield,
+  FileText,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -23,5 +26,11 @@ export const primaryNav: NavItem[] = [
 export const secondaryNav: NavItem[] = [
   { to: '/account', label: 'Account', icon: UserRound },
   { to: '/settings', label: 'Settings', icon: Settings2 },
+]
+
+export const publicNav: NavItem[] = [
+  { to: '/support', label: 'Support', icon: CircleHelp },
+  { to: '/privacy', label: 'Privacy policy', icon: Shield },
+  { to: '/terms', label: 'Terms', icon: FileText },
 ]
 
