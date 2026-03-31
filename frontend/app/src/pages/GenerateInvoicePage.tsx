@@ -1,8 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Copy, Download, Mail, ReceiptText, ShieldCheck } from 'lucide-react'
-import { createInvoice, createInvoicePdf, sendInvoiceEmail, type InvoiceSupplement } from '@/api/invoices'
-import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
+import {
+  createInvoice,
+  createInvoicePdf,
+  sendInvoiceEmail,
+  validateInvoice,
+  validateOrder,
+  type InvoiceSupplement,
+} from '@/api/invoices'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,6 +16,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { XmlUploadButton } from '@/components/XmlUploadButton'
 import { toast } from '@/lib/toast'
+import { cn } from '@/lib/utils'
+
+/** Same outline treatment as the Output card “Validate” control */
+const outlineValidateStyle =
+  'h-8 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40'
 
 function downloadText(filename: string, text: string, mime: string) {
   const blob = new Blob([text], { type: mime })
@@ -48,8 +58,9 @@ export function GenerateInvoicePage() {
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [invoiceXml, setInvoiceXml] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [isPdfLoading, setIsPdfLoading] = useState(false)
+  const [isValidatingOrder, setIsValidatingOrder] = useState(false)
+  const [isValidatingInvoice, setIsValidatingInvoice] = useState(false)
   const [isEmailSending, setIsEmailSending] = useState(false)
   const [emailTo, setEmailTo] = useState('')
 
@@ -78,12 +89,48 @@ export function GenerateInvoicePage() {
     return true
   }, [isGenerating, orderXml, supplement])
 
+  const canValidateOrder = orderXml.trim().length > 0 && !isGenerating && !isValidatingOrder
+
+  const canValidateInvoice =
+    !!invoiceXml?.trim() && !isGenerating && !isValidatingInvoice
+
+  async function onValidateOrder() {
+    const trimmed = orderXml.trim()
+    if (!trimmed) return
+    setIsValidatingOrder(true)
+    try {
+      const res = await validateOrder(trimmed)
+      const message = res.message ?? 'UBL Order is valid.'
+      toast.success('Order is valid', { description: message })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Validation failed'
+      toast.error('Order validation failed', { description: msg })
+    } finally {
+      setIsValidatingOrder(false)
+    }
+  }
+
+  async function onValidateInvoiceOutput() {
+    const trimmed = invoiceXml?.trim()
+    if (!trimmed) return
+    setIsValidatingInvoice(true)
+    try {
+      const res = await validateInvoice(trimmed)
+      const message = res.message ?? 'UBL Invoice is valid.'
+      toast.success('Invoice is valid', { description: message })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Validation failed'
+      toast.error('Invoice validation failed', { description: msg })
+    } finally {
+      setIsValidatingInvoice(false)
+    }
+  }
+
   async function onGenerate() {
     const trimmed = orderXml.trim()
     if (!trimmed || !supplement) return
 
     setIsGenerating(true)
-    setError(null)
     setInvoiceXml(null)
     try {
       const xml = await createInvoice(trimmed, supplement)
@@ -91,7 +138,6 @@ export function GenerateInvoicePage() {
       toast.success('Invoice XML generated')
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to generate invoice'
-      setError(msg)
       toast.error('Generation failed', { description: msg })
     } finally {
       setIsGenerating(false)
@@ -141,6 +187,19 @@ export function GenerateInvoicePage() {
     }
   }
 
+  async function loadSampleUbl() {
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}sample-ubl-order.xml`)
+      if (!res.ok) throw new Error('Not found')
+      const text = await res.text()
+      setOrderXml(text)
+      setInvoiceXml(null)
+      toast.success('Sample UBL order loaded')
+    } catch {
+      toast.error('Could not load sample UBL file')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -150,26 +209,49 @@ export function GenerateInvoicePage() {
             Generation
           </div>
           <h1 className="font-display text-3xl tracking-tight">Generate Invoice</h1>
-          <p className="text-sm text-muted-foreground">Generate Invoice XML (and PDF) from a UBL Order.</p>
+          <p className="text-sm text-muted-foreground">
+            Generate Invoice XML (and PDF) from a <strong className="font-medium text-foreground">UBL 2.x Order</strong> — not plain custom XML.
+          </p>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base">Input</CardTitle>
-              <XmlUploadButton onUpload={setOrderXml} className="rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40" />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void onValidateOrder()}
+                disabled={!canValidateOrder}
+                className={cn(outlineValidateStyle, 'shrink-0')}
+              >
+                <ShieldCheck className="size-4" />
+                {isValidatingOrder ? 'Validating…' : 'Validate'}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="orderXml">Order XML</Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <Label htmlFor="orderXml">Order XML</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                  onClick={() => void loadSampleUbl()}
+                >
+                  Load sample UBL
+                </Button>
+              </div>
               <Textarea
                 id="orderXml"
                 value={orderXml}
                 onChange={(e) => setOrderXml(e.target.value)}
-                placeholder="XML"
+                placeholder="UBL 2.x Order XML"
                 className="min-h-24 rounded-xl font-mono text-xs resize-y"
               />
             </div>
@@ -205,26 +287,40 @@ export function GenerateInvoicePage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={onGenerate} disabled={!canGenerate} className="rounded-lg bg-amber-400 font-semibold text-slate-900 shadow-md shadow-amber-400/25 hover:bg-amber-500">
+            <div className="mx-auto grid w-full max-w-full grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="min-w-0">
+                <XmlUploadButton
+                  onUpload={(xml) => {
+                    setOrderXml(xml)
+                    setInvoiceXml(null)
+                  }}
+                  className={cn(
+                    outlineValidateStyle,
+                    'h-10 w-full min-w-0 justify-center gap-1.5 px-2 text-sm sm:px-3',
+                  )}
+                />
+              </div>
+              <Button
+                onClick={onGenerate}
+                disabled={!canGenerate}
+                className="h-10 w-full min-w-0 justify-center rounded-lg bg-amber-400 px-2 text-sm font-semibold text-slate-900 shadow-md shadow-amber-400/25 hover:bg-amber-500 sm:px-3"
+              >
                 {isGenerating ? 'Generating…' : 'Generate'}
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { setOrderXml(''); setInvoiceXml(null); setError(null) }}
+                onClick={() => {
+                  setOrderXml('')
+                  setInvoiceXml(null)
+                }}
                 disabled={isGenerating}
-                className="rounded-lg"
+                className="h-10 w-full min-w-0 justify-center rounded-lg px-2 text-sm sm:px-3"
               >
                 Clear
               </Button>
             </div>
 
-            {!supplement && (
-              <ErrorAlertWithTeapot variant="destructive" title="Invalid input">
-                Tax rate must be a number.
-              </ErrorAlertWithTeapot>
-            )}
           </CardContent>
         </Card>
 
@@ -232,28 +328,20 @@ export function GenerateInvoicePage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Output</CardTitle>
-              {invoiceXml ? (
-                <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40">
-                  <Link to="/validate" state={{ invoiceXml }}>
-                    <ShieldCheck className="size-4" />
-                    Validate
-                  </Link>
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled className="h-8 gap-1.5 rounded-lg border-amber-300 text-amber-800 opacity-50 dark:border-amber-700 dark:text-amber-200">
-                  <ShieldCheck className="size-4" />
-                  Validate
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void onValidateInvoiceOutput()}
+                disabled={!canValidateInvoice}
+                className={cn(outlineValidateStyle, 'shrink-0')}
+              >
+                <ShieldCheck className="size-4" />
+                {isValidatingInvoice ? 'Validating…' : 'Validate'}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {error && (
-              <ErrorAlertWithTeapot variant="destructive" title="Generation failed">
-                <span className="whitespace-pre-wrap">{error}</span>
-              </ErrorAlertWithTeapot>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="invoiceXml">Invoice XML</Label>
               {isGenerating ? (
@@ -275,7 +363,7 @@ export function GenerateInvoicePage() {
                 disabled={!invoiceXml}
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200"
+                className="h-9 w-9 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 hover:text-amber-950 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-400 dark:hover:text-slate-900"
                 title="Copy"
               >
                 <Copy className="size-4" />
@@ -284,7 +372,7 @@ export function GenerateInvoicePage() {
                 variant="outline"
                 onClick={() => invoiceXml && downloadText('invoice.xml', invoiceXml, 'application/xml')}
                 disabled={!invoiceXml}
-                className="h-9 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200"
+                className="h-9 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 hover:text-amber-950 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-400 dark:hover:text-slate-900"
               >
                 <Download className="size-4" />
                 XML
@@ -293,7 +381,7 @@ export function GenerateInvoicePage() {
                 variant="outline"
                 onClick={onPdf}
                 disabled={!invoiceXml || isPdfLoading}
-                className="h-9 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200"
+                className="h-9 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 hover:text-amber-950 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-400 dark:hover:text-slate-900"
               >
                 <Download className="size-4" />
                 {isPdfLoading ? '…' : 'PDF'}

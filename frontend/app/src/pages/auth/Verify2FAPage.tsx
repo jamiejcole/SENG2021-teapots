@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Loader } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -22,6 +22,7 @@ export function Verify2FAPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [didSubmit, setDidSubmit] = useState(false)
+  const submitLockRef = useRef(false)
 
   const codeError = useMemo(() => {
     if (!code) return 'Code is required.'
@@ -62,10 +63,12 @@ export function Verify2FAPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (submitLockRef.current) return
     setDidSubmit(true)
     setError(null)
     if (!canSubmit) return
-    
+
+    submitLockRef.current = true
     setIsLoading(true)
     try {
       const result = await verify2FA({ userId: validatedUserId, code })
@@ -85,6 +88,7 @@ export function Verify2FAPage() {
       const message = err instanceof Error ? err.message : 'Verification failed'
       setError(message)
     } finally {
+      submitLockRef.current = false
       setIsLoading(false)
     }
   }

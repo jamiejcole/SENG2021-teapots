@@ -1,3 +1,4 @@
+import "./loadEnv";
 import express from "express";
 import cors from "cors";
 import swaggerUi from "swagger-ui-express";
@@ -40,7 +41,7 @@ app.use(
       return cb(null, false);
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Accept", "Authorization"],
+    allowedHeaders: ["Content-Type", "Accept", "Authorization", "x-api-key", "X-News-Admin-Key"],
     exposedHeaders: ["X-Invoice-Url", "Content-Disposition"],
   })
 );

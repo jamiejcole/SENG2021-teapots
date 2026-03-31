@@ -1,8 +1,10 @@
 import type { ExternalToast } from 'sonner'
 import { toast as sonnerToast } from 'sonner'
-import { ErrorTeapotToastIcon } from '@/components/feedback/ErrorTeapot'
+import { ErrorTeapotToastIcon, SuccessTeapotToastIcon } from '@/components/feedback/ErrorTeapot'
 
+/** Original Sonner methods — must not call `sonnerToast.error` after `Object.assign` overwrites them. */
 const sonnerError = sonnerToast.error.bind(sonnerToast)
+const sonnerSuccess = sonnerToast.success.bind(sonnerToast)
 
 function error(message: React.ReactNode, data?: ExternalToast) {
   return sonnerError(message, {
@@ -11,14 +13,11 @@ function error(message: React.ReactNode, data?: ExternalToast) {
   })
 }
 
-export const toast = {
-  success: sonnerToast.success,
-  error,
-  info: sonnerToast.info,
-  warning: sonnerToast.warning,
-  message: sonnerToast.message,
-  loading: sonnerToast.loading,
-  dismiss: sonnerToast.dismiss,
-  custom: sonnerToast.custom,
-  promise: sonnerToast.promise,
+function success(message: React.ReactNode, data?: ExternalToast) {
+  return sonnerSuccess(message, {
+    ...data,
+    icon: data?.icon !== undefined ? data.icon : <SuccessTeapotToastIcon />,
+  })
 }
+
+export const toast = Object.assign(sonnerToast, { error, success })

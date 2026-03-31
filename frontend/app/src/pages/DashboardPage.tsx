@@ -48,7 +48,7 @@ export function DashboardPage() {
             { id: 'a1', title: 'Invoice generated', meta: 'ORDER-1 • 2m ago', amount: '$236.50', status: 'success' },
             { id: 'a2', title: 'Order validated', meta: 'AEG012345 • 9m ago', status: 'success' },
             { id: 'a3', title: 'PDF created', meta: 'INV-123 • 21m ago', status: 'pending' },
-            { id: 'a4', title: 'Validation failed', meta: 'Missing PartyTaxScheme • 1h ago', status: 'failed' },
+            { id: 'a4', title: 'Order received', meta: 'BATCH-88 • 1h ago', status: 'pending' },
           ]}
         />
       </div>

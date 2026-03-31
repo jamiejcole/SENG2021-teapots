@@ -1,5 +1,10 @@
 import { getApiBaseUrl } from '@/config'
 
+function defaultHeaders(): HeadersInit {
+  const key = (import.meta.env.VITE_API_KEY as string | undefined)?.trim()
+  return key ? { 'x-api-key': key } : {}
+}
+
 export type ApiErrorShape = {
   message?: string
   error?: string
@@ -42,6 +47,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers: {
+      ...defaultHeaders(),
       Accept: 'application/json',
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
@@ -65,6 +71,7 @@ export async function apiText(path: string, init?: RequestInit): Promise<string>
   const res = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers: {
+      ...defaultHeaders(),
       ...getAuthHeaders(),
       ...(init?.headers ?? {}),
     },
@@ -86,6 +93,7 @@ export async function apiBlob(path: string, init?: RequestInit): Promise<Blob> {
   const res = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers: {
+      ...defaultHeaders(),
       ...getAuthHeaders(),
       ...(init?.headers ?? {}),
     },

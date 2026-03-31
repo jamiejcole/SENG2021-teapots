@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
 import { validateOrder, validateInvoice } from '@/api/invoices'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -19,7 +17,6 @@ type ValidationSectionProps = {
   setXml: (v: string) => void
   onValidate: () => void
   isLoading: boolean
-  result: { ok: boolean; message: string } | null
 }
 
 function ValidationSection({
@@ -29,7 +26,6 @@ function ValidationSection({
   setXml,
   onValidate,
   isLoading,
-  result,
 }: ValidationSectionProps) {
   const canSubmit = xml.trim().length > 0 && !isLoading
 
@@ -67,17 +63,6 @@ function ValidationSection({
           </Button>
         </div>
         {isLoading && <Skeleton className="h-12 w-full rounded-xl" />}
-        {!isLoading && result && result.ok && (
-          <Alert className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/30">
-            <AlertTitle>Valid</AlertTitle>
-            <AlertDescription className="whitespace-pre-wrap">{result.message}</AlertDescription>
-          </Alert>
-        )}
-        {!isLoading && result && !result.ok && (
-          <ErrorAlertWithTeapot variant="destructive" title="Invalid">
-            <span className="whitespace-pre-wrap">{result.message}</span>
-          </ErrorAlertWithTeapot>
-        )}
       </CardContent>
     </Card>
   )
@@ -90,21 +75,16 @@ export function ValidateOrderPage() {
   const [invoiceXml, setInvoiceXml] = useState(stateInvoice ?? '')
   const [orderLoading, setOrderLoading] = useState(false)
   const [invoiceLoading, setInvoiceLoading] = useState(false)
-  const [orderResult, setOrderResult] = useState<{ ok: boolean; message: string } | null>(null)
-  const [invoiceResult, setInvoiceResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   async function onValidateOrder() {
     const trimmed = orderXml.trim()
     if (!trimmed) return
     setOrderLoading(true)
-    setOrderResult(null)
     try {
       const res = await validateOrder(trimmed)
-      setOrderResult({ ok: true, message: res.message ?? 'UBL Order is valid.' })
-      toast.success('Order is valid')
+      toast.success('Order is valid', { description: res.message ?? 'UBL Order is valid.' })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Validation failed'
-      setOrderResult({ ok: false, message: msg })
       toast.error('Validation failed', { description: msg })
     } finally {
       setOrderLoading(false)
@@ -115,14 +95,11 @@ export function ValidateOrderPage() {
     const trimmed = invoiceXml.trim()
     if (!trimmed) return
     setInvoiceLoading(true)
-    setInvoiceResult(null)
     try {
       const res = await validateInvoice(trimmed)
-      setInvoiceResult({ ok: true, message: res.message ?? 'UBL Invoice is valid.' })
-      toast.success('Invoice is valid')
+      toast.success('Invoice is valid', { description: res.message ?? 'UBL Invoice is valid.' })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Validation failed'
-      setInvoiceResult({ ok: false, message: msg })
       toast.error('Validation failed', { description: msg })
     } finally {
       setInvoiceLoading(false)
@@ -139,7 +116,7 @@ export function ValidateOrderPage() {
           </div>
           <h1 className="font-display text-3xl tracking-tight">Validate</h1>
           <p className="text-sm text-muted-foreground">
-            Validate UBL Order or Invoice XML against XSD schemas.
+            Validate UBL Order or Invoice XML against XSD schemas. Results appear as toasts.
           </p>
         </div>
       </div>
@@ -152,7 +129,6 @@ export function ValidateOrderPage() {
           setXml={setOrderXml}
           onValidate={onValidateOrder}
           isLoading={orderLoading}
-          result={orderResult}
         />
         <ValidationSection
           title="Validate Invoice XML"
@@ -161,7 +137,6 @@ export function ValidateOrderPage() {
           setXml={setInvoiceXml}
           onValidate={onValidateInvoice}
           isLoading={invoiceLoading}
-          result={invoiceResult}
         />
       </div>
     </div>
