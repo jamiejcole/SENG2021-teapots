@@ -190,7 +190,14 @@ export function SignUpPage() {
         </form>
 
         <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-          By continuing, you agree to our terms and privacy policy.
+          By continuing, you agree to our{' '}
+          <Link to="/terms" className="font-medium text-amber-600 underline-offset-4 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300">
+            terms
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="font-medium text-amber-600 underline-offset-4 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300">
+            privacy policy
+          </Link>.
         </p>
 
         <p className="text-center text-sm text-slate-500 dark:text-slate-400">
