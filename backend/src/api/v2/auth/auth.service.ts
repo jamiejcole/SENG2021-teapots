@@ -1,4 +1,5 @@
 import UserModel from "../../../models/user.model";
+import { sha256 } from "../../../models/hash";
 import {
   hashPassword,
   comparePasswords,
@@ -8,10 +9,24 @@ import {
   generateTwoFactorExpiry,
   isTwoFactorCodeExpired,
   verifyToken,
+  generatePasswordResetToken,
+  generatePasswordResetExpiry,
+  isPasswordResetTokenExpired,
   JWTPayload,
 } from "../../../utils/auth.utils";
-import { sendTwoFactorCode } from "../../../utils/mailgun.service";
+import { sendTwoFactorCode, sendPasswordResetEmail } from "../../../utils/mailgun.service";
 import { HttpError } from "../../../errors/HttpError";
+
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_RESET_EXPIRY_MINUTES = 60;
+
+function getPublicAppUrl() {
+  return (process.env.PUBLIC_APP_URL || "https://teapotinvoicing.app").replace(/\/$/, "");
+}
+
+function buildPasswordResetLink(token: string) {
+  return `${getPublicAppUrl()}/auth/reset-password?token=${encodeURIComponent(token)}`;
+}
 
 export async function signupUser(
   email: string,
@@ -24,8 +39,8 @@ export async function signupUser(
     throw new HttpError(400, "All fields are required");
   }
 
-  if (password.length < 8) {
-    throw new HttpError(400, "Password must be at least 8 characters");
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    throw new HttpError(400, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
   }
 
   // Check if user already exists
@@ -269,5 +284,83 @@ export async function updateUserProfile(
     phone: updatedUser.phone,
     company: updatedUser.company,
     message: "Profile updated successfully",
+  };
+}
+
+export async function requestPasswordReset(email: string) {
+  if (!email || typeof email !== "string" || !email.trim()) {
+    throw new HttpError(400, "Email is required");
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await UserModel.findOne({ email: normalizedEmail });
+
+  if (!user) {
+    return {
+      message: "If an account exists, a password reset link has been sent.",
+    };
+  }
+
+  const resetToken = generatePasswordResetToken();
+  const resetTokenHash = sha256(resetToken);
+  const expiresAt = generatePasswordResetExpiry();
+
+  user.passwordReset = {
+    tokenHash: resetTokenHash,
+    expiresAt,
+  };
+
+  await user.save();
+
+  try {
+    await sendPasswordResetEmail(user.email, {
+      firstName: user.firstName,
+      resetLink: buildPasswordResetLink(resetToken),
+      expiresInMinutes: PASSWORD_RESET_EXPIRY_MINUTES,
+    });
+  } catch (error) {
+    user.passwordReset = {
+      tokenHash: null,
+      expiresAt: null,
+    };
+    await user.save();
+    throw error;
+  }
+
+  return {
+    message: "If an account exists, a password reset link has been sent.",
+  };
+}
+
+export async function resetPassword(token: string, password: string) {
+  if (!token || typeof token !== "string" || !token.trim()) {
+    throw new HttpError(400, "Reset token is required");
+  }
+
+  if (!password || typeof password !== "string" || !password.trim()) {
+    throw new HttpError(400, "Password is required");
+  }
+
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    throw new HttpError(400, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
+  }
+
+  const tokenHash = sha256(token.trim());
+  const user = await UserModel.findOne({ "passwordReset.tokenHash": tokenHash });
+
+  if (!user || isPasswordResetTokenExpired(user.passwordReset?.expiresAt)) {
+    throw new HttpError(400, "Invalid or expired password reset link");
+  }
+
+  user.password = await hashPassword(password);
+  user.passwordReset = {
+    tokenHash: null,
+    expiresAt: null,
+  };
+
+  await user.save();
+
+  return {
+    message: "Password reset successful",
   };
 }

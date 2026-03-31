@@ -5,6 +5,7 @@ import crypto from "crypto";
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const JWT_EXPIRES_IN = "1h";
 const REFRESH_TOKEN_EXPIRES_IN = "7d";
+const PASSWORD_RESET_TOKEN_EXPIRES_IN_MINUTES = 60;
 
 // Password hashing
 export async function hashPassword(password: string): Promise<string> {
@@ -50,6 +51,21 @@ export function generateTwoFactorExpiry(): Date {
 }
 
 export function isTwoFactorCodeExpired(expiresAt: Date | null | undefined): boolean {
+  if (!expiresAt) return true;
+  return new Date() > expiresAt;
+}
+
+export function generatePasswordResetToken(): string {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+export function generatePasswordResetExpiry(): Date {
+  const expiryTime = new Date();
+  expiryTime.setMinutes(expiryTime.getMinutes() + PASSWORD_RESET_TOKEN_EXPIRES_IN_MINUTES);
+  return expiryTime;
+}
+
+export function isPasswordResetTokenExpired(expiresAt: Date | null | undefined): boolean {
   if (!expiresAt) return true;
   return new Date() > expiresAt;
 }
