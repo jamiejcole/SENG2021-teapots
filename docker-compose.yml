@@ -8,7 +8,7 @@ services:
     security_opt: [no-new-privileges:true]
     environment:
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
-      - DOMAINS=api.teapotinvoicing.app
+      - DOMAINS=teapotinvoicing.app,api.teapotinvoicing.app
       - PROXIED=false
       - IP6_PROVIDER=none
   caddy:
@@ -29,6 +29,19 @@ services:
         awslogs-group: "api-logs"
         awslogs-create-group: "true"
         awslogs-stream: "caddy"
+  app-frontend:
+    image: ghcr.io/jamiejcole/seng2021-teapots-frontend:latest
+    container_name: seng2021-teapots-frontend
+    restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: "ap-southeast-2"
+        awslogs-group: "api-logs"
+        awslogs-create-group: "true"
+        awslogs-stream: "frontend"
   app-dev-api:
     image: ghcr.io/jamiejcole/seng2021-teapots:latest
     container_name: seng2021-teapots-api
@@ -57,7 +70,7 @@ services:
     container_name: seng2021-teapots-watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --label-enable --interval 300 seng2021-teapots-api
+    command: --label-enable --interval 300 seng2021-teapots-api seng2021-teapots-frontend
     restart: unless-stopped
     environment:
       WATCHTOWER_CLEANUP: true

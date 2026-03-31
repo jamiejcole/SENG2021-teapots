@@ -1,3 +1,7 @@
+teapotinvoicing.app, www.teapotinvoicing.app {
+  reverse_proxy app-frontend:80
+}
+
 api.teapotinvoicing.app {
   reverse_proxy app-dev-api:3000
 }
