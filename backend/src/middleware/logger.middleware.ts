@@ -10,7 +10,7 @@ type LogPayload = {
 };
 
 const writeLog = (_payload: LogPayload): void => {
-  // console.log("* Incoming request:", payload);
+  console.log(`* Incoming request: ${_payload.method}, ${_payload.path}`);
 };
 
 export const loggerMiddleware = (

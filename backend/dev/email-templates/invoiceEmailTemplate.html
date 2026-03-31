@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Invoice is Ready</title>
+    <style>
+        /* Reset and base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            min-width: 100%;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #0f081c;
+            background-color: #f7f5f0;
+        }
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+        }
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        a {
+            color: #f5c60f;
+            text-decoration: none;
+        }
+        .preheader {
+            display: none;
+            max-width: 0;
+            max-height: 0;
+            overflow: hidden;
+            font-size: 1px;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="preheader">Your invoice is attached as PDF and XML. Please find both files in this email.</div>
+    
+    <!-- Wrapper for outer padding -->
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; background-color: #f7f5f0;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <!-- Container 600px max width -->
+                <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 15px; overflow: hidden; box-shadow: 0 2px 6px rgba(31, 23, 39, 0.14), 0 28px 60px rgba(31, 23, 39, 0.12);">
+                    
+                    <!-- Header with brand color -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f5c60f 0%, #f5c60f 100%); padding: 40px 30px; text-align: center;">
+                            <img alt="Teapots Logo" src="https://i.imgur.com/dwYhevE.png" style="max-width: 120px; height: auto; display: inline-block;">
+                        </td>
+                    </tr>
+
+                    <!-- Main content -->
+                    <tr>
+                        <td style="padding-top: 50px; padding-left: 30px; padding-right: 30px; padding-bottom: 18px;">
+                            <!-- Headline -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 30px;">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <h1 style="margin: 0; font-family: 'Fraunces', Georgia, serif; font-size: 32px; font-weight: 600; color: #0f081c; line-height: 1.3;">
+                                            Your Invoice is Ready
+                                        </h1>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Subheading -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 40px;">
+                                <tr>
+                                    <td style="text-align: center; color: #6b5f7a; font-size: 16px; line-height: 1.6;">
+                                        We've processed your order. Please find the invoice attached as a PDF in this email, along with the matching XML file for your records.
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Invoice details card -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 40px; background-color: #faf9f7; border: 1px solid #e5e0eb; border-radius: 10px; padding: 25px;">
+                                <tr>
+                                    <td>
+                                        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%;">
+                                            <!-- Invoice number -->
+                                            <tr>
+                                                <td style="padding-bottom: 16px;">
+                                                    <p style="margin: 0; font-size: 13px; color: #7a6f85; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Invoice Number</p>
+                                                    <p style="margin: 8px 0 0 0; font-size: 18px; font-weight: 600; color: #0f081c; font-family: ui-monospace, 'Courier New', monospace;">{{invoiceNumber}}</p>
+                                                </td>
+                                            </tr>
+                                            <!-- Invoice amount -->
+                                            <tr>
+                                                <td style="padding-bottom: 16px;">
+                                                    <p style="margin: 0; font-size: 13px; color: #7a6f85; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Amount Due</p>
+                                                    <p style="margin: 8px 0 0 0; font-size: 18px; font-weight: 600; color: #f5c60f;">{{amount}}</p>
+                                                </td>
+                                            </tr>
+                                            <!-- Due date -->
+                                            <tr>
+                                                <td>
+                                                    <p style="margin: 0; font-size: 13px; color: #7a6f85; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Due Date</p>
+                                                    <p style="margin: 8px 0 0 0; font-size: 16px; color: #0f081c;">{{dueDate}}</p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Info section -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 30px; background-color: #faf9f7; border-left: 3px solid #f5c60f; padding: 20px; border-radius: 4px;">
+                                <tr>
+                                    <td>
+                                        <p style="margin: 0; color: #0f081c; font-size: 14px; line-height: 1.6; padding-left: 8px; padding-bottom: 6px;">
+                                            <strong>Attachments included:</strong><br>
+                                            PDF invoice file<br>
+                                            XML invoice file (UBL 2.4 format)<br>
+                                            PEPPOL-compliant invoice data
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Disclaimer section -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 30px; background-color: #fff8d9; border: 1px solid #f5c60f; padding: 18px; border-radius: 8px;">
+                                <tr>
+                                    <td>
+                                        <p style="margin: 0; color: #0f081c; font-size: 14px; line-height: 1.6;">
+                                            Please find the invoice attached as a PDF in this email. A matching XML file is also attached for system-to-system processing and record keeping.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Support section -->
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="width: 100%; border-top: 1px solid #e5e0eb; padding-top: 30px;">
+                                <tr>
+                                    <td style="text-align: center; color: #7a6f85; font-size: 14px; line-height: 1.6; padding-top: 16px;">
+                                        <p style="margin: 0;">
+                                            Questions? Contact our support team or reply to this email.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f7f5f0; padding: 30px; text-align: center; border-top: 1px solid #e5e0eb;">
+                            <p style="margin: 0 0 15px 0; color: #7a6f85; font-size: 13px; padding-bottom: 12px;">
+                                © 2026 Teapot Invoicing Systems. All rights reserved.
+                            </p>
+                            <p style="margin: 0; color: #a89fad; font-size: 12px; padding-top: 20px">
+                                You're receiving this email because you have an active invoice in our system.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

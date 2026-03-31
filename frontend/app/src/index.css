@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans';
+    --font-display: 'Fraunces';
+    --font-mono: ui-monospace;
+
+    /* Premium fintech neutrals */
+    --background: 0 0% 100%;
+    --foreground: 222 33% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 33% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 33% 9%;
+
+    /* Brand: CommBank-like sunshine yellow */
+    --brand: 47 100% 58%;
+    --brand-foreground: 222 33% 10%;
+    --brand-muted: 47 100% 96%;
+
+    /* Semantic tokens */
+    --primary: 47 100% 55%;
+    --primary-foreground: 222 33% 10%;
+    --secondary: 220 15% 96%;
+    --secondary-foreground: 222 33% 10%;
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 47 100% 96%;
+    --accent-foreground: 222 33% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 90%;
+    --input: 220 13% 90%;
+    --ring: 47 100% 58%;
+
+    --shadow: 222 30% 12%;
+    --radius: 0.9rem;
+  }
+
+  .dark {
+    --background: 222 28% 8%;
+    --foreground: 210 20% 98%;
+    --card: 222 26% 10%;
+    --card-foreground: 210 20% 98%;
+    --popover: 222 26% 10%;
+    --popover-foreground: 210 20% 98%;
+
+    --brand: 47 100% 60%;
+    --brand-foreground: 222 33% 10%;
+    --brand-muted: 47 35% 16%;
+
+    --primary: 47 100% 60%;
+    --primary-foreground: 222 33% 10%;
+    --secondary: 222 18% 16%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 222 18% 16%;
+    --muted-foreground: 215 14% 70%;
+    --accent: 47 35% 16%;
+    --accent-foreground: 210 20% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 222 18% 18%;
+    --input: 222 18% 18%;
+    --ring: 47 100% 60%;
+
+    --shadow: 0 0% 0%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-amber-50/30 font-sans text-foreground antialiased dark:bg-slate-950;
+    text-rendering: geometricPrecision;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .surface {
+    @apply bg-card text-card-foreground shadow-soft;
+  }
+  .surface-hover {
+    @apply transition-shadow hover:shadow-lift;
+  }
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}
