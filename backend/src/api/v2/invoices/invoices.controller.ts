@@ -26,7 +26,7 @@ function extractInvoiceEmailData(invoiceXml: string) {
     const dueDate = getText("/inv:Invoice/cbc:DueDate") || new Date().toISOString().slice(0, 10);
     const currency = getText("/inv:Invoice/cbc:DocumentCurrencyCode") || "AUD";
     const payableAmount = getText("/inv:Invoice/cac:LegalMonetaryTotal/cbc:PayableAmount");
-    const amount = payableAmount ? `${currency} ${payableAmount}` : `${currency} 0.00`;
+    const amount = payableAmount ? `${currency} $${payableAmount}` : `${currency} $0.00`;
 
     return { invoiceNumber, dueDate, amount };
 }
@@ -80,7 +80,7 @@ export async function createPdf(req: Request, res: Response) {
     const publicPdfUrl = `${baseUrl}/invoices/${invoiceHash}.pdf`;
 
     res.set("Content-Type", "application/pdf");
-    res.set("Content-Disposition", `inline; filename=\"${invoiceHash}.pdf\"`);
+    res.set("Content-Disposition", `inline; filename="${invoiceHash}.pdf"`);
     res.set("X-Invoice-Url", publicPdfUrl);
     res.status(201).send(doc);
 }
@@ -99,7 +99,7 @@ export const getPublicInvoicePdf = asyncHandler(async (req: Request, res: Respon
     }
 
     res.set("Content-Type", invoicePdf.contentType || "application/pdf");
-    res.set("Content-Disposition", `inline; filename=\"${invoicePdf.invoiceHash}.pdf\"`);
+    res.set("Content-Disposition", `inline; filename="${invoicePdf.invoiceHash}.pdf"`);
     res.set("Cache-Control", "public, max-age=86400");
     res.status(200).send(invoicePdf.pdfData);
 });
@@ -123,28 +123,30 @@ export const emailInvoice = asyncHandler(async (req: Request, res: Response) => 
     validateUBL(invoiceXml, "Invoice");
 
     const pdfBuffer = await generateInvoicePdf(invoiceXml);
-    const invoiceHash = await service.storeInvoicePdf(invoiceXml, pdfBuffer);
-
-    const baseUrl = (process.env.PUBLIC_APP_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
-    const publicPdfUrl = `${baseUrl}/invoices/${invoiceHash}.pdf`;
 
     const { invoiceNumber, dueDate, amount } = extractInvoiceEmailData(invoiceXml);
+    const attachments = [
+        {
+            data: pdfBuffer,
+            filename: `${invoiceNumber}.pdf`,
+            contentType: "application/pdf",
+        },
+        {
+            data: Buffer.from(invoiceXml, "utf8"),
+            filename: `${invoiceNumber}.xml`,
+            contentType: "application/xml",
+        },
+    ];
 
     await sendInvoiceReadyEmail(email, {
         amount,
-        dashboardLink: process.env.PUBLIC_DASHBOARD_URL || baseUrl,
-        downloadLink: publicPdfUrl,
         dueDate,
-        helpLink: process.env.PUBLIC_HELP_URL || `${baseUrl}/support`,
         invoiceNumber,
-        settingsLink: process.env.PUBLIC_SETTINGS_URL || `${baseUrl}/account`,
-    });
+    }, attachments);
 
     res.status(200).json({
         message: "Invoice email sent",
         to: email,
-        invoiceHash,
-        downloadLink: publicPdfUrl,
     });
 });
 

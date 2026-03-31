@@ -62,15 +62,21 @@ export async function sendTwoFactorCode(
 
 type InvoiceTemplateVariables = {
   amount: string;
-  dashboardLink: string;
-  downloadLink: string;
   dueDate: string;
-  helpLink: string;
   invoiceNumber: string;
-  settingsLink: string;
 };
 
-export async function sendInvoiceReadyEmail(email: string, variables: InvoiceTemplateVariables): Promise<void> {
+type MailgunAttachment = {
+  data: Buffer | string;
+  filename: string;
+  contentType?: string;
+};
+
+export async function sendInvoiceReadyEmail(
+  email: string,
+  variables: InvoiceTemplateVariables,
+  attachments: MailgunAttachment[]
+): Promise<void> {
   try {
     const { domain, fromEmail, replyTo, invoiceTemplate } = getMailgunConfig();
     const mg = getMailgunClient();
@@ -83,6 +89,7 @@ export async function sendInvoiceReadyEmail(email: string, variables: InvoiceTem
       "h:Reply-To": replyTo,
       "t:text": "yes",
       "o:tracking": "no",
+      attachment: attachments,
       "h:X-Mailgun-Variables": JSON.stringify(variables),
     });
   } catch (error) {
