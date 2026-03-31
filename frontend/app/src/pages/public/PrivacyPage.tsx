@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 const sections = [
@@ -53,6 +52,7 @@ export function PrivacyPage() {
           This policy outlines how Teapot Invoicing handles API metadata and PEPPOL document transmission for our developer community and enterprise partners.
         </p>
         <p className="text-xs text-slate-400 dark:text-slate-500">Last Updated: March 31, 2026</p>
+        
       </div>
 
       <div className="grid gap-4">
@@ -75,10 +75,11 @@ export function PrivacyPage() {
         <CardContent className="space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
           <p>Questions regarding our PEPPOL Access Point certification or data processing? Reach out to <a className="font-medium text-amber-700 underline-offset-4 hover:underline dark:text-amber-300" href="mailto:support@teapotinvoicing.app">support@teapotinvoicing.app</a>.</p>
           <p>
-            Technical issues? Check our <Link className="font-medium text-amber-700 underline-offset-4 hover:underline dark:text-amber-300" to="https://api.teapotinvoicing.app/api/docs">API Documentation</Link>.
+            Technical issues? Check our <a className="font-medium text-amber-700 underline-offset-4 hover:underline dark:text-amber-300" href="https://api.teapotinvoicing.app/api/docs" target="_blank" rel="noreferrer">API Documentation</a>.
           </p>
         </CardContent>
       </Card>
+
     </div>
   )
 }

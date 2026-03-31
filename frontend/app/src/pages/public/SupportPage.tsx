@@ -57,13 +57,11 @@ export function SupportPage() {
             General support: <a className="font-medium text-amber-700 underline-offset-4 hover:underline dark:text-amber-300" href="mailto:support@teapotinvoicing.app">support@teapotinvoicing.app</a>
           </p>
           <p>
-            Privacy requests: <a className="font-medium text-amber-700 underline-offset-4 hover:underline dark:text-amber-300" href="mailto:privacy@teapotinvoicing.app">privacy@teapotinvoicing.app</a>
-          </p>
-          <p>
             Review the <Link className="font-medium text-amber-700 underline-offset-4 hover:underline dark:text-amber-300" to="/privacy">privacy policy</Link> or reset your password from the sign-in page if needed.
           </p>
         </CardContent>
       </Card>
+
     </div>
   )
 }

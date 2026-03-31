@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { primaryNav, secondaryNav } from '@/components/layout/nav'
+import { primaryNav, publicNav, secondaryNav } from '@/components/layout/nav'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 
@@ -81,6 +81,12 @@ export function Sidebar({ variant = 'full', onNavigate }: SidebarProps) {
         <Separator />
         <nav className={cn('flex flex-col gap-1 px-3 py-3', compact && 'px-2')}>
           {secondaryNav.map((item) => (
+            <Item key={item.to} {...item} compact={compact} onNavigate={onNavigate} />
+          ))}
+        </nav>
+        <Separator />
+        <nav className={cn('flex flex-col gap-1 px-3 py-3', compact && 'px-2')}>
+          {publicNav.map((item) => (
             <Item key={item.to} {...item} compact={compact} onNavigate={onNavigate} />
           ))}
         </nav>
