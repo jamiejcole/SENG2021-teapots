@@ -55,6 +55,23 @@ export type UpdateUserProfileRequest = {
   company?: string
 }
 
+export type RequestPasswordResetRequest = {
+  email: string
+}
+
+export type RequestPasswordResetResponse = {
+  message: string
+}
+
+export type ResetPasswordRequest = {
+  token: string
+  password: string
+}
+
+export type ResetPasswordResponse = {
+  message: string
+}
+
 export async function signup(data: SignupRequest): Promise<SignupResponse> {
   return apiJson<SignupResponse>('/auth/signup', {
     method: 'POST',
@@ -87,6 +104,22 @@ export async function updateUserProfile(
 ): Promise<UserProfileResponse> {
   return apiJson<UserProfileResponse>('/auth/user', {
     method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function requestPasswordReset(
+  data: RequestPasswordResetRequest
+): Promise<RequestPasswordResetResponse> {
+  return apiJson<RequestPasswordResetResponse>('/auth/password-reset/request', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+  return apiJson<ResetPasswordResponse>('/auth/password-reset/confirm', {
+    method: 'POST',
     body: JSON.stringify(data),
   })
 }

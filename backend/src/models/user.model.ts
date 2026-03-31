@@ -10,6 +10,14 @@ const TwoFactorSchema = new Schema(
   { _id: false }
 );
 
+const PasswordResetSchema = new Schema(
+  {
+    tokenHash: { type: String, default: null },
+    expiresAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 const UserSchema = new Schema(
   {
     email: {
@@ -46,6 +54,10 @@ const UserSchema = new Schema(
     },
     twoFactor: {
       type: TwoFactorSchema,
+      default: () => ({}),
+    },
+    passwordReset: {
+      type: PasswordResetSchema,
       default: () => ({}),
     },
     isActive: {
