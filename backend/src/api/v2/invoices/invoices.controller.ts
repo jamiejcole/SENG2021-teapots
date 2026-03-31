@@ -106,6 +106,7 @@ export const getPublicInvoicePdf = asyncHandler(async (req: Request, res: Respon
 
 export const emailInvoice = asyncHandler(async (req: Request, res: Response) => {
     const { invoiceXml, to } = req.body as { invoiceXml?: string; to?: string };
+    const startedAt = Date.now();
 
     if (!invoiceXml || typeof invoiceXml !== "string" || !invoiceXml.trim()) {
         throw new HttpError(400, "Request body must include 'invoiceXml' as a non-empty string");
@@ -120,9 +121,12 @@ export const emailInvoice = asyncHandler(async (req: Request, res: Response) => 
         throw new HttpError(400, "Invalid recipient email address");
     }
 
+    console.log(`[invoice-email] Start email send for ${email}`);
     validateUBL(invoiceXml, "Invoice");
 
+    console.log('[invoice-email] Generating PDF attachment');
     const pdfBuffer = await generateInvoicePdf(invoiceXml);
+    console.log('[invoice-email] PDF attachment generated');
 
     const { invoiceNumber, dueDate, amount } = extractInvoiceEmailData(invoiceXml);
     const attachments = [
@@ -138,11 +142,13 @@ export const emailInvoice = asyncHandler(async (req: Request, res: Response) => 
         },
     ];
 
+    console.log('[invoice-email] Sending Mailgun message');
     await sendInvoiceReadyEmail(email, {
         amount,
         dueDate,
         invoiceNumber,
     }, attachments);
+    console.log(`[invoice-email] Email sent in ${Date.now() - startedAt}ms`);
 
     res.status(200).json({
         message: "Invoice email sent",

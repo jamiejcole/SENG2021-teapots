@@ -1,6 +1,26 @@
 import FormData from "form-data";
 import Mailgun from "mailgun.js";
 
+const MAILGUN_SEND_TIMEOUT_MS = 30_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise
+      .then((result) => {
+        clearTimeout(timeout);
+        resolve(result);
+      })
+      .catch((error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+  });
+}
+
 function getMailgunConfig() {
   const apiKey = process.env.MAILGUN_API_KEY || process.env.API_KEY;
   const domain = process.env.MAILGUN_DOMAIN || "teapotinvoicing.app";
@@ -37,7 +57,7 @@ export async function sendTwoFactorCode(
     const { domain, fromEmail, twoFactorTemplate } = getMailgunConfig();
     const mg = getMailgunClient();
 
-    await mg.messages.create(domain, {
+    await withTimeout(mg.messages.create(domain, {
       from: fromEmail,
       to: email,
       subject: `Your Teapot Invoicing 2FA Code, ${userName}`,
@@ -50,7 +70,7 @@ export async function sendTwoFactorCode(
         securityLink: process.env.MAILGUN_SECURITY_LINK || "https://teapotinvoicing.app/account",
         verificationCode: code,
       }),
-    });
+    }), MAILGUN_SEND_TIMEOUT_MS, "Mailgun 2FA send");
   } catch (error) {
     console.error("Failed to send 2FA email:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to send verification code";
@@ -81,7 +101,7 @@ export async function sendInvoiceReadyEmail(
     const { domain, fromEmail, replyTo, invoiceTemplate } = getMailgunConfig();
     const mg = getMailgunClient();
 
-    await mg.messages.create(domain, {
+    await withTimeout(mg.messages.create(domain, {
       from: fromEmail,
       to: email,
       subject: "Your Invoice is Ready!",
@@ -91,7 +111,7 @@ export async function sendInvoiceReadyEmail(
       "o:tracking": "no",
       attachment: attachments,
       "h:X-Mailgun-Variables": JSON.stringify(variables),
-    });
+    }), MAILGUN_SEND_TIMEOUT_MS, "Mailgun invoice send");
   } catch (error) {
     console.error("Failed to send invoice email:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to send invoice email";

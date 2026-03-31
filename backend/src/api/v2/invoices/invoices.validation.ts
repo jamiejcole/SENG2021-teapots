@@ -129,6 +129,26 @@ import { existsSync } from 'node:fs';
 import SaxonJS from 'saxon-js';
 import puppeteer from 'puppeteer';
 
+const PDF_RENDER_TIMEOUT_MS = 60_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        promise
+            .then((result) => {
+                clearTimeout(timeout);
+                resolve(result);
+            })
+            .catch((error) => {
+                clearTimeout(timeout);
+                reject(error);
+            });
+    });
+}
+
 function getChromeExecutablePath() {
     const candidatePaths = [
         process.env.PUPPETEER_EXECUTABLE_PATH,
@@ -159,6 +179,7 @@ function getChromeExecutablePath() {
 export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
     const sefPath = path.join(__dirname, '../../../schemas/ubl2.4/xslt/s4.sef.json');
 
+    console.log('[invoice-pdf] Starting PDF generation');
     const result = SaxonJS.transform({
         stylesheetLocation: sefPath,
         sourceText: xmlString,
@@ -167,15 +188,39 @@ export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
 
     const htmlResult = result.principalResult;
 
-    const browser = await puppeteer.launch({
-        headless: true,
-        executablePath: getChromeExecutablePath(),
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
-    const page = await browser.newPage();
-    await page.setContent(htmlResult, { waitUntil: 'networkidle0' });
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
-    await browser.close();
+    const browser = await withTimeout(
+        puppeteer.launch({
+            headless: true,
+            executablePath: getChromeExecutablePath(),
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        }),
+        PDF_RENDER_TIMEOUT_MS,
+        'Puppeteer launch'
+    );
 
-    return Buffer.from(pdfBuffer);
+    try {
+        console.log('[invoice-pdf] Browser launched');
+        const page = await withTimeout(browser.newPage(), PDF_RENDER_TIMEOUT_MS, 'Puppeteer newPage');
+        console.log('[invoice-pdf] Page created');
+
+        await withTimeout(
+            page.setContent(htmlResult, { waitUntil: 'domcontentloaded' }),
+            PDF_RENDER_TIMEOUT_MS,
+            'Puppeteer setContent'
+        );
+        console.log('[invoice-pdf] HTML loaded');
+
+        const pdfBuffer = await withTimeout(
+            page.pdf({ format: 'A4', printBackground: true }),
+            PDF_RENDER_TIMEOUT_MS,
+            'Puppeteer pdf generation'
+        );
+        console.log('[invoice-pdf] PDF generated');
+
+        return Buffer.from(pdfBuffer);
+    } finally {
+        await browser.close().catch((error) => {
+            console.error('[invoice-pdf] Failed to close browser cleanly:', error);
+        });
+    }
 }
