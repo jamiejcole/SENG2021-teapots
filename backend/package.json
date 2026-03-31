@@ -8,6 +8,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --runInBand --coverage",
     "dev": "ts-node-dev --respawn --transpile-only --poll src/server.ts",
+    "install:chrome": "puppeteer browsers install chrome",
     "lint": "eslint .",
     "build": "tsc",
     "start": "node dist/server.js"

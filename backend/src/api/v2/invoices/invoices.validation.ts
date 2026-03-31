@@ -125,8 +125,37 @@ export function validateUBL(xmlString: string, schemaType: 'Order' | 'Invoice') 
 }
 
 // @ts-expect-error no-types-for-this-file
+import { existsSync } from 'node:fs';
+// @ts-expect-error no-types-for-this-file
 import SaxonJS from 'saxon-js';
 import puppeteer from 'puppeteer';
+
+function getChromeExecutablePath() {
+    const candidatePaths = [
+        process.env.PUPPETEER_EXECUTABLE_PATH,
+        process.env.CHROME_PATH,
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium',
+    ];
+
+    try {
+        candidatePaths.push(puppeteer.executablePath());
+    } catch {
+        // Ignore Puppeteer cache lookup failures here and fall through to the explicit error below.
+    }
+
+    const availableCandidates = candidatePaths.filter((candidate): candidate is string => Boolean(candidate));
+
+    const executablePath = availableCandidates.find((candidatePath) => existsSync(candidatePath));
+
+    if (!executablePath) {
+        throw new Error(
+            'Could not find Chrome executable. Run `npm run install:chrome` locally or set PUPPETEER_EXECUTABLE_PATH to a valid browser binary.'
+        );
+    }
+
+    return executablePath;
+}
 
 export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
     const sefPath = path.join(__dirname, '../../../schemas/ubl2.4/xslt/s4.sef.json');
@@ -139,7 +168,11 @@ export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
 
     const htmlResult = result.principalResult;
 
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+    const browser = await puppeteer.launch({
+        headless: true,
+        executablePath: getChromeExecutablePath(),
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    });
     const page = await browser.newPage();
     await page.setContent(htmlResult, { waitUntil: 'networkidle0' });
     const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
