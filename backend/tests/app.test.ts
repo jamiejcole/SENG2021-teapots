@@ -26,6 +26,15 @@ describe('app routes', () => {
     expect(typeof response.body.uptimeSeconds).toBe('number');
   });
 
+  it('allows the production frontend origin for CORS', async () => {
+    const response = await request(app)
+      .get('/api/v1/health')
+      .set('Origin', 'https://teapotinvoicing.app');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['access-control-allow-origin']).toBe('https://teapotinvoicing.app');
+  });
+
   it('returns 404 JSON for unknown routes', async () => {
     const response = await request(app).get('/api/v1/does-not-exist');
 
