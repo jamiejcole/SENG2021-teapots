@@ -1,4 +1,4 @@
-teapotinvoicing.app, www.teapotinvoicing.app {
+teapotinvoicing.app {
   reverse_proxy app-frontend:80
 }
 
