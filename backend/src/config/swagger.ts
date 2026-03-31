@@ -24,6 +24,7 @@ const swaggerDefinition = {
   tags: [
     { name: "Health", description: "Service health checks" },
     { name: "Invoices", description: "Invoice generation and validation" },
+    { name: "Orders", description: "Order creation integration" },
   ],
   components: {
     schemas: {
