@@ -124,7 +124,6 @@ export function validateUBL(xmlString: string, schemaType: 'Order' | 'Invoice') 
     return true;
 }
 
-// @ts-expect-error no-types-for-this-file
 import { existsSync } from 'node:fs';
 // @ts-expect-error no-types-for-this-file
 import SaxonJS from 'saxon-js';
