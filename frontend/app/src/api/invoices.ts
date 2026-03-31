@@ -52,6 +52,13 @@ export async function createInvoicePdf(invoiceXml: string) {
   })
 }
 
+export async function sendInvoiceEmail(invoiceXml: string, to: string) {
+  return await apiJson<{ message: string; to: string; invoiceHash: string; downloadLink: string }>('/invoices/email', {
+    method: 'POST',
+    body: JSON.stringify({ invoiceXml, to }),
+  })
+}
+
 export async function deleteInvoiceById(invoiceId: string) {
   await apiText(`/invoices/${encodeURIComponent(invoiceId)}`, {
     method: 'DELETE',

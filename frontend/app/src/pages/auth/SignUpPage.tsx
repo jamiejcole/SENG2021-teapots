@@ -5,10 +5,11 @@ import { ErrorAlertWithTeapot } from '@/components/feedback/ErrorTeapot'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { GoogleButton } from '@/components/auth/GoogleButton'
 import { PasswordField } from '@/components/auth/PasswordField'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/components/auth/AuthContext'
+
+const MIN_PASSWORD_LENGTH = 8
 
 function validateEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())
@@ -31,10 +32,21 @@ export function SignUpPage() {
     if (!name.trim()) e.name = 'Name is required.'
     if (!email.trim()) e.email = 'Email is required.'
     else if (!validateEmail(email)) e.email = 'Enter a valid email address.'
-    if (password.length < 8) e.password = 'Use at least 8 characters.'
+    if (password.length < MIN_PASSWORD_LENGTH) e.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`
     if (confirm !== password) e.confirm = 'Passwords do not match.'
     return e
   }, [name, email, password, confirm])
+
+  const passwordHint = !password
+    ? `Use at least ${MIN_PASSWORD_LENGTH} characters.`
+    : password.length < MIN_PASSWORD_LENGTH
+      ? `Use at least ${MIN_PASSWORD_LENGTH} characters.`
+      : 'Password length looks good.'
+  const passwordHintTone = !password
+    ? 'default'
+    : password.length < MIN_PASSWORD_LENGTH
+      ? 'error'
+      : 'success'
 
   const canSubmit = Object.keys(errors).length === 0 && !isLoading && !authLoading
 
@@ -85,7 +97,7 @@ export function SignUpPage() {
           Create your account
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Register with email or continue with Google below.
+          Register with email and a password that meets the length requirement.
         </p>
       </div>
 
@@ -151,6 +163,8 @@ export function SignUpPage() {
             showError={didSubmit}
             placeholder="Create a password"
             autoComplete="new-password"
+            helperText={passwordHint}
+            helperTone={passwordHintTone}
           />
 
           <PasswordField
@@ -179,21 +193,15 @@ export function SignUpPage() {
           </Button>
         </form>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200 dark:border-slate-700" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-3 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-              or
-            </span>
-          </div>
-        </div>
-
-        <GoogleButton isLoading={isLoading} />
-
         <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-          By continuing, you agree to our terms and privacy policy.
+          By continuing, you agree to our{' '}
+          <Link to="/terms" className="font-medium text-amber-600 underline-offset-4 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300">
+            terms
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="font-medium text-amber-600 underline-offset-4 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300">
+            privacy policy
+          </Link>.
         </p>
 
         <p className="text-center text-sm text-slate-500 dark:text-slate-400">

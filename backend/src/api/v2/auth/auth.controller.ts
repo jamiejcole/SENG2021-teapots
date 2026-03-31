@@ -55,3 +55,17 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
 
   res.status(200).json(result);
 });
+
+export const requestPasswordReset = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const result = await authService.requestPasswordReset(email);
+
+  res.status(200).json(result);
+});
+
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { token, password } = req.body;
+  const result = await authService.resetPassword(token, password);
+
+  res.status(200).json(result);
+});

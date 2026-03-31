@@ -6,12 +6,18 @@ import { GenerateInvoicePage } from '@/pages/GenerateInvoicePage'
 import { ValidateOrderPage } from '@/pages/ValidateOrderPage'
 import { InvoiceHistoryPage } from '@/pages/InvoiceHistoryPage'
 import { AuthLayout } from '@/pages/auth/AuthLayout'
+import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { SignInPage } from '@/pages/auth/SignInPage'
 import { SignUpPage } from '@/pages/auth/SignUpPage'
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { Verify2FAPage } from '@/pages/auth/Verify2FAPage'
 import { AccountPage } from '@/pages/AccountPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { useAuth } from '@/components/auth/AuthContext'
+import { PublicLayout } from '@/pages/public/PublicLayout'
+import { PrivacyPage } from '@/pages/public/PrivacyPage'
+import { SupportPage } from '@/pages/public/SupportPage'
+import { TermsPage } from '@/pages/public/TermsPage'
 
 // Protected route wrapper
 function ProtectedRoute({ element }: { element: React.ReactNode }) {
@@ -45,8 +51,16 @@ export default function App() {
       <Route path="/auth" element={<AuthLayout />}>
         <Route path="sign-in" element={<SignInPage />} />
         <Route path="sign-up" element={<SignUpPage />} />
+        <Route path="forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="verify-2fa" element={<Verify2FAPage />} />
         <Route index element={<Navigate to="/auth/sign-in" replace />} />
+      </Route>
+
+      <Route element={<PublicLayout />}>
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/support" element={<SupportPage />} />
+        <Route path="/terms" element={<TermsPage />} />
       </Route>
 
       {/* Protected app routes */}

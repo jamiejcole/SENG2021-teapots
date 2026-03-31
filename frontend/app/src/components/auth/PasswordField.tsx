@@ -12,6 +12,8 @@ export function PasswordField({
   showError,
   placeholder,
   autoComplete,
+  helperText,
+  helperTone = 'default',
 }: {
   label: string
   value: string
@@ -20,9 +22,17 @@ export function PasswordField({
   showError?: boolean
   placeholder?: string
   autoComplete?: string
+  helperText?: string
+  helperTone?: 'default' | 'error' | 'success'
 }) {
   const id = useId()
   const [show, setShow] = useState(false)
+
+  const helperToneClasses = {
+    default: 'text-slate-500 dark:text-slate-400',
+    error: 'text-amber-600 dark:text-amber-400',
+    success: 'text-emerald-600 dark:text-emerald-400',
+  } as const
 
   return (
     <div className="space-y-2">
@@ -54,6 +64,9 @@ export function PasswordField({
           {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </Button>
       </div>
+      {helperText && (
+        <p className={cn('text-sm', helperToneClasses[helperTone])}>{helperText}</p>
+      )}
       {showError && error && (
         <p className="text-sm text-amber-600 dark:text-amber-400">{error}</p>
       )}

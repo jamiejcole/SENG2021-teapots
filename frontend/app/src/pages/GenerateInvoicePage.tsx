@@ -1,6 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Copy, Download, Mail, ReceiptText, ShieldCheck } from 'lucide-react'
-import { createInvoice, createInvoicePdf, validateInvoice, validateOrder, type InvoiceSupplement } from '@/api/invoices'
+import {
+  createInvoice,
+  createInvoicePdf,
+  sendInvoiceEmail,
+  validateInvoice,
+  validateOrder,
+  type InvoiceSupplement,
+} from '@/api/invoices'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -54,8 +61,8 @@ export function GenerateInvoicePage() {
   const [isPdfLoading, setIsPdfLoading] = useState(false)
   const [isValidatingOrder, setIsValidatingOrder] = useState(false)
   const [isValidatingInvoice, setIsValidatingInvoice] = useState(false)
+  const [isEmailSending, setIsEmailSending] = useState(false)
   const [emailTo, setEmailTo] = useState('')
-  const [emailFormat, setEmailFormat] = useState<'pdf' | 'xml'>('pdf')
 
   const supplement: InvoiceSupplement | null = useMemo(() => {
     const parsedTaxRate = Number(taxRate)
@@ -162,13 +169,22 @@ export function GenerateInvoicePage() {
     }
   }
 
-  function onEmail() {
+  async function onEmail() {
     if (!emailTo.trim()) {
       toast.error('Enter an email address')
       return
     }
     if (!invoiceXml) return
-    toast.info('Email will be sent when backend is connected', { description: `Would send as ${emailFormat.toUpperCase()} to ${emailTo}` })
+    setIsEmailSending(true)
+    try {
+      const result = await sendInvoiceEmail(invoiceXml, emailTo.trim())
+      toast.success('Invoice email sent', { description: `Sent to ${result.to}` })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to send invoice email'
+      toast.error('Email send failed', { description: msg })
+    } finally {
+      setIsEmailSending(false)
+    }
   }
 
   async function loadSampleUbl() {
@@ -382,29 +398,13 @@ export function GenerateInvoicePage() {
                   onChange={(e) => setEmailTo(e.target.value)}
                   className="h-9 w-full rounded-lg border-amber-300 bg-white dark:border-amber-700 dark:bg-slate-900"
                 />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEmailFormat('pdf')}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${emailFormat === 'pdf' ? 'bg-amber-400 text-slate-900' : 'bg-amber-100/80 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-800/50'}`}
-                  >
-                    PDF
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEmailFormat('xml')}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${emailFormat === 'xml' ? 'bg-amber-400 text-slate-900' : 'bg-amber-100/80 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-800/50'}`}
-                  >
-                    XML
-                  </button>
-                </div>
                 <Button
                   onClick={onEmail}
-                  disabled={!invoiceXml}
+                  disabled={!invoiceXml || isEmailSending}
                   className="h-9 gap-1.5 rounded-lg bg-amber-400 font-semibold text-slate-900 hover:bg-amber-500"
                 >
                   <Mail className="size-4" />
-                  Send
+                  {isEmailSending ? 'Sending…' : 'Send'}
                 </Button>
               </div>
             </div>
