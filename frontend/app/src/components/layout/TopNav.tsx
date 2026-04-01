@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { useAuth } from '@/components/auth/AuthContext'
+import { useInvoiceSearch } from '@/context/InvoiceSearchContext'
 
 type TopNavProps = {
   onOpenMobileNav: () => void
@@ -22,6 +23,7 @@ type TopNavProps = {
 export function TopNav({ onOpenMobileNav }: TopNavProps) {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const { invoiceSearch, setInvoiceSearch } = useInvoiceSearch()
 
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
   const initials = (fullName.slice(0, 2) || user?.email?.slice(0, 2) || 'TA').toUpperCase()
@@ -40,8 +42,8 @@ export function TopNav({ onOpenMobileNav }: TopNavProps) {
       >
         Skip to content
       </a>
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
-        <div className="flex items-center gap-2 md:hidden">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 md:gap-3">
+        <div className="flex shrink-0 items-center gap-2 md:hidden">
           <Button
             variant="ghost"
             size="icon"
@@ -54,16 +56,18 @@ export function TopNav({ onOpenMobileNav }: TopNavProps) {
           <img src="/logo.png" alt="Teapots" className="size-8 rounded-lg object-contain" />
         </div>
 
-        <div className="relative hidden flex-1 md:block">
+        <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="h-9 rounded-full pl-9"
-            placeholder="Search invoices, orders, customers…"
-            aria-label="Search"
+            value={invoiceSearch}
+            onChange={(e) => setInvoiceSearch(e.target.value)}
+            className="h-9 rounded-full pl-9 pr-3 text-sm md:text-base"
+            placeholder="Search by customer name, email, invoice #…"
+            aria-label="Search invoices"
           />
         </div>
 
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <ThemeToggle />
 
           <Button variant="ghost" size="icon" className="focus-ring" aria-label="Notifications">

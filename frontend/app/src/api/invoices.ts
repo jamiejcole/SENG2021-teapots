@@ -1,6 +1,10 @@
-import { apiBlob, apiJson, apiText } from '@/api/client'
+import { apiBlob, apiJson, apiText, apiTextWithHeaders } from '@/api/client'
 
 export type InvoiceSupplement = {
+  invoiceNumber?: string
+  issueDate?: string
+  dueDate?: string
+  note?: string
   currencyCode: string
   taxRate: number
   taxScheme: {
@@ -14,6 +18,76 @@ export type InvoiceSupplement = {
       name: string
     }
   }
+  paymentTerms?: {
+    note: string
+  }
+}
+
+export type StoredInvoiceParty = {
+  name: string
+  id?: string
+  email?: string
+  address: { street: string; city: string; postalCode: string; country: string }
+}
+
+export type StoredInvoiceLine = {
+  lineId: string
+  description: string
+  quantity: number
+  unitCode?: string
+  unitPrice: number
+  taxRate: number
+}
+
+export type StoredInvoiceActivity = {
+  at: string
+  type: string
+  message: string
+  meta?: unknown
+}
+
+export type StoredInvoiceSummary = {
+  _id: string
+  invoiceId: string
+  issueDate: string
+  currency: string
+  lifecycleStatus: string
+  status: string
+  buyer: StoredInvoiceParty
+  seller: StoredInvoiceParty
+  lines: StoredInvoiceLine[]
+  orderReference?: { orderId?: string }
+  paymentTerms?: string
+  totals: { subTotal: number; taxTotal: number; payableAmount: number }
+  sentAt?: string
+  sentTo?: string
+  lastError?: string
+  pdfInvoiceHash?: string
+  activity?: StoredInvoiceActivity[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type StoredInvoiceDetail = StoredInvoiceSummary & {
+  invoiceXml: string
+}
+
+export type DashboardStats = {
+  totalInvoices: number
+  revenueTotal: number
+  sentCount: number
+  validatedCount: number
+  failedSendCount: number
+  pendingCount: number
+  throughputByDay: { date: string; count: number }[]
+  recentActivity: {
+    id: string
+    invoiceMongoId: string
+    invoiceId: string
+    type: string
+    message: string
+    at: string
+  }[]
 }
 
 export async function validateOrder(orderXml: string) {
@@ -31,7 +105,7 @@ export async function validateInvoice(invoiceXml: string) {
 }
 
 export async function createInvoice(orderXml: string, invoiceSupplement: InvoiceSupplement) {
-  return await apiText('/invoices', {
+  const { text, headers } = await apiTextWithHeaders('/invoices', {
     method: 'POST',
     headers: {
       Accept: 'application/xml',
@@ -39,6 +113,8 @@ export async function createInvoice(orderXml: string, invoiceSupplement: Invoice
     },
     body: JSON.stringify({ orderXml, invoiceSupplement }),
   })
+  const storedInvoiceId = headers.get('X-Stored-Invoice-Id')?.trim() || null
+  return { invoiceXml: text, storedInvoiceId }
 }
 
 export async function createInvoicePdf(invoiceXml: string) {
@@ -52,10 +128,14 @@ export async function createInvoicePdf(invoiceXml: string) {
   })
 }
 
-export async function sendInvoiceEmail(invoiceXml: string, to: string) {
-  return await apiJson<{ message: string; to: string; invoiceHash: string; downloadLink: string }>('/invoices/email', {
+export async function sendInvoiceEmail(invoiceXml: string, to: string, storedInvoiceId?: string | null) {
+  return await apiJson<{ message: string; to: string }>('/invoices/email', {
     method: 'POST',
-    body: JSON.stringify({ invoiceXml, to }),
+    body: JSON.stringify({
+      invoiceXml,
+      to,
+      ...(storedInvoiceId ? { storedInvoiceId } : {}),
+    }),
   })
 }
 
@@ -65,3 +145,38 @@ export async function deleteInvoiceById(invoiceId: string) {
   })
 }
 
+export async function fetchDashboardStats() {
+  return await apiJson<DashboardStats>('/invoices/dashboard-stats', { method: 'GET' })
+}
+
+export async function listStoredInvoices() {
+  return await apiJson<{ invoices: StoredInvoiceSummary[] }>('/invoices', { method: 'GET' })
+}
+
+export async function getStoredInvoice(invoiceId: string) {
+  return await apiJson<StoredInvoiceDetail>(`/invoices/${encodeURIComponent(invoiceId)}`, { method: 'GET' })
+}
+
+export async function patchStoredInvoice(
+  invoiceId: string,
+  body: { lifecycleStatus?: string; paymentTermsNote?: string },
+) {
+  return await apiJson<StoredInvoiceSummary>(`/invoices/${encodeURIComponent(invoiceId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function validateStoredInvoice(invoiceId: string) {
+  return await apiJson<StoredInvoiceSummary>(`/invoices/${encodeURIComponent(invoiceId)}/validate`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
+export async function regenerateStoredInvoice(invoiceId: string, invoiceSupplement: InvoiceSupplement) {
+  return await apiJson<StoredInvoiceDetail>(`/invoices/${encodeURIComponent(invoiceId)}/regenerate`, {
+    method: 'POST',
+    body: JSON.stringify({ invoiceSupplement }),
+  })
+}
