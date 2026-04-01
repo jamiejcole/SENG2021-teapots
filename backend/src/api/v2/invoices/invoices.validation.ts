@@ -29,54 +29,65 @@ export function validateCreateInvoiceRequest(body: any): asserts body is { order
     if (!('invoiceSupplement' in body)) {
         throw new HttpError(400, "Request body is missing required field 'invoiceSupplement'");
     }
-    if (typeof body.invoiceSupplement !== 'object' || body.invoiceSupplement === null) {
+    validateInvoiceSupplementShape(body.invoiceSupplement);
+}
+
+/**
+ * Validates `invoiceSupplement` object shape (used on create and regenerate).
+ */
+export function validateInvoiceSupplementShape(supplement: unknown): asserts supplement is InvoiceSupplement {
+    if (typeof supplement !== 'object' || supplement === null) {
         throw new HttpError(400, "'invoiceSupplement' must be an object");
     }
 
-    const supplement = body.invoiceSupplement;
+    const s = supplement as Record<string, unknown>;
 
     const requiredFields = ['currencyCode', 'taxRate', 'taxScheme', 'paymentMeans'];
     for (const field of requiredFields) {
-        if (!(field in supplement)) {
+        if (!(field in s)) {
             throw new HttpError(400, `invoiceSupplement is missing required field '${field}'`);
         }
     }
 
-    if (typeof supplement.currencyCode !== 'string') {
+    if (typeof s.currencyCode !== 'string') {
         throw new HttpError(400, "invoiceSupplement.currencyCode must be a string");
     }
-    if (typeof supplement.taxRate !== 'number') {
+    if (typeof s.taxRate !== 'number') {
         throw new HttpError(400, "invoiceSupplement.taxRate must be a number");
     }
-    if (typeof supplement.taxScheme !== 'object' || supplement.taxScheme === null) {
+    if (typeof s.taxScheme !== 'object' || s.taxScheme === null) {
         throw new HttpError(400, "invoiceSupplement.taxScheme must be an object");
     }
-    if (typeof supplement.paymentMeans !== 'object' || supplement.paymentMeans === null) {
+    if (typeof s.paymentMeans !== 'object' || s.paymentMeans === null) {
         throw new HttpError(400, "invoiceSupplement.paymentMeans must be an object");
     }
 
-    if (!('id' in supplement.taxScheme)) {
+    const taxScheme = s.taxScheme as Record<string, unknown>;
+    const paymentMeans = s.paymentMeans as Record<string, unknown>;
+
+    if (typeof taxScheme.id !== 'string') {
         throw new HttpError(400, "invoiceSupplement.taxScheme is missing required field 'id'");
     }
-    if (!('taxTypeCode' in supplement.taxScheme)) {
+    if (typeof taxScheme.taxTypeCode !== 'string') {
         throw new HttpError(400, "invoiceSupplement.taxScheme is missing required field 'taxTypeCode'");
     }
 
-    if (!('code' in supplement.paymentMeans)) {
+    if (typeof paymentMeans.code !== 'string') {
         throw new HttpError(400, "invoiceSupplement.paymentMeans is missing required field 'code'");
     }
-    if (!('payeeFinancialAccount' in supplement.paymentMeans)) {
+    if (!('payeeFinancialAccount' in paymentMeans)) {
         throw new HttpError(400, "invoiceSupplement.paymentMeans is missing required field 'payeeFinancialAccount'");
     }
 
-    const account = supplement.paymentMeans.payeeFinancialAccount;
+    const account = paymentMeans.payeeFinancialAccount;
     if (typeof account !== 'object' || account === null) {
         throw new HttpError(400, "invoiceSupplement.paymentMeans.payeeFinancialAccount must be an object");
     }
-    if (!('id' in account)) {
+    const acc = account as Record<string, unknown>;
+    if (typeof acc.id !== 'string') {
         throw new HttpError(400, "invoiceSupplement.paymentMeans.payeeFinancialAccount is missing required field 'id'");
     }
-    if (!('name' in account)) {
+    if (typeof acc.name !== 'string') {
         throw new HttpError(400, "invoiceSupplement.paymentMeans.payeeFinancialAccount is missing required field 'name'");
     }
 }

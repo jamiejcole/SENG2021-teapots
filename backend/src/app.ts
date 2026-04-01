@@ -42,7 +42,12 @@ app.use(
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Accept", "Authorization", "x-api-key", "X-News-Admin-Key"],
-    exposedHeaders: ["X-Invoice-Url", "Content-Disposition"],
+    exposedHeaders: [
+      "X-Invoice-Url",
+      "X-Invoice-Pdf-Hash",
+      "X-Stored-Invoice-Id",
+      "Content-Disposition",
+    ],
   })
 );
 app.use(express.json({ limit: "50mb"}));
