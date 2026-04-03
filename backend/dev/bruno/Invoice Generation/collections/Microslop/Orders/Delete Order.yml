@@ -1,0 +1,18 @@
+info:
+  name: Delete Order
+  type: http
+  seq: 4
+
+http:
+  method: DELETE
+  url: https://api.orderms.tech/v1/orders/35674a0dc646a2a03ec8c67737ef13d3
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

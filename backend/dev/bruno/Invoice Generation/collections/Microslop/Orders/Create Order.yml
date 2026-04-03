@@ -1,0 +1,53 @@
+info:
+  name: Create Order
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: https://api.orderms.tech/v1/orders
+  body:
+    type: json
+    data: |-
+      {
+        "ID": "ORD-001",
+        "IssueDate": "2026-03-16",
+        "BuyerCustomerParty": {
+          "Party": {
+            "PartyName": [
+              {
+                "Name": "John"
+              }
+            ]
+          }
+        },
+        "SellerSupplierParty": {
+          "Party": {
+            "PartyName": [
+              {
+                "Name": "James"
+              }
+            ]
+          }
+        },
+        "OrderLine": [
+          {
+            "LineItem": {
+              "ID": "LINE-001",
+              "Item": {
+                "Description": [
+                  "item"
+                ],
+                "Name": "item"
+              }
+            }
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
