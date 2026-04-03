@@ -8,16 +8,16 @@ const swaggerDefinition = {
   openapi: "3.0.0",
   info: {
     title: "UBL Invoice Generator API",
-    version: "2.0.0",
+    version: "2.0.1",
     description: "API for Invoice Generation and UBL validation. Made by the SENG2021 26T1 W11A Teapots Team.",
   },
   servers: [
     {
-      url: "http://100.48.200.166:3000",
+      url: "https://api.teapotinvoicing.app",
       description: "Production Server",
     },
     {
-      url: "https://seng2021.jamiecole.dev",
+      url: "https://api2.teapotinvoicing.app",
       description: "Production Server (Backup)",
     },
     {
