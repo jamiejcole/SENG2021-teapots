@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   signup as apiSignup,
   login as apiLogin,
@@ -10,7 +11,44 @@ import { type User, type AuthContextType, AUTH_TOKEN_KEY, REFRESH_TOKEN_KEY, USE
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+type JwtPayload = {
+  exp?: number
+}
+
+function decodeTokenPayload(token: string): JwtPayload | null {
+  const payload = token.split('.')[1]
+
+  if (!payload) {
+    return null
+  }
+
+  try {
+    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const paddedPayload = normalizedPayload.padEnd(Math.ceil(normalizedPayload.length / 4) * 4, '=')
+    return JSON.parse(atob(paddedPayload)) as JwtPayload
+  } catch {
+    return null
+  }
+}
+
+function getTokenExpiryTime(token: string): number | null {
+  const payload = decodeTokenPayload(token)
+
+  if (typeof payload?.exp !== 'number') {
+    return null
+  }
+
+  return payload.exp * 1000
+}
+
+function clearStoredAuth() {
+  localStorage.removeItem(AUTH_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  localStorage.removeItem(USER_KEY)
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
@@ -21,6 +59,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedToken = localStorage.getItem(AUTH_TOKEN_KEY)
     const storedUser = localStorage.getItem(USER_KEY)
     let parsedUser: User | null = null
+
+    if (storedToken) {
+      const expiresAt = getTokenExpiryTime(storedToken)
+      if (expiresAt === null || expiresAt <= Date.now()) {
+        clearStoredAuth()
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsInitializing(false)
+        return
+      }
+    }
 
     try {
       if (storedToken && storedUser) {
@@ -57,6 +105,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set initializing to false after state prep is complete
     setIsInitializing(false)
   }, [])
+
+  useEffect(() => {
+    if (!accessToken) {
+      return
+    }
+
+    const expiresAt = getTokenExpiryTime(accessToken)
+    if (expiresAt === null || expiresAt <= Date.now()) {
+      clearStoredAuth()
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAccessToken(null)
+      setUser(null)
+      navigate('/auth/sign-in', { replace: true })
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      clearStoredAuth()
+      setAccessToken(null)
+      setUser(null)
+      navigate('/auth/sign-in', { replace: true })
+    }, expiresAt - Date.now())
+
+    return () => window.clearTimeout(timeoutId)
+  }, [accessToken, navigate])
 
   const handleSignup = async (data: SignupRequest) => {
     setError(null)
@@ -99,9 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleLogout = () => {
     setAccessToken(null)
     setUser(null)
-    localStorage.removeItem(AUTH_TOKEN_KEY)
-    localStorage.removeItem(REFRESH_TOKEN_KEY)
-    localStorage.removeItem(USER_KEY)
+    clearStoredAuth()
   }
 
   const handle2FAVerification = (
