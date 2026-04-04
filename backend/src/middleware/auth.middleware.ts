@@ -1,15 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyToken, JWTPayload } from "../utils/auth.utils";
+import { verifyToken } from "../utils/auth.utils";
 import { HttpError } from "../errors/HttpError";
-
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface Request {
-      user?: JWTPayload;
-    }
-  }
-}
 
 export function authMiddleware(
   req: Request,
