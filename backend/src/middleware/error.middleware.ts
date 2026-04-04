@@ -13,6 +13,8 @@ const getStatusName = (code: number): string => {
     return map[code] || "Error";
 };
 
+const isTestEnvironment = process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID !== undefined;
+
 export const errorMiddleware = (
     err: any, 
     req: Request, 
@@ -20,11 +22,18 @@ export const errorMiddleware = (
     next: NextFunction
 ) => {
     const status = err instanceof HttpError ? err.statusCode : 500;
-    
-    console.error("--- ERROR OCCURRED ---");
-    console.error(`Status: ${status}`);
-    console.error(err.stack); 
-    console.error("----------------------");
+
+    if (!isTestEnvironment) {
+        console.error(JSON.stringify({
+            level: "error",
+            message: "Request failed",
+            status,
+            method: req.method,
+            path: req.originalUrl,
+            error: err?.message ?? "An unexpected error occurred",
+            stack: err?.stack,
+        }));
+    }
 
     res.status(status).json({
         error: getStatusName(status),

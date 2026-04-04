@@ -13,6 +13,8 @@ const writeLog = (_payload: LogPayload): void => {
   console.log(`* Incoming request: ${_payload.method}, ${_payload.path}`);
 };
 
+const isTestEnvironment = process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID !== undefined;
+
 export const loggerMiddleware = (
   req: Request,
   res: Response,
@@ -21,6 +23,8 @@ export const loggerMiddleware = (
   const start = Date.now();
 
   res.on("finish", () => {
+    if (isTestEnvironment) return;
+
     writeLog({
       timestamp: new Date().toISOString(),
       method: req.method,
