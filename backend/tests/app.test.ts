@@ -35,6 +35,22 @@ describe('app routes', () => {
     expect(response.headers['access-control-allow-origin']).toBe('https://teapotinvoicing.app');
   });
 
+  it.each([
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://0.0.0.0:5173',
+    'http://10.0.2.15:5173',
+    'http://192.168.1.42:5173',
+    'http://172.30.247.227:5173',
+  ])('allows local/private network origins for CORS: %s', async (origin) => {
+    const response = await request(app)
+      .get('/api/v1/health')
+      .set('Origin', origin);
+
+    expect(response.status).toBe(200);
+    expect(response.headers['access-control-allow-origin']).toBe(origin);
+  });
+
   it('returns 404 JSON for unknown routes', async () => {
     const response = await request(app).get('/api/v1/does-not-exist');
 
