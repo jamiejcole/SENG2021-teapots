@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-const JWT_EXPIRES_IN = "1h";
+const JWT_ACCESS_TOKEN_EXPIRES_IN = (process.env.JWT_ACCESS_TOKEN_EXPIRES_IN as jwt.SignOptions["expiresIn"] | undefined) ?? "7d";
 const REFRESH_TOKEN_EXPIRES_IN = "7d";
 const PASSWORD_RESET_TOKEN_EXPIRES_IN_MINUTES = 60;
 
@@ -28,7 +28,7 @@ export interface JWTPayload {
 }
 
 export function generateAccessToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_ACCESS_TOKEN_EXPIRES_IN });
 }
 
 export function generateRefreshToken(payload: JWTPayload): string {
