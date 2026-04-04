@@ -1,6 +1,15 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+/**
+ * Test Suite for Teapot Invoicing Production Deployed v1 API
+ * OpenAPI URL: https://api.teapotinvoicing.app/api/docs/
+ * API Base:    https://api.teapotinvoicing.app/api/v1/
+ * 
+ * To run this test, use the following:
+ * `RUN_TEAPOT_INTEGRATION=true npm test -- --runTestsByPath tests/api/external/teapotinvoicing.integration.test.ts`
+ */
+
 type HealthResponse = {
   status: string;
   service: string;
@@ -96,7 +105,7 @@ type InvoiceRecord = {
 
 type InvoiceListResponse = InvoiceRecord[];
 
-const RUN_LIVE_TESTS = true; //process.env.RUN_TEAPOT_INTEGRATION === 'true';
+const RUN_LIVE_TESTS = process.env.RUN_TEAPOT_INTEGRATION === 'true';
 const describeIfLive = RUN_LIVE_TESTS ? describe : describe.skip;
 const baseUrl = (process.env.TEAPOT_API_BASE_URL ?? 'https://api.teapotinvoicing.app/api/v1').replace(/\/$/, '');
 const apiKey = process.env.TEAPOT_API_KEY ?? '67amongus';

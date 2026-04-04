@@ -2,6 +2,9 @@
  * Test Suite for 'Microslop' Order API
  * OpenAPI URL: https://docs.orderms.tech/
  * API Base:    https://api.orderms.tech/v1/
+ * 
+ * To run this test, use the following:
+ * `RUN_ORDERMS_INTEGRATION=true npm test -- --runTestsByPath tests/api/external/orderms.integration.test.ts`
  */
 
 // Types are taken directly from their OpenAPI spec
@@ -86,7 +89,7 @@ type OrderApiResponse =
   | OrderRecordResponse
   | OrderListResponse;
 
-const runLiveTests = true; //process.env.RUN_ORDERMS_INTEGRATION === 'true';
+const runLiveTests = process.env.RUN_ORDERMS_INTEGRATION === 'true';
 const describeIfLive = runLiveTests ? describe : describe.skip;
 const baseUrl = (process.env.ORDERMS_API_BASE_URL ?? 'https://api.orderms.tech/v1').replace(/\/$/, '');
 
