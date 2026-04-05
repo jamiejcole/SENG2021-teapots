@@ -8,9 +8,9 @@ export function PublicLayout() {
         <ThemeToggle />
       </div>
       <div className="mx-auto grid min-h-dvh w-full max-w-7xl grid-cols-1 lg:grid-cols-[1fr_minmax(0,1.3fr)]">
-        <div className="relative hidden overflow-hidden lg:block">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-white to-yellow-50 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20" />
-          <div className="relative flex h-full flex-col justify-between p-12">
+        <div className="relative hidden lg:sticky lg:top-0 lg:block lg:h-dvh lg:overflow-y-auto lg:overflow-x-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-50 via-white to-yellow-50 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20" />
+          <div className="relative flex min-h-dvh flex-col justify-between p-12">
             <div>
               <div className="inline-flex items-center gap-3">
                 <img src="/logo.png" alt="Teapots" className="size-12 rounded-2xl object-contain" />

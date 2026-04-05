@@ -7,6 +7,9 @@ const router = Router();
 // Apply authentication middleware to all invoice routes
 router.use(authMiddleware);
 
+router.get("/dashboard-stats", controller.getDashboardStats);
+router.get("/", controller.listStoredInvoices);
+
 /**
  * @openapi
  * /api/v2/invoices/pdf:
@@ -171,6 +174,11 @@ router.post("/", controller.createInvoice);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post("/validate", controller.validateInvoice);
+
+router.post("/:invoiceId/validate", controller.validateOneStoredInvoice);
+router.post("/:invoiceId/regenerate", controller.regenerateStoredInvoice);
+router.patch("/:invoiceId", controller.patchStoredInvoice);
+router.get("/:invoiceId", controller.getStoredInvoice);
 
 /**
  * @openapi

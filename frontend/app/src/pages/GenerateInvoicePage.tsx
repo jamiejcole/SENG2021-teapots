@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Copy, Download, Mail, ReceiptText, ShieldCheck } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import {
   createInvoice,
   createInvoicePdf,
   sendInvoiceEmail,
   validateInvoice,
   validateOrder,
+  validateStoredInvoice,
   type InvoiceSupplement,
 } from '@/api/invoices'
 import { Button } from '@/components/ui/button'
@@ -55,9 +57,14 @@ export function GenerateInvoicePage() {
   const [paymentCode, setPaymentCode] = useState('30')
   const [accountId, setAccountId] = useState('12345678')
   const [accountName, setAccountName] = useState('Main account')
+  const [paymentTermsNote, setPaymentTermsNote] = useState('Net 30 days')
+  const [issueDate, setIssueDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [dueDate, setDueDate] = useState('')
+  const [invoiceNote, setInvoiceNote] = useState('')
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [invoiceXml, setInvoiceXml] = useState<string | null>(null)
+  const [storedInvoiceId, setStoredInvoiceId] = useState<string | null>(null)
   const [isPdfLoading, setIsPdfLoading] = useState(false)
   const [isValidatingOrder, setIsValidatingOrder] = useState(false)
   const [isValidatingInvoice, setIsValidatingInvoice] = useState(false)
@@ -75,8 +82,24 @@ export function GenerateInvoicePage() {
         code: paymentCode.trim(),
         payeeFinancialAccount: { id: accountId.trim(), name: accountName.trim() },
       },
+      ...(paymentTermsNote.trim() ? { paymentTerms: { note: paymentTermsNote.trim() } } : {}),
+      ...(issueDate.trim() ? { issueDate: issueDate.trim() } : {}),
+      ...(dueDate.trim() ? { dueDate: dueDate.trim() } : {}),
+      ...(invoiceNote.trim() ? { note: invoiceNote.trim() } : {}),
     }
-  }, [accountId, accountName, currencyCode, paymentCode, taxRate, taxSchemeId, taxTypeCode])
+  }, [
+    accountId,
+    accountName,
+    currencyCode,
+    dueDate,
+    invoiceNote,
+    issueDate,
+    paymentCode,
+    paymentTermsNote,
+    taxRate,
+    taxSchemeId,
+    taxTypeCode,
+  ])
 
   const canGenerate = useMemo(() => {
     if (isGenerating) return false
@@ -118,6 +141,14 @@ export function GenerateInvoicePage() {
       const res = await validateInvoice(trimmed)
       const message = res.message ?? 'UBL Invoice is valid.'
       toast.success('Invoice is valid', { description: message })
+      if (storedInvoiceId) {
+        try {
+          await validateStoredInvoice(storedInvoiceId)
+          toast.success('Stored copy marked validated', { description: 'Server-side UBL check passed.' })
+        } catch {
+          /* optional — ignore if duplicate validate */
+        }
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Validation failed'
       toast.error('Invoice validation failed', { description: msg })
@@ -132,10 +163,14 @@ export function GenerateInvoicePage() {
 
     setIsGenerating(true)
     setInvoiceXml(null)
+    setStoredInvoiceId(null)
     try {
-      const xml = await createInvoice(trimmed, supplement)
+      const { invoiceXml: xml, storedInvoiceId: sid } = await createInvoice(trimmed, supplement)
       setInvoiceXml(xml)
-      toast.success('Invoice XML generated')
+      setStoredInvoiceId(sid)
+      toast.success('Invoice XML generated', {
+        description: sid ? 'Saved to your account.' : 'Persisted id not returned (duplicate XML hash or legacy row).',
+      })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to generate invoice'
       toast.error('Generation failed', { description: msg })
@@ -177,7 +212,7 @@ export function GenerateInvoicePage() {
     if (!invoiceXml) return
     setIsEmailSending(true)
     try {
-      const result = await sendInvoiceEmail(invoiceXml, emailTo.trim())
+      const result = await sendInvoiceEmail(invoiceXml, emailTo.trim(), storedInvoiceId)
       toast.success('Invoice email sent', { description: `Sent to ${result.to}` })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to send invoice email'
@@ -194,6 +229,7 @@ export function GenerateInvoicePage() {
       const text = await res.text()
       setOrderXml(text)
       setInvoiceXml(null)
+      setStoredInvoiceId(null)
       toast.success('Sample UBL order loaded')
     } catch {
       toast.error('Could not load sample UBL file')
@@ -285,6 +321,27 @@ export function GenerateInvoicePage() {
                 <Label htmlFor="accountName">Account name</Label>
                 <Input id="accountName" value={accountName} onChange={(e) => setAccountName(e.target.value)} className="h-8 rounded-lg" />
               </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="paymentTermsNote">Payment terms (note)</Label>
+                <Input
+                  id="paymentTermsNote"
+                  value={paymentTermsNote}
+                  onChange={(e) => setPaymentTermsNote(e.target.value)}
+                  className="h-8 rounded-lg"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="issueDate">Issue date</Label>
+                <Input id="issueDate" type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className="h-8 rounded-lg" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="dueDate">Due date</Label>
+                <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-8 rounded-lg" />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="invoiceNote">Invoice note (optional)</Label>
+                <Input id="invoiceNote" value={invoiceNote} onChange={(e) => setInvoiceNote(e.target.value)} className="h-8 rounded-lg" />
+              </div>
             </div>
 
             <div className="mx-auto grid w-full max-w-full grid-cols-1 gap-2 sm:grid-cols-3">
@@ -293,6 +350,7 @@ export function GenerateInvoicePage() {
                   onUpload={(xml) => {
                     setOrderXml(xml)
                     setInvoiceXml(null)
+                    setStoredInvoiceId(null)
                   }}
                   className={cn(
                     outlineValidateStyle,
@@ -313,6 +371,7 @@ export function GenerateInvoicePage() {
                 onClick={() => {
                   setOrderXml('')
                   setInvoiceXml(null)
+                  setStoredInvoiceId(null)
                 }}
                 disabled={isGenerating}
                 className="h-10 w-full min-w-0 justify-center rounded-lg px-2 text-sm sm:px-3"
@@ -387,6 +446,15 @@ export function GenerateInvoicePage() {
                 {isPdfLoading ? '…' : 'PDF'}
               </Button>
             </div>
+
+            {storedInvoiceId && (
+              <p className="text-xs text-muted-foreground">
+                Stored invoice ID:{' '}
+                <Link className="font-medium text-amber-700 underline dark:text-amber-400" to={`/invoices/${storedInvoiceId}`}>
+                  open detail
+                </Link>
+              </p>
+            )}
 
             <div className="space-y-3 rounded-xl border border-amber-200/60 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
               <Label className="text-amber-900 dark:text-amber-100">Email invoice</Label>

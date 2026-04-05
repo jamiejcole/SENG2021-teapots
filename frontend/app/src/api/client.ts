@@ -89,6 +89,30 @@ export async function apiText(path: string, init?: RequestInit): Promise<string>
   return await res.text()
 }
 
+/** Like `apiText` but returns response headers (e.g. `X-Stored-Invoice-Id`). */
+export async function apiTextWithHeaders(path: string, init?: RequestInit): Promise<{ text: string; headers: Headers }> {
+  const res = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...init,
+    headers: {
+      ...defaultHeaders(),
+      ...getAuthHeaders(),
+      ...(init?.headers ?? {}),
+    },
+  })
+
+  if (!res.ok) {
+    const body = await readErrorBody(res)
+    const msg =
+      (typeof body === 'object' && body && 'message' in body && typeof (body as ApiErrorShape).message === 'string'
+        ? (body as ApiErrorShape).message
+        : `Request failed (${res.status})`) ?? `Request failed (${res.status})`
+    throw new ApiError(msg, res.status, body)
+  }
+
+  const text = await res.text()
+  return { text, headers: res.headers }
+}
+
 export async function apiBlob(path: string, init?: RequestInit): Promise<Blob> {
   const res = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,

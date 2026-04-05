@@ -1,14 +1,18 @@
 import { Request, Response } from "express";
 import * as service from "./invoices.service";
-import { validateUBL, validateCreateInvoiceRequest, generateInvoicePdf } from "./invoices.validation";
+import {
+    validateUBL,
+    validateCreateInvoiceRequest,
+    validateInvoiceSupplementShape,
+    generateInvoicePdf,
+} from "./invoices.validation";
 import { asyncHandler } from "../../../utils/asyncHandler";
 import { OrderData } from "../../../types/order.types";
+import type { InvoiceSupplement } from "../../../types/invoice.types";
 import { HttpError } from "../../../errors/HttpError";
-import { deleteInvoiceById } from "./invoices.service";
 import { persistInvoiceRequest } from "../../../db/persistInvoiceRequest";
 import { sendInvoiceReadyEmail } from "../../../utils/mailgun.service";
 import * as libxml from "libxmljs2";
-
 function extractInvoiceEmailData(invoiceXml: string) {
     const doc = libxml.parseXml(invoiceXml.trim());
     const ns = {
@@ -31,6 +35,77 @@ function extractInvoiceEmailData(invoiceXml: string) {
     return { invoiceNumber, dueDate, amount };
 }
 
+function requireUserId(req: Request): string {
+    const uid = req.user?.userId;
+    if (!uid) {
+        throw new HttpError(401, "Authentication required");
+    }
+    return uid;
+}
+
+function mongoIdParam(param: string | string[] | undefined): string {
+    if (typeof param === "string" && param) return param;
+    if (Array.isArray(param) && param[0]) return param[0];
+    return "";
+}
+
+export const listStoredInvoices = asyncHandler(async (req: Request, res: Response) => {
+    const userId = requireUserId(req);
+    const rows = await service.listInvoicesForUser(userId);
+    res.status(200).json({ invoices: rows });
+});
+
+export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
+    const userId = requireUserId(req);
+    const stats = await service.getDashboardForUser(userId);
+    res.status(200).json(stats);
+});
+
+export const getStoredInvoice = asyncHandler(async (req: Request, res: Response) => {
+    const userId = requireUserId(req);
+    const invoiceId = mongoIdParam(req.params.invoiceId);
+    const doc = await service.getInvoiceForUser(invoiceId, userId);
+    if (!doc) {
+        throw new HttpError(404, "Invoice not found");
+    }
+    res.status(200).json(doc);
+});
+
+export const patchStoredInvoice = asyncHandler(async (req: Request, res: Response) => {
+    const userId = requireUserId(req);
+    const invoiceId = mongoIdParam(req.params.invoiceId);
+    const body = req.body as { lifecycleStatus?: string; paymentTermsNote?: string };
+    const updated = await service.patchInvoiceMetadata(invoiceId, userId, body);
+    if (!updated) {
+        throw new HttpError(404, "Invoice not found");
+    }
+    res.status(200).json(updated);
+});
+
+export const validateOneStoredInvoice = asyncHandler(async (req: Request, res: Response) => {
+    const userId = requireUserId(req);
+    const invoiceId = mongoIdParam(req.params.invoiceId);
+    const updated = await service.recordStoredInvoiceValidated(invoiceId, userId);
+    if (!updated) {
+        throw new HttpError(404, "Invoice not found or has no XML");
+    }
+    res.status(200).json(updated);
+});
+
+export const regenerateStoredInvoice = asyncHandler(async (req: Request, res: Response) => {
+    const userId = requireUserId(req);
+    const invoiceId = mongoIdParam(req.params.invoiceId);
+    if (!req.body || typeof req.body !== "object" || !("invoiceSupplement" in req.body)) {
+        throw new HttpError(400, "Request body must include 'invoiceSupplement'");
+    }
+    validateInvoiceSupplementShape((req.body as { invoiceSupplement: unknown }).invoiceSupplement);
+    const { invoiceSupplement } = req.body as { invoiceSupplement: InvoiceSupplement };
+    const updated = await service.regenerateInvoiceForUser(invoiceId, userId, invoiceSupplement);
+    if (!updated) {
+        throw new HttpError(404, "Invoice not found");
+    }
+    res.status(200).json(updated);
+});
 
 export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
     validateCreateInvoiceRequest(req.body);
@@ -40,28 +115,38 @@ export const createInvoice = asyncHandler(async (req: Request, res: Response) =>
 
     const orderObj = (await service.createFullUblObject(orderXml)).data as OrderData;
 
-    const invoiceXml = await service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
+    const invoiceXml = service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
 
-    validateUBL(invoiceXml, 'Invoice');
+    validateUBL(invoiceXml, "Invoice");
 
-    await persistInvoiceRequest({ orderXml, orderObj, invoiceXml, invoiceSupplement });
+    const userId = req.user?.userId;
+    const storedId = await persistInvoiceRequest({
+        orderXml,
+        orderObj,
+        invoiceXml,
+        invoiceSupplement,
+        userId,
+    });
+    if (storedId) {
+        res.set("X-Stored-Invoice-Id", storedId);
+    }
     res.contentType("application/xml");
     res.status(201).send(invoiceXml);
 });
 
 export async function validateInvoice(req: Request, res: Response) {
     const { invoiceXml } = req.body;
-        
-    if (!invoiceXml || typeof invoiceXml !== 'string' || !invoiceXml.trim()) {
+
+    if (!invoiceXml || typeof invoiceXml !== "string" || !invoiceXml.trim()) {
         throw new HttpError(400, "Request body must include 'invoiceXml' as a non-empty string");
     }
-    
+
     res.contentType("application/json");
 
     validateUBL(invoiceXml, "Invoice");
 
     res.status(200).json({
-        message: "UBL Invoice is valid!"
+        message: "UBL Invoice is valid!",
     });
 }
 
@@ -79,9 +164,14 @@ export async function createPdf(req: Request, res: Response) {
     const baseUrl = (process.env.PUBLIC_APP_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
     const publicPdfUrl = `${baseUrl}/invoices/${invoiceHash}.pdf`;
 
+    if (req.user?.userId) {
+        await service.linkPdfHashToInvoiceIfOwned(req.user.userId, invoiceXml, invoiceHash);
+    }
+
     res.set("Content-Type", "application/pdf");
     res.set("Content-Disposition", `inline; filename="${invoiceHash}.pdf"`);
     res.set("X-Invoice-Url", publicPdfUrl);
+    res.set("X-Invoice-Pdf-Hash", invoiceHash);
     res.status(201).send(doc);
 }
 
@@ -105,8 +195,13 @@ export const getPublicInvoicePdf = asyncHandler(async (req: Request, res: Respon
 });
 
 export const emailInvoice = asyncHandler(async (req: Request, res: Response) => {
-    const { invoiceXml, to } = req.body as { invoiceXml?: string; to?: string };
+    const { invoiceXml, to, storedInvoiceId } = req.body as {
+        invoiceXml?: string;
+        to?: string;
+        storedInvoiceId?: string;
+    };
     const startedAt = Date.now();
+    const userId = req.user?.userId;
 
     if (!invoiceXml || typeof invoiceXml !== "string" || !invoiceXml.trim()) {
         throw new HttpError(400, "Request body must include 'invoiceXml' as a non-empty string");
@@ -124,9 +219,9 @@ export const emailInvoice = asyncHandler(async (req: Request, res: Response) => 
     console.log(`[invoice-email] Start email send for ${email}`);
     validateUBL(invoiceXml, "Invoice");
 
-    console.log('[invoice-email] Generating PDF attachment');
+    console.log("[invoice-email] Generating PDF attachment");
     const pdfBuffer = await generateInvoicePdf(invoiceXml);
-    console.log('[invoice-email] PDF attachment generated');
+    console.log("[invoice-email] PDF attachment generated");
 
     const { invoiceNumber, dueDate, amount } = extractInvoiceEmailData(invoiceXml);
     const attachments = [
@@ -142,31 +237,48 @@ export const emailInvoice = asyncHandler(async (req: Request, res: Response) => 
         },
     ];
 
-    console.log('[invoice-email] Sending Mailgun message');
-    await sendInvoiceReadyEmail(email, {
-        amount,
-        dueDate,
-        invoiceNumber,
-    }, attachments);
-    console.log(`[invoice-email] Email sent in ${Date.now() - startedAt}ms`);
+    try {
+        console.log("[invoice-email] Sending Mailgun message");
+        await sendInvoiceReadyEmail(
+            email,
+            {
+                amount,
+                dueDate,
+                invoiceNumber,
+            },
+            attachments
+        );
+        console.log(`[invoice-email] Email sent in ${Date.now() - startedAt}ms`);
 
-    res.status(200).json({
-        message: "Invoice email sent",
-        to: email,
-    });
+        if (storedInvoiceId && userId) {
+            await service.applyEmailOutcomeToInvoice(storedInvoiceId, userId, "SENT", { to: email });
+        }
+
+        res.status(200).json({
+            message: "Invoice email sent",
+            to: email,
+        });
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (storedInvoiceId && userId) {
+            await service.applyEmailOutcomeToInvoice(storedInvoiceId, userId, "SEND_FAILED", { error: msg });
+        }
+        throw err;
+    }
 });
 
 export async function deleteInvoice(req: Request, res: Response) {
-    const { invoiceId } = req.params
+    const userId = requireUserId(req);
+    const invoiceId = mongoIdParam(req.params.invoiceId);
 
-    if (!invoiceId || typeof invoiceId !== 'string') {
+    if (!invoiceId) {
         throw new HttpError(400, "Invoice ID is required as a non-empty string");
     }
-    
-    const deletedInvoiceObj = await deleteInvoiceById(invoiceId)
+
+    const deletedInvoiceObj = await service.deleteInvoiceByIdForUser(invoiceId, userId);
 
     if (!deletedInvoiceObj) {
-        throw new HttpError(404, "Invoice not found")
+        throw new HttpError(404, "Invoice not found");
     }
 
     res.status(204).send();
