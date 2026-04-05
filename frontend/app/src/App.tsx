@@ -5,6 +5,8 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { GenerateInvoicePage } from '@/pages/GenerateInvoicePage'
 import { ValidateOrderPage } from '@/pages/ValidateOrderPage'
 import { InvoiceHistoryPage } from '@/pages/InvoiceHistoryPage'
+import { OrdersPage } from '@/pages/OrdersPage'
+import { DespatchPage } from '@/pages/DespatchPage'
 import { AuthLayout } from '@/pages/auth/AuthLayout'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { SignInPage } from '@/pages/auth/SignInPage'
@@ -66,6 +68,8 @@ export default function App() {
       {/* Protected app routes */}
       <Route element={<AppLayout />}>
         <Route path="/dashboard" element={<ProtectedRoute element={<DashboardPage />} />} />
+        <Route path="/orders" element={<ProtectedRoute element={<OrdersPage />} />} />
+        <Route path="/despatch" element={<ProtectedRoute element={<DespatchPage />} />} />
         <Route path="/generate" element={<ProtectedRoute element={<GenerateInvoicePage />} />} />
         <Route path="/validate" element={<ProtectedRoute element={<ValidateOrderPage />} />} />
         <Route path="/invoices" element={<ProtectedRoute element={<InvoiceHistoryPage />} />} />

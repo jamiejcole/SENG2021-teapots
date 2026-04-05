@@ -1,8 +1,10 @@
 import {
   LayoutDashboard,
+  Package,
   ReceiptText,
   ShieldCheck,
   History,
+  Truck,
   UserRound,
   Settings2,
   CircleHelp,
@@ -18,8 +20,10 @@ export type NavItem = {
 
 export const primaryNav: NavItem[] = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
+  { to: '/orders', label: 'Orders', icon: Package },
+  { to: '/despatch', label: 'Despatch Advice', icon: Truck },
   { to: '/generate', label: 'Generate Invoice', icon: ReceiptText },
-  { to: '/validate', label: 'Validate Order', icon: ShieldCheck },
+  { to: '/validate', label: 'Validate', icon: ShieldCheck },
   { to: '/invoices', label: 'Invoice history', icon: History },
 ]
 
