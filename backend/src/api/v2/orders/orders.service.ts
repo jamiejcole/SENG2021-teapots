@@ -126,7 +126,7 @@ function getSellerName(data: any): string {
     }
 }
 
-function extractLines(data: any): Array<{ lineId: string; description: string; quantity: number; unitPrice: number; taxRate: number }> {
+function extractLines(data: any): Array<{ lineId: string; description: string; quantity: number; unitCode?: string; unitPrice: number; taxRate: number }> {
     try {
         const orderLines = data?.OrderLine;
         if (!orderLines) return [{ lineId: "1", description: "Item", quantity: 1, unitPrice: 0, taxRate: 0 }];
