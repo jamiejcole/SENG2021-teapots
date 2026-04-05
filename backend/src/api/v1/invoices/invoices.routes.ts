@@ -4,10 +4,126 @@ const router = Router();
 
 /**
  * @openapi
+ * /api/v1/invoices:
+ *   post:
+ *     summary: Create an invoice from UBL Order XML
+ *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateInvoiceRequest'
+ *     responses:
+ *       201:
+ *         description: Invoice XML generated successfully
+ *         content:
+ *           application/xml:
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Invalid request or invalid UBL payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post("/", controller.createInvoice);
+
+/**
+ * @openapi
+ * /api/v1/invoices:
+ *   get:
+ *     summary: Retrieve a list of invoices
+ *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     responses:
+ *       200:
+ *         description: Invoices fetched
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/InvoiceListResponse'
+ *       401:
+ *         description: Missing or invalid API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get("/", controller.listInvoices);
+
+/**
+ * @openapi
+ * /api/v1/invoices/validate:
+ *   post:
+ *     summary: Validate UBL Invoice XML payload
+ *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ValidateInvoiceRequest'
+ *     responses:
+ *       200:
+ *         description: UBL Invoice is valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessMessageResponse'
+ *       400:
+ *         description: Invalid request or invalid UBL payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post("/validate", controller.validateInvoice);
+
+/**
+ * @openapi
  * /api/v1/invoices/pdf:
  *   post:
- *     summary: Create a PDF from a UBL XML Invoice Document
+ *     summary: Create a PDF from a UBL XML Invoice document
  *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -33,6 +149,12 @@ const router = Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Internal server error
  *         content:
@@ -44,59 +166,40 @@ router.post("/pdf", controller.createPdf);
 
 /**
  * @openapi
- * /api/v1/invoices:
- *   post:
- *     summary: Create an invoice from UBL Order XML
+ * /api/v1/invoices/{invoiceId}:
+ *   get:
+ *     summary: Retrieve an invoice by ID
  *     tags: [Invoices]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/CreateInvoiceRequest'
- *     responses:
- *       201:
- *         description: Invoice XML generated successfully
- *         content:
- *           application/xml:
- *             schema:
- *               type: string
- *       400:
- *         description: Invalid request or invalid UBL payload
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.post("/", controller.createInvoice);
-
-/**
- * @openapi
- * /api/v1/invoices/validate:
- *   post:
- *     summary: Validate UBL Order XML payload
- *     tags: [Invoices]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ValidateInvoiceRequest'
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: invoiceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the invoice to retrieve
  *     responses:
  *       200:
- *         description: UBL Order is valid
+ *         description: Invoice fetched
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/SuccessMessageResponse'
+ *               $ref: '#/components/schemas/InvoiceRecord'
  *       400:
- *         description: Invalid request or invalid UBL payload
+ *         description: Invalid invoice ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Invoice not found
  *         content:
  *           application/json:
  *             schema:
@@ -108,7 +211,7 @@ router.post("/", controller.createInvoice);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post("/validate", controller.validateInvoice);
+router.get("/:invoiceId", controller.getInvoice);
 
 /**
  * @openapi
@@ -116,6 +219,8 @@ router.post("/validate", controller.validateInvoice);
  *   put:
  *     summary: Update an invoice by ID
  *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: invoiceId
@@ -131,21 +236,25 @@ router.post("/validate", controller.validateInvoice);
  *             $ref: '#/components/schemas/CreateInvoiceRequest'
  *     responses:
  *       200:
- *         description: Invoice successfully updated
+ *         description: Invoice XML successfully updated
+ *         content:
+ *           application/xml:
+ *             schema:
+ *               type: string
  *       400:
  *         description: Validation error
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: Invoice not found
+ *       401:
+ *         description: Missing or invalid API key
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       422:
- *         description: Business rule error
+ *       404:
+ *         description: Invoice not found
  *         content:
  *           application/json:
  *             schema:
@@ -165,6 +274,8 @@ router.put("/:invoiceId", controller.updateInvoice);
  *   delete:
  *     summary: Delete an invoice by ID
  *     tags: [Invoices]
+ *     security:
+ *       - ApiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: invoiceId
@@ -177,6 +288,12 @@ router.put("/:invoiceId", controller.updateInvoice);
  *         description: Invoice successfully deleted
  *       400:
  *         description: Invalid invoice ID format
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid API key
  *         content:
  *           application/json:
  *             schema:

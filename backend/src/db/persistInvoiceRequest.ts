@@ -57,8 +57,11 @@ function pickText(doc: libxml.Document, xpath: string, namespaces: Record<string
 export async function persistInvoiceRequest(args: PersistInvoiceRequestArgs): Promise<void> {
   const { orderXml, orderObj, invoiceXml, invoiceSupplement } = args;
 
-  const orderXmlHash = sha256(orderXml);
-  const invoiceXmlHash = sha256(invoiceXml);
+  const normalizedOrderXml = orderXml.trim().replace(/\r\n/g, "\n");
+  const normalizedInvoiceXml = invoiceXml.trim().replace(/\r\n/g, "\n");
+
+  const orderXmlHash = sha256(normalizedOrderXml);
+  const invoiceXmlHash = sha256(normalizedInvoiceXml);
 
   const orderLines = toArray(orderObj.OrderLine);
   const calculator = new InvoiceCalculator(orderLines as any[], invoiceSupplement.taxRate);
@@ -104,16 +107,22 @@ export async function persistInvoiceRequest(args: PersistInvoiceRequestArgs): Pr
       payableAmount: Number(calculator.summary.payableAmount),
     },
 
-    orderXml,
+    orderXml: normalizedOrderXml,
     xmlSha256: orderXmlHash,
   };
 
-  const existingOrder = await OrderModel.findOne({ xmlSha256: orderXmlHash }).exec();
+  const existingOrder = await OrderModel.findOne({
+    $or: [{ xmlSha256: orderXmlHash }, { orderId: orderDoc.orderId }],
+  }).exec();
+
   if (existingOrder === null) {
     await OrderModel.create(orderDoc); // rely on schema validation
+  } else if (existingOrder.xmlSha256 !== orderXmlHash) {
+    // Same business Order ID but different XML representation (e.g. whitespace/line endings)
+    await OrderModel.updateOne({ _id: existingOrder._id }, { $set: orderDoc }).exec();
   }
 
-  const invDoc = libxml.parseXml(invoiceXml);
+  const invDoc = libxml.parseXml(normalizedInvoiceXml);
   const namespaces = {
     inv: "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
     cbc: "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
@@ -146,7 +155,7 @@ export async function persistInvoiceRequest(args: PersistInvoiceRequestArgs): Pr
 
     totals: orderDoc.totals,
 
-    invoiceXml,
+    invoiceXml: normalizedInvoiceXml,
     xmlSha256: invoiceXmlHash,
   };
 

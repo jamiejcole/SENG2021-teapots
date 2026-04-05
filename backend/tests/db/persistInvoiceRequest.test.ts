@@ -1,6 +1,7 @@
 import { persistInvoiceRequest } from '../../src/db/persistInvoiceRequest';
 import { OrderModel } from '../../src/models/order.model';
 import { InvoiceModel } from '../../src/models/invoice.model';
+import { sha256 } from '../../src/models/hash';
 import type { OrderData } from '../../src/types/order.types';
 import type { InvoiceSupplement } from '../../src/types/invoice.types';
 
@@ -8,6 +9,9 @@ jest.mock('../../src/models/order.model', () => ({
   OrderModel: {
     findOne: jest.fn(),
     create: jest.fn(),
+    updateOne: jest.fn(() => ({
+      exec: jest.fn().mockResolvedValue({ acknowledged: true, modifiedCount: 1 }),
+    })),
   },
 }));
 
@@ -116,7 +120,10 @@ describe('persistInvoiceRequest', () => {
   });
 
   it('skips create calls when docs already exist', async () => {
-    (OrderModel.findOne as jest.Mock).mockReturnValue({ exec: jest.fn().mockResolvedValue({ _id: 'existing-order' }) });
+    const orderHash = sha256('<Order></Order>');
+    (OrderModel.findOne as jest.Mock).mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ _id: 'existing-order', xmlSha256: orderHash }),
+    });
     (InvoiceModel.findOne as jest.Mock).mockReturnValue({ exec: jest.fn().mockResolvedValue({ _id: 'existing-invoice' }) });
 
     await persistInvoiceRequest({
@@ -127,6 +134,7 @@ describe('persistInvoiceRequest', () => {
     });
 
     expect(OrderModel.create).not.toHaveBeenCalled();
+    expect(OrderModel.updateOne).not.toHaveBeenCalled();
     expect(InvoiceModel.create).not.toHaveBeenCalled();
   });
 

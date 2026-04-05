@@ -1,8 +1,14 @@
 # SENG2021-teapots
 Repo for SENG2021 26T1 Project
 
+**DEPLOYED WEB APP:** https://teapotinvoicing.app
+
+**DEPLOYED API URL:** https://api.teapotinvoicing.app/api/docs/
+
+**DEPLOYED API URL (BACKUP):** https://api2.teapotinvoicing.app/api/docs/
+
 ## Getting Started
-1. Make sure to use Node 24.14.0
+1. Make sure to use Node `>=24.14.0`
 2. Make sure you have the VS Code ESLint extension installed
 3. Clone repo
 4. `cd backend && npm install`
@@ -11,6 +17,13 @@ Repo for SENG2021 26T1 Project
 ## Dev Info
 - Pushing directly to `main` is blocked such to enforce best git practices
 - When working on a feature, make sure to checkout to a branch and create a PR when you're ready to merge into `main`.
+
+## Testing
+- Testing can be done by running `npm run test`, and code coverage with `npm run test:coverage`.
+- Please ensure when making a PR, that the overall project test coverage remains >85%. 
+
+## Deploying
+- Auto deploy configurations are setup when merging branches into main. This rebuilds a docker image used for backup API deployment
 
 ## Quick Links
 - [Jira](https://unswcse.atlassian.net/jira/software/projects/WT/boards/2316)

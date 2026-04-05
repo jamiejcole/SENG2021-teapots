@@ -1,0 +1,169 @@
+meta {
+  name: Create Invoice
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:3000/api/v1/invoices
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "orderXml": "{{orderXml}}",
+    "invoiceSupplement": {
+      "invoiceNumber": "123",
+      "issueDate": "2026-01-01",
+      "dueDate": "2026-01-01",
+      "currencyCode": "AUD",
+      "taxRate": 0.1,
+      "taxScheme": {
+        "id": "GST",
+        "taxTypeCode": "GST"
+      },
+      "paymentMeans": {
+        "code": "30",
+        "payeeFinancialAccount": {
+          "id": "123",
+          "name": "Joe Mama",
+          "branchId": "6969"
+        }
+      },
+      "paymentTerms": {
+        "note": "30 days omg"
+      }
+    }
+  }
+}
+
+body:xml {
+  <?xml version="1.0" encoding="UTF-8"?>
+  <Order xmlns="urn:oasis:names:specification:ubl:schema:xsd:Order-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+      <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+      <cbc:CustomizationID>urn:oasis:names:specification:ubl:xpath:Order-2.1</cbc:CustomizationID>
+      <cbc:ProfileID>urn:www.cenbii.eu:profile:bii03:ver2.0</cbc:ProfileID>
+      <cbc:ID>ORD-2026-0451</cbc:ID>
+      <cbc:IssueDate>2026-03-01</cbc:IssueDate>
+      <cbc:Note>Please deliver hardware directly to the loading dock.</cbc:Note>
+      <cbc:DocumentCurrencyCode>AUD</cbc:DocumentCurrencyCode>
+      
+      <cac:BuyerCustomerParty>
+          <cac:Party>
+              <cbc:EndpointID schemeID="0151">47555123456</cbc:EndpointID>
+              <cac:PartyName>
+                  <cbc:Name>Acme Enterprises Corp</cbc:Name>
+              </cac:PartyName>
+              <cac:PostalAddress>
+                  <cbc:StreetName>100 Corporate Boulevard</cbc:StreetName>
+                  <cbc:CityName>Sydney</cbc:CityName>
+                  <cbc:PostalZone>2000</cbc:PostalZone>
+                  <cbc:CountrySubentity>NSW</cbc:CountrySubentity>
+                  <cac:Country>
+                      <cbc:IdentificationCode>AU</cbc:IdentificationCode>
+                  </cac:Country>
+              </cac:PostalAddress>
+              <cac:Contact>
+                  <cbc:Name>Jane Doe</cbc:Name>
+                  <cbc:Telephone>+61-2-5550-1234</cbc:Telephone>
+                  <cbc:ElectronicMail>purchasing@acme.example.com</cbc:ElectronicMail>
+              </cac:Contact>
+          </cac:Party>
+      </cac:BuyerCustomerParty>
+  
+      <cac:SellerSupplierParty>
+          <cac:Party>
+              <cbc:EndpointID schemeID="0151">88123456789</cbc:EndpointID>
+              <cac:PartyName>
+                  <cbc:Name>TechSupplies Pty Ltd</cbc:Name>
+              </cac:PartyName>
+              <cac:PostalAddress>
+                  <cbc:StreetName>50 Enterprise Drive</cbc:StreetName>
+                  <cbc:CityName>Melbourne</cbc:CityName>
+                  <cbc:PostalZone>3000</cbc:PostalZone>
+                  <cbc:CountrySubentity>VIC</cbc:CountrySubentity>
+                  <cac:Country>
+                      <cbc:IdentificationCode>AU</cbc:IdentificationCode>
+                  </cac:Country>
+              </cac:PostalAddress>
+          </cac:Party>
+      </cac:SellerSupplierParty>
+  
+      <cac:Delivery>
+          <cac:PromisedDeliveryPeriod>
+              <cbc:EndDate>2026-03-05</cbc:EndDate>
+          </cac:PromisedDeliveryPeriod>
+      </cac:Delivery>
+  
+      <cac:AnticipatedMonetaryTotal>
+          <cbc:LineExtensionAmount currencyID="AUD">21500.00</cbc:LineExtensionAmount>
+          <cbc:TaxExclusiveAmount currencyID="AUD">21000.00</cbc:TaxExclusiveAmount>
+          <cbc:TaxInclusiveAmount currencyID="AUD">23100.00</cbc:TaxInclusiveAmount>
+          <cbc:AllowanceTotalAmount currencyID="AUD">500.00</cbc:AllowanceTotalAmount>
+          <cbc:PayableAmount currencyID="AUD">23100.00</cbc:PayableAmount>
+      </cac:AnticipatedMonetaryTotal>
+  
+      <cac:OrderLine>
+          <cac:LineItem>
+              <cbc:ID>1</cbc:ID>
+              <cbc:Quantity unitCode="EA">10</cbc:Quantity>
+              <cbc:LineExtensionAmount currencyID="AUD">15000.00</cbc:LineExtensionAmount>
+              <cac:Price>
+                  <cbc:PriceAmount currencyID="AUD">1500.00</cbc:PriceAmount>
+              </cac:Price>
+              <cac:Item>
+                  <cbc:Name>ProBook Laptop 15-inch</cbc:Name>
+                  <cac:SellersItemIdentification>
+                      <cbc:ID>HW-LP-15</cbc:ID>
+                  </cac:SellersItemIdentification>
+              </cac:Item>
+          </cac:LineItem>
+      </cac:OrderLine>
+  
+      <cac:OrderLine>
+          <cac:LineItem>
+              <cbc:ID>2</cbc:ID>
+              <cbc:Quantity unitCode="EA">20</cbc:Quantity>
+              <cbc:LineExtensionAmount currencyID="AUD">6000.00</cbc:LineExtensionAmount>
+              <cac:Price>
+                  <cbc:PriceAmount currencyID="AUD">300.00</cbc:PriceAmount>
+              </cac:Price>
+              <cac:Item>
+                  <cbc:Name>UltraSharp 27-inch Monitor</cbc:Name>
+                  <cac:SellersItemIdentification>
+                      <cbc:ID>HW-MON-27</cbc:ID>
+                  </cac:SellersItemIdentification>
+              </cac:Item>
+          </cac:LineItem>
+      </cac:OrderLine>
+  
+      <cac:OrderLine>
+          <cac:LineItem>
+              <cbc:ID>3</cbc:ID>
+              <cbc:Quantity unitCode="EA">1</cbc:Quantity>
+              <cbc:LineExtensionAmount currencyID="AUD">500.00</cbc:LineExtensionAmount>
+              <cac:Price>
+                  <cbc:PriceAmount currencyID="AUD">500.00</cbc:PriceAmount>
+              </cac:Price>
+              <cac:Item>
+                  <cbc:Name>On-site Hardware Installation</cbc:Name>
+                  <cac:SellersItemIdentification>
+                      <cbc:ID>SRV-INST-01</cbc:ID>
+                  </cac:SellersItemIdentification>
+              </cac:Item>
+          </cac:LineItem>
+      </cac:OrderLine>
+  </Order>
+}
+
+vars:pre-request {
+  orderXml: <?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<Order xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:Order-2\"\r\n       xmlns:cac=\"urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2\"\r\n       xmlns:cbc=\"urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2\">\r\n    <cbc:UBLVersionID>2.1<\/cbc:UBLVersionID>\r\n    <cbc:CustomizationID>urn:oasis:names:specification:ubl:xpath:Order-2.1<\/cbc:CustomizationID>\r\n    <cbc:ProfileID>urn:www.cenbii.eu:profile:bii03:ver2.0<\/cbc:ProfileID>\r\n    <cbc:ID>ORD-2026-0451<\/cbc:ID>\r\n    <cbc:IssueDate>2026-03-01<\/cbc:IssueDate>\r\n    <cbc:Note>Please deliver hardware directly to the loading dock.<\/cbc:Note>\r\n    <cbc:DocumentCurrencyCode>AUD<\/cbc:DocumentCurrencyCode>\r\n    \r\n    <cac:BuyerCustomerParty>\r\n        <cac:Party>\r\n            <cbc:EndpointID schemeID=\"0151\">47555123456<\/cbc:EndpointID>\r\n            <cac:PartyName>\r\n                <cbc:Name>Acme Enterprises Corp<\/cbc:Name>\r\n            <\/cac:PartyName>\r\n            <cac:PostalAddress>\r\n                <cbc:StreetName>100 Corporate Boulevard<\/cbc:StreetName>\r\n                <cbc:CityName>Sydney<\/cbc:CityName>\r\n                <cbc:PostalZone>2000<\/cbc:PostalZone>\r\n                <cbc:CountrySubentity>NSW<\/cbc:CountrySubentity>\r\n                <cac:Country>\r\n                    <cbc:IdentificationCode>AU<\/cbc:IdentificationCode>\r\n                <\/cac:Country>\r\n            <\/cac:PostalAddress>\r\n            <cac:Contact>\r\n                <cbc:Name>Jane Doe<\/cbc:Name>\r\n                <cbc:Telephone>+61-2-5550-1234<\/cbc:Telephone>\r\n                <cbc:ElectronicMail>purchasing@acme.example.com<\/cbc:ElectronicMail>\r\n            <\/cac:Contact>\r\n        <\/cac:Party>\r\n    <\/cac:BuyerCustomerParty>\r\n\r\n    <cac:SellerSupplierParty>\r\n        <cac:Party>\r\n            <cbc:EndpointID schemeID=\"0151\">88123456789<\/cbc:EndpointID>\r\n            <cac:PartyName>\r\n                <cbc:Name>TechSupplies Pty Ltd<\/cbc:Name>\r\n            <\/cac:PartyName>\r\n            <cac:PostalAddress>\r\n                <cbc:StreetName>50 Enterprise Drive<\/cbc:StreetName>\r\n                <cbc:CityName>Melbourne<\/cbc:CityName>\r\n                <cbc:PostalZone>3000<\/cbc:PostalZone>\r\n                <cbc:CountrySubentity>VIC<\/cbc:CountrySubentity>\r\n                <cac:Country>\r\n                    <cbc:IdentificationCode>AU<\/cbc:IdentificationCode>\r\n                <\/cac:Country>\r\n            <\/cac:PostalAddress>\r\n        <\/cac:Party>\r\n    <\/cac:SellerSupplierParty>\r\n\r\n    <cac:Delivery>\r\n        <cac:PromisedDeliveryPeriod>\r\n            <cbc:EndDate>2026-03-05<\/cbc:EndDate>\r\n        <\/cac:PromisedDeliveryPeriod>\r\n    <\/cac:Delivery>\r\n\r\n    <cac:AnticipatedMonetaryTotal>\r\n        <cbc:LineExtensionAmount currencyID=\"AUD\">21500.00<\/cbc:LineExtensionAmount>\r\n        <cbc:TaxExclusiveAmount currencyID=\"AUD\">21000.00<\/cbc:TaxExclusiveAmount>\r\n        <cbc:TaxInclusiveAmount currencyID=\"AUD\">23100.00<\/cbc:TaxInclusiveAmount>\r\n        <cbc:AllowanceTotalAmount currencyID=\"AUD\">500.00<\/cbc:AllowanceTotalAmount>\r\n        <cbc:PayableAmount currencyID=\"AUD\">23100.00<\/cbc:PayableAmount>\r\n    <\/cac:AnticipatedMonetaryTotal>\r\n\r\n    <cac:OrderLine>\r\n        <cac:LineItem>\r\n            <cbc:ID>1<\/cbc:ID>\r\n            <cbc:Quantity unitCode=\"EA\">10<\/cbc:Quantity>\r\n            <cbc:LineExtensionAmount currencyID=\"AUD\">15000.00<\/cbc:LineExtensionAmount>\r\n            <cac:Price>\r\n                <cbc:PriceAmount currencyID=\"AUD\">1500.00<\/cbc:PriceAmount>\r\n            <\/cac:Price>\r\n            <cac:Item>\r\n                <cbc:Name>ProBook Laptop 15-inch<\/cbc:Name>\r\n                <cac:SellersItemIdentification>\r\n                    <cbc:ID>HW-LP-15<\/cbc:ID>\r\n                <\/cac:SellersItemIdentification>\r\n            <\/cac:Item>\r\n        <\/cac:LineItem>\r\n    <\/cac:OrderLine>\r\n\r\n    <cac:OrderLine>\r\n        <cac:LineItem>\r\n            <cbc:ID>2<\/cbc:ID>\r\n            <cbc:Quantity unitCode=\"EA\">20<\/cbc:Quantity>\r\n            <cbc:LineExtensionAmount currencyID=\"AUD\">6000.00<\/cbc:LineExtensionAmount>\r\n            <cac:Price>\r\n                <cbc:PriceAmount currencyID=\"AUD\">300.00<\/cbc:PriceAmount>\r\n            <\/cac:Price>\r\n            <cac:Item>\r\n                <cbc:Name>UltraSharp 27-inch Monitor<\/cbc:Name>\r\n                <cac:SellersItemIdentification>\r\n                    <cbc:ID>HW-MON-27<\/cbc:ID>\r\n                <\/cac:SellersItemIdentification>\r\n            <\/cac:Item>\r\n        <\/cac:LineItem>\r\n    <\/cac:OrderLine>\r\n\r\n    <cac:OrderLine>\r\n        <cac:LineItem>\r\n            <cbc:ID>3<\/cbc:ID>\r\n            <cbc:Quantity unitCode=\"EA\">1<\/cbc:Quantity>\r\n            <cbc:LineExtensionAmount currencyID=\"AUD\">500.00<\/cbc:LineExtensionAmount>\r\n            <cac:Price>\r\n                <cbc:PriceAmount currencyID=\"AUD\">500.00<\/cbc:PriceAmount>\r\n            <\/cac:Price>\r\n            <cac:Item>\r\n                <cbc:Name>On-site Hardware Installation<\/cbc:Name>\r\n                <cac:SellersItemIdentification>\r\n                    <cbc:ID>SRV-INST-01<\/cbc:ID>\r\n                <\/cac:SellersItemIdentification>\r\n            <\/cac:Item>\r\n        <\/cac:LineItem>\r\n    <\/cac:OrderLine>\r\n<\/Order>
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
