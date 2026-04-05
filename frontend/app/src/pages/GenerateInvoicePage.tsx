@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Copy, Download, Mail, ReceiptText, ShieldCheck } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Copy, Download, Mail, Package, ReceiptText, ShieldCheck, Truck } from 'lucide-react'
 import {
   createInvoice,
   createInvoicePdf,
@@ -8,6 +9,8 @@ import {
   validateOrder,
   type InvoiceSupplement,
 } from '@/api/invoices'
+import { createDespatchAdvice } from '@/api/despatch'
+import { listOrders, getOrderXml, type OrderListItem } from '@/api/orders'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -18,7 +21,6 @@ import { XmlUploadButton } from '@/components/XmlUploadButton'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 
-/** Same outline treatment as the Output card “Validate” control */
 const outlineValidateStyle =
   'h-8 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40'
 
@@ -45,7 +47,65 @@ function downloadBlob(filename: string, blob: Blob) {
   URL.revokeObjectURL(url)
 }
 
+function OrderPickerDropdown({
+  orders,
+  onSelect,
+  onClose,
+}: {
+  orders: OrderListItem[]
+  onSelect: (orderId: string, label: string) => void
+  onClose: () => void
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="flex w-full max-w-md flex-col gap-3 rounded-2xl border border-amber-200/60 bg-white p-5 shadow-2xl dark:border-amber-900/40 dark:bg-slate-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <span className="font-semibold">Import from Orders</span>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-muted-foreground hover:bg-accent text-lg leading-none"
+          >
+            ✕
+          </button>
+        </div>
+        {orders.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">No orders found.</p>
+        ) : (
+          <div className="max-h-72 overflow-y-auto space-y-2">
+            {orders.map((o) => (
+              <button
+                key={o._id}
+                className="flex w-full items-center gap-3 rounded-xl border border-amber-200/60 px-3 py-2.5 text-left transition-colors hover:bg-amber-50 dark:border-amber-900/40 dark:hover:bg-amber-950/30"
+                onClick={() => {
+                  onSelect(o._id, o.orderId)
+                  onClose()
+                }}
+              >
+                <Package className="size-5 shrink-0 text-amber-500" />
+                <div className="min-w-0">
+                  <div className="font-medium text-sm">{o.orderId}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {o.buyer?.name ?? ''} • {o.issueDate}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function GenerateInvoicePage() {
+  const navigate = useNavigate()
+
   const [orderXml, setOrderXml] = useState('')
 
   const [currencyCode, setCurrencyCode] = useState('AUD')
@@ -63,6 +123,11 @@ export function GenerateInvoicePage() {
   const [isValidatingInvoice, setIsValidatingInvoice] = useState(false)
   const [isEmailSending, setIsEmailSending] = useState(false)
   const [emailTo, setEmailTo] = useState('')
+  const [isCreatingDespatch, setIsCreatingDespatch] = useState(false)
+
+  const [showOrderPicker, setShowOrderPicker] = useState(false)
+  const [pickerOrders, setPickerOrders] = useState<OrderListItem[]>([])
+  const [isPickerLoading, setIsPickerLoading] = useState(false)
 
   const supplement: InvoiceSupplement | null = useMemo(() => {
     const parsedTaxRate = Number(taxRate)
@@ -187,6 +252,51 @@ export function GenerateInvoicePage() {
     }
   }
 
+  async function onCreateDespatch() {
+    const trimmed = orderXml.trim()
+    if (!trimmed) return
+    setIsCreatingDespatch(true)
+    try {
+      const result = await createDespatchAdvice(trimmed)
+      toast.success('Despatch advice created', {
+        description: `Advice ID: ${result.adviceIds[0]}`,
+      })
+      navigate('/despatch')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to create despatch advice'
+      toast.error('Despatch creation failed', { description: msg })
+    } finally {
+      setIsCreatingDespatch(false)
+    }
+  }
+
+  async function onImportFromOrders() {
+    setIsPickerLoading(true)
+    setShowOrderPicker(true)
+    try {
+      const orders = await listOrders()
+      setPickerOrders(orders)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to load orders'
+      toast.error('Failed to load orders', { description: msg })
+      setShowOrderPicker(false)
+    } finally {
+      setIsPickerLoading(false)
+    }
+  }
+
+  async function onOrderSelected(orderId: string, label: string) {
+    try {
+      const actualXml = await getOrderXml(orderId)
+      setOrderXml(actualXml)
+      setInvoiceXml(null)
+      toast.success(`Loaded order ${label}`)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to load order XML'
+      toast.error('Failed to load order XML', { description: msg })
+    }
+  }
+
   async function loadSampleUbl() {
     try {
       const res = await fetch(`${import.meta.env.BASE_URL}sample-ubl-order.xml`)
@@ -202,6 +312,14 @@ export function GenerateInvoicePage() {
 
   return (
     <div className="space-y-6">
+      {showOrderPicker && !isPickerLoading && (
+        <OrderPickerDropdown
+          orders={pickerOrders}
+          onSelect={(orderId, label) => void onOrderSelected(orderId, label)}
+          onClose={() => setShowOrderPicker(false)}
+        />
+      )}
+
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
@@ -220,17 +338,30 @@ export function GenerateInvoicePage() {
           <CardHeader>
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base">Input</CardTitle>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => void onValidateOrder()}
-                disabled={!canValidateOrder}
-                className={cn(outlineValidateStyle, 'shrink-0')}
-              >
-                <ShieldCheck className="size-4" />
-                {isValidatingOrder ? 'Validating…' : 'Validate'}
-              </Button>
+              <div className="flex gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void onImportFromOrders()}
+                  disabled={isGenerating || isPickerLoading}
+                  className={cn(outlineValidateStyle, 'shrink-0')}
+                >
+                  <Package className="size-4" />
+                  {isPickerLoading ? 'Loading…' : 'From Orders'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void onValidateOrder()}
+                  disabled={!canValidateOrder}
+                  className={cn(outlineValidateStyle, 'shrink-0')}
+                >
+                  <ShieldCheck className="size-4" />
+                  {isValidatingOrder ? 'Validating…' : 'Validate'}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -320,6 +451,23 @@ export function GenerateInvoicePage() {
                 Clear
               </Button>
             </div>
+
+            {orderXml.trim() && (
+              <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-3 dark:border-amber-900/40 dark:bg-amber-950/20">
+                <p className="mb-2 text-xs font-medium text-amber-900 dark:text-amber-100">
+                  Create despatch advice from this order
+                </p>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5 rounded-lg bg-amber-400 text-xs font-semibold text-slate-900 shadow shadow-amber-400/25 hover:bg-amber-500"
+                  onClick={() => void onCreateDespatch()}
+                  disabled={isCreatingDespatch || !orderXml.trim()}
+                >
+                  <Truck className="size-3.5" />
+                  {isCreatingDespatch ? 'Creating…' : 'Create despatch advice'}
+                </Button>
+              </div>
+            )}
 
           </CardContent>
         </Card>

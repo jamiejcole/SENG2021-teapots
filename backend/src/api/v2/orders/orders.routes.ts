@@ -48,4 +48,11 @@ router.use(authMiddleware);
  */
 router.post("/validate", controller.validateOrder);
 
+router.post("/", controller.createOrder);
+router.get("/", controller.listOrders);
+router.get("/:orderId/xml", controller.getOrderXml);
+router.get("/:orderId", controller.getOrder);
+router.put("/:orderId", controller.updateOrder);
+router.delete("/:orderId", controller.deleteOrder);
+
 export default router;
