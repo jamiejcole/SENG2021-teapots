@@ -1,0 +1,1828 @@
+{
+  "swaggerDoc": {
+    "openapi": "3.0.0",
+    "info": {
+      "title": "DevEx Despatch API",
+      "version": "v1",
+      "description": "API for handling Category 2 despatch documents and API key management. <u>Request a key via the Getting Started section below.</u>\n\n<b>⚠️ Note: protected requests (most endpoints) should be accessed using an Api-Key header alongside your request.</b>\n\nIf you have any questions/suggestions/change requests, contact us at devex@platform.tcore.network.\n\nThanks for using :) - DevEx team."
+    },
+    "servers": [
+      {
+        "url": "https://devex.cloud.tcore.network",
+        "description": "DevEx Despatch API Server"
+      }
+    ],
+    "tags": [
+      {
+        "name": "Getting Started",
+        "description": "Registration endpoint to request your first API key and begin using the API."
+      },
+      {
+        "name": "Health",
+        "description": "Service status endpoints."
+      },
+      {
+        "name": "Despatch",
+        "description": "Create, retrieve, and list despatch advice documents."
+      },
+      {
+        "name": "Despatch Cancellation",
+        "description": "Order and fulfilment cancellation endpoints for despatch advice documents."
+      },
+      {
+        "name": "Document Validation",
+        "description": "Validate supported XML document types against server-side schemas."
+      },
+      {
+        "name": "Developers Only",
+        "description": "Internal API key management routes - intended for DevEx team members only."
+      }
+    ],
+    "components": {
+      "securitySchemes": {
+        "ApiKeyAuth": {
+          "type": "apiKey",
+          "in": "header",
+          "name": "Api-Key",
+          "description": "API key sent in the Api-Key header."
+        }
+      },
+      "schemas": {
+        "HealthResponse": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "example": "healthy"
+            },
+            "uptime": {
+              "type": "integer",
+              "example": 3600
+            },
+            "version": {
+              "type": "string",
+              "example": "v1"
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "status",
+            "uptime",
+            "version",
+            "executed-at"
+          ]
+        },
+        "ErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Missing API key header. A valid key is required for this endpoint."
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors"
+          ]
+        },
+        "MissingApiKeyErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Missing API key header. A valid key is required for this endpoint."
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "InvalidApiKeyErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Invalid API key. Check it matches the one we issued you."
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "MissingMasterKeyErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Missing API key header. A valid master key is required for this endpoint."
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "InvalidMasterKeyErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Invalid master API key"
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "ForbiddenErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Unauthorised access."
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "BadRequestCreateApiKeyErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Missing teamName in request body"
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "BadRequestDespatchCreateErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Request body must contain raw XML data"
+              ]
+            },
+            "success": {
+              "type": "boolean",
+              "example": false
+            }
+          },
+          "required": [
+            "errors",
+            "success"
+          ]
+        },
+        "BadRequestDespatchRetrievalErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Missing valid search-type parameter - must be one of: order, advice-id"
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "BadRequestOrderCancellationErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Missing required field: advice-id"
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "BadRequestFulfilmentCancellationErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Missing required field: fulfilment-cancellation-reason"
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "BadRequestDocumentValidationErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Missing required parameter: XML body must be provided."
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "NotFoundApiKeyErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "API key not found"
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "NotFoundDespatchAdviceErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Despatch advice not found for provided advice-id"
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "NotFoundCancellationErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Failed to find Despatch Advice with id e553cc8e-8b37-4a9b-a0cf-87c34ea70a35."
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "NotFoundFulfilmentCancellationErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "No fulfilment cancellation found for id e553cc8e-8b37-4a9b-a0cf-87c34ea70a35."
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "SuccessErrorResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": false
+            },
+            "error": {
+              "type": "string",
+              "example": "Request body must contain raw XML data"
+            }
+          },
+          "required": [
+            "success",
+            "error"
+          ]
+        },
+        "CreateApiKeyRequest": {
+          "type": "object",
+          "required": [
+            "teamName",
+            "contactEmail",
+            "contactName"
+          ],
+          "properties": {
+            "teamName": {
+              "type": "string",
+              "description": "Team name requesting access.",
+              "example": "DevEx"
+            },
+            "contactEmail": {
+              "type": "string",
+              "format": "email",
+              "description": "Primary contact email. Must be a UNSW domain (ad.unsw.edu.au, student.unsw.edu.au, or unsw.edu.au).",
+              "example": "zID@ad.unsw.edu.au"
+            },
+            "contactName": {
+              "type": "string",
+              "description": "Primary contact person who will receive API and contact emails from us.",
+              "example": "Student Name"
+            }
+          }
+        },
+        "CreateApiKeyResponse": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "example": "API key created successfully - an email will be sent to the specified email address. **Allow two minutes for it to get through UNSW spam filter, and check your junk folder!**"
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "message",
+            "executed-at"
+          ]
+        },
+        "ApiKeyRecord": {
+          "type": "object",
+          "properties": {
+            "_id": {
+              "type": "string"
+            },
+            "teamName": {
+              "type": "string"
+            },
+            "contactEmail": {
+              "type": "string",
+              "format": "email"
+            },
+            "contactName": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "_id",
+            "teamName",
+            "contactEmail",
+            "contactName",
+            "createdAt"
+          ]
+        },
+        "ListApiKeysResponse": {
+          "type": "object",
+          "properties": {
+            "results": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ApiKeyRecord"
+              }
+            },
+            "executed-at": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "results",
+            "executed-at"
+          ]
+        },
+        "DeleteApiKeyResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": []
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        },
+        "CreateDespatchAdviceResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": true
+            },
+            "adviceIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "success",
+            "adviceIds",
+            "executed-at"
+          ]
+        },
+        "ListDespatchAdvicesResponse": {
+          "type": "object",
+          "properties": {
+            "results": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "advice-id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "despatch-advice": {
+                    "type": "string",
+                    "example": "<DespatchAdvice>...</DespatchAdvice>"
+                  }
+                },
+                "required": [
+                  "advice-id",
+                  "despatch-advice"
+                ]
+              }
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "results",
+            "executed-at"
+          ]
+        },
+        "NotImplementedResponse": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean",
+              "example": false
+            },
+            "error": {
+              "type": "string",
+              "example": "Not implemented yet"
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "success",
+            "error",
+            "executed-at"
+          ]
+        },
+        "CancelOrderRequest": {
+          "type": "object",
+          "required": [
+            "advice-id",
+            "order-cancellation-document"
+          ],
+          "properties": {
+            "advice-id": {
+              "type": "string",
+              "format": "uuid",
+              "example": "e553cc8e-8b37-4a9b-a0cf-87c34ea70a35"
+            },
+            "order-cancellation-document": {
+              "type": "string",
+              "example": "<OrderCancellation>...</OrderCancellation>"
+            }
+          }
+        },
+        "CancelOrderResponse": {
+          "type": "object",
+          "properties": {
+            "order-cancellation": {
+              "type": "string",
+              "example": "<OrderCancellation>...</OrderCancellation>"
+            },
+            "order-cancellation-reason": {
+              "type": "string",
+              "example": "Refund requested"
+            },
+            "order-cancellation-id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "advice-id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "executed-at": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-03-15T09:00:00.000Z"
+            }
+          },
+          "required": [
+            "order-cancellation",
+            "order-cancellation-reason",
+            "order-cancellation-id",
+            "advice-id",
+            "executed-at"
+          ]
+        },
+        "DespatchRetrievalResponse": {
+          "type": "object",
+          "properties": {
+            "despatch-advice": {
+              "type": "string",
+              "example": "<DespatchAdvice>...</DespatchAdvice>"
+            },
+            "advice-id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "despatch-advice",
+            "advice-id",
+            "executed-at"
+          ]
+        },
+        "FulfilmentCancellationRequest": {
+          "type": "object",
+          "required": [
+            "advice-id",
+            "fulfilment-cancellation-reason"
+          ],
+          "properties": {
+            "advice-id": {
+              "type": "string",
+              "format": "uuid",
+              "example": "e553cc8e-8b37-4a9b-a0cf-87c34ea70a35"
+            },
+            "fulfilment-cancellation-reason": {
+              "type": "string",
+              "example": "Unable to fulfil delivery window"
+            }
+          }
+        },
+        "FulfilmentCancellationResponse": {
+          "type": "object",
+          "properties": {
+            "fulfilment-cancellation": {
+              "type": "string",
+              "example": "<FulfilmentCancellation>...</FulfilmentCancellation>"
+            },
+            "fulfilment-cancellation-reason": {
+              "type": "string"
+            },
+            "fulfilment-cancellation-id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "advice-id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "executed-at": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-03-15T09:00:00.000Z"
+            }
+          },
+          "required": [
+            "fulfilment-cancellation",
+            "fulfilment-cancellation-reason",
+            "fulfilment-cancellation-id",
+            "advice-id",
+            "executed-at"
+          ]
+        },
+        "ValidateDocumentResponse": {
+          "type": "object",
+          "properties": {
+            "valid": {
+              "type": "boolean",
+              "example": true
+            },
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": []
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "valid",
+            "errors",
+            "executed-at"
+          ]
+        },
+        "InternalErrorsArrayResponse": {
+          "type": "object",
+          "properties": {
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "Internal server error, please try again later."
+              ]
+            },
+            "executed-at": {
+              "type": "integer",
+              "example": 1772246484
+            }
+          },
+          "required": [
+            "errors",
+            "executed-at"
+          ]
+        }
+      }
+    },
+    "paths": {
+      "/api/v1/health": {
+        "get": {
+          "tags": [
+            "Health"
+          ],
+          "summary": "Get API health",
+          "description": "Returns current service health, uptime, and API version.",
+          "responses": {
+            "200": {
+              "description": "Server health payload",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HealthResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/api-key/create": {
+        "post": {
+          "tags": [
+            "Getting Started"
+          ],
+          "summary": "Request an API key",
+          "description": "Use this registration endpoint to request your team's API key. If an address already has a key (i.e. you lost it), the service resends the existing key details by email.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateApiKeyRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "API key created",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CreateApiKeyResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Missing required fields or invalid UNSW contactEmail format",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BadRequestCreateApiKeyErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/api-key/list": {
+        "get": {
+          "tags": [
+            "Developers Only"
+          ],
+          "summary": "List all API keys",
+          "description": "Returns all issued client API keys. Requires the master Api-Key header.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "All API keys",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ListApiKeysResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid master API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingMasterKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidMasterKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/api-key/retrieve/{key}": {
+        "get": {
+          "tags": [
+            "Developers Only"
+          ],
+          "summary": "Retrieve one API key",
+          "description": "Looks up a single issued API key record by key value. Requires the master Api-Key header.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "key",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Key found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ApiKeyRecord"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid master API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingMasterKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidMasterKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "API key not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotFoundApiKeyErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/api-key/delete/{key}": {
+        "delete": {
+          "tags": [
+            "Developers Only"
+          ],
+          "summary": "Delete one API key",
+          "description": "Deletes an issued API key by key value. Requires the master Api-Key header.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "key",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Key deleted",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DeleteApiKeyResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid master API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingMasterKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidMasterKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "API key not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotFoundApiKeyErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/despatch/create": {
+        "post": {
+          "tags": [
+            "Despatch"
+          ],
+          "summary": "Create despatch advice records from order XML",
+          "description": "Accepts raw order XML and creates one or more despatch advice records for the calling API key.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "string",
+                  "description": "Raw XML payload"
+                }
+              },
+              "text/xml": {
+                "schema": {
+                  "type": "string",
+                  "description": "Raw XML payload"
+                }
+              },
+              "application/*+xml": {
+                "schema": {
+                  "type": "string",
+                  "description": "Raw XML payload"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Despatch advice created",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CreateDespatchAdviceResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid or missing XML payload",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BadRequestDespatchCreateErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid issued API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingApiKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidApiKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/despatch/retrieve": {
+        "get": {
+          "tags": [
+            "Despatch"
+          ],
+          "summary": "Retrieve a despatch advice",
+          "description": "Finds a despatch advice either by advice-id UUID or by providing an order XML document.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "search-type",
+              "in": "query",
+              "required": true,
+              "description": "Search mode: advice-id for UUID lookup, or order for order XML lookup.",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "order",
+                  "advice-id"
+                ]
+              }
+            },
+            {
+              "name": "query",
+              "in": "query",
+              "required": true,
+              "description": "The value to search with. Provide a UUID when search-type=advice-id, or raw order XML when search-type=order.",
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Despatch advice retrieved",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DespatchRetrievalResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Missing or invalid search parameters",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BadRequestDespatchRetrievalErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid issued API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingApiKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidApiKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Despatch advice not found (this will also occur if you try to retrieve another team's advice)",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotFoundDespatchAdviceErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/despatch/list": {
+        "get": {
+          "tags": [
+            "Despatch"
+          ],
+          "summary": "List despatch advice records for the current API key",
+          "description": "Returns all despatch advice records associated with the calling API key.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of despatch advice records",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ListDespatchAdvicesResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid issued API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingApiKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidApiKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/despatch/cancel/order": {
+        "post": {
+          "tags": [
+            "Despatch Cancellation"
+          ],
+          "summary": "Cancel an existing despatch advice",
+          "description": "Cancels a despatch advice using its advice-id and an order cancellation XML document.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelOrderRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Cancellation stored",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CancelOrderResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid request payload",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BadRequestOrderCancellationErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid issued API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingApiKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidApiKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "API key does not own the despatch advice",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ForbiddenErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Despatch advice not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotFoundCancellationErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "get": {
+          "tags": [
+            "Despatch Cancellation"
+          ],
+          "summary": "Retrieve order cancellation",
+          "description": "Retrieves an order cancellation using advice-id or cancellation-id query parameters.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "advice-id",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "Despatch advice id."
+            },
+            {
+              "name": "cancellation-id",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "Order cancellation id."
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Cancellation record",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CancelOrderResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Missing or invalid query parameters",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BadRequestOrderCancellationErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid issued API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingApiKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidApiKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "API key does not own the despatch advice",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ForbiddenErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Cancellation not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotFoundCancellationErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/despatch/cancel/fulfilment": {
+        "post": {
+          "tags": [
+            "Despatch Cancellation"
+          ],
+          "summary": "Create fulfilment cancellation",
+          "description": "Generates and stores a fulfilment cancellation document for a despatch advice.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FulfilmentCancellationRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Fulfilment cancellation created",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FulfilmentCancellationResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid request payload",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BadRequestFulfilmentCancellationErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid issued API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingApiKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidApiKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "API key does not own the despatch advice",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ForbiddenErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Despatch advice not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotFoundCancellationErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "get": {
+          "tags": [
+            "Despatch Cancellation"
+          ],
+          "summary": "Retrieve fulfilment cancellation",
+          "description": "Retrieves a fulfilment cancellation using advice-id or fulfilment-cancellation-id.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "advice-id",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "Despatch advice id."
+            },
+            {
+              "name": "fulfilment-cancellation-id",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "description": "Fulfilment cancellation id."
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Fulfilment cancellation record",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FulfilmentCancellationResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Missing or invalid query parameters",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BadRequestFulfilmentCancellationErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid issued API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingApiKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidApiKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "403": {
+              "description": "API key does not own the despatch advice",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ForbiddenErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Fulfilment cancellation not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotFoundFulfilmentCancellationErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/validate-doc/{document-type}": {
+        "post": {
+          "tags": [
+            "Document Validation"
+          ],
+          "summary": "Validate an XML document",
+          "description": "Validates a supported XML document type against the corresponding XSD validators.",
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "document-type",
+              "in": "path",
+              "required": true,
+              "description": "Document type to validate.",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "order",
+                  "receipt",
+                  "despatch",
+                  "order-cancel",
+                  "order-change",
+                  "fulfilment-cancel"
+                ]
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "string",
+                  "example": "<Order>...</Order>"
+                }
+              },
+              "text/xml": {
+                "schema": {
+                  "type": "string",
+                  "example": "<Order>...</Order>"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Validation completed",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ValidateDocumentResponse"
+                  },
+                  "examples": {
+                    "invalidXmlValidation": {
+                      "summary": "Invalid XML but successful request",
+                      "value": {
+                        "valid": false,
+                        "errors": [
+                          "Missing required field: cbc:ID"
+                        ],
+                        "executed-at": 1772246484
+                      }
+                    },
+                    "validXmlValidation": {
+                      "summary": "Valid XML",
+                      "value": {
+                        "valid": true,
+                        "errors": [],
+                        "executed-at": 1772246484
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid document type or missing/invalid XML body",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BadRequestDocumentValidationErrorsArrayResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Missing or invalid issued API key",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/MissingApiKeyErrorsArrayResponse"
+                      },
+                      {
+                        "$ref": "#/components/schemas/InvalidApiKeyErrorsArrayResponse"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error occured - try again later.",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/InternalErrorsArrayResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
