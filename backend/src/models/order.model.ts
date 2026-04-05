@@ -118,6 +118,16 @@ const OrderSchema = new Schema(
             unique: true,
             index: true,
         },
+
+        userId: {
+            type: String,
+            trim: true,
+            index: true,
+        },
+
+        rawData: {
+            type: Schema.Types.Mixed,
+        },
     },
     {
         collection: "orders",
