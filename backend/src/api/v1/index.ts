@@ -3,6 +3,7 @@ import healthRoutes from "./health/health.routes";
 import invoiceRoutes from "./invoices/invoices.routes";
 import orderRoutes from "./orders/orders.routes";
 import { apiKeyMiddleware } from "../../middleware/apiKey.middleware";
+import ordersRouter from "./orders/orders.routes";
 
 const router = Router();
 

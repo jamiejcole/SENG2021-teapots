@@ -26,6 +26,9 @@ const swaggerDefinition = {
     },
   ],
   tags: [
+    { name: "Health", description: "Service health checks" },
+    { name: "Invoices", description: "Invoice generation and validation" },
+    { name: "Orders", description: "Order creation integration" },
     { name: "V1 Health", description: "Service health checks (v1)" },
     { name: "V1 Invoices", description: "Invoice generation and validation (v1)" },
     { name: "V1 Orders", description: "Order validation (v1)" },
