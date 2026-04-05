@@ -1,6 +1,7 @@
 import path from "node:path";
 import swaggerJSDoc from "swagger-jsdoc";
 import { generateInvoiceSupplementSchemas } from "./swagger.utils";
+import { orderAndDespatchProxyPaths, orderAndDespatchProxySchemas } from "./swagger.order-despatch";
 
 const invoiceSupplementSchemas = generateInvoiceSupplementSchemas();
 
@@ -8,8 +9,8 @@ const swaggerDefinition = {
   openapi: "3.0.0",
   info: {
     title: "UBL Invoice Generator API",
-    version: "2.0.1",
-    description: "API for Invoice Generation and UBL validation. Made by the SENG2021 26T1 W11A Teapots Team.",
+    version: "2.1.0",
+    description: "API for Invoice Generation, UBL validation, and backend proxy support for Orders and Despatch Advice. Made by the SENG2021 26T1 W11A Teapots Team.",
   },
   servers: [
     {
@@ -31,8 +32,11 @@ const swaggerDefinition = {
     { name: "V1 Orders", description: "Order validation (v1)" },
     { name: "V2 Auth", description: "Authentication and 2FA (v2)" },
     { name: "V2 Invoices", description: "Invoice generation and validation (v2)" },
-    { name: "V2 Orders", description: "Order validation (v2)" },
+    { name: "V2 Orders", description: "Order generation, retrieval, and validation (v2)" },
+    { name: "V2 Summary", description: "AI order summary operations (v2)" },
+    { name: "V2 Despatch", description: "Despatch advice, cancellation, and validation (v2)" },
   ],
+  paths: orderAndDespatchProxyPaths,
   components: {
     securitySchemes: {
       ApiKeyAuth: {
@@ -195,6 +199,7 @@ const swaggerDefinition = {
           $ref: "#/components/schemas/InvoiceRecord",
         },
       },
+      ...orderAndDespatchProxySchemas,
     },
   },
 };
@@ -217,8 +222,11 @@ const versionedTagMap: Record<string, Record<string, string>> = {
   },
   "/api/v2/": {
     Auth: "V2 Auth",
+    Health: "V2 Health",
     Invoices: "V2 Invoices",
     Orders: "V2 Orders",
+    Summary: "V2 Summary",
+    Despatch: "V2 Despatch",
   },
 };
 
