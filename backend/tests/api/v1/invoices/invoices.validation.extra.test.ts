@@ -2,6 +2,22 @@ const parseXml = jest.fn()
 const saxonTransform = jest.fn()
 const puppeteerLaunch = jest.fn()
 
+jest.mock('node:fs', () => {
+  const actualFs = jest.requireActual('node:fs') as typeof import('node:fs')
+
+  return {
+    __esModule: true,
+    ...actualFs,
+    existsSync: jest.fn((filePath: string) => {
+      if (filePath === '/bin/true') {
+        return true
+      }
+
+      return actualFs.existsSync(filePath)
+    }),
+  }
+})
+
 jest.mock('libxmljs2', () => ({
   __esModule: true,
   default: { parseXml },
