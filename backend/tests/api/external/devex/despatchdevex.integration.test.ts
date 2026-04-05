@@ -1,4 +1,5 @@
-import '../../../src/loadEnv';
+export {}
+import '../../../../src/loadEnv';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -86,7 +87,7 @@ const runLiveTests = process.env.RUN_DEVEX_DESPATCH_INTEGRATION === 'true';
 const describeIfLive = runLiveTests ? describe : describe.skip;
 const baseUrl = (process.env.DEVEX_DESPATCH_API_BASE_URL ?? 'https://devex.cloud.tcore.network/api/v1').replace(/\/$/, '');
 const apiKey = process.env.DEVEX_DESPATCH_API_KEY;
-const sampleOrderXmlPath = path.resolve(__dirname, '../../../src/models/sample.xml');
+const sampleOrderXmlPath = path.resolve(__dirname, '../../../../src/models/sample.xml');
 const orderXml = fs.readFileSync(sampleOrderXmlPath, 'utf8').trim();
 
 function apiKeyHeaders() {
