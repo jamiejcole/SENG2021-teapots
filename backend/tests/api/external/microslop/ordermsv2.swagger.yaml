@@ -1,0 +1,1548 @@
+openapi: '3.0.3'
+info:
+  description: |
+    A UBL ordering API that generates the UBL XML based on JSON objects of the UBL parameters. 
+
+    Supports:
+    -  Authentication for future retrieval of orders
+    -  The ability to create orders without needing an account
+    -  AI tools, like AI summarise. More tools coming soon.
+    -  XML and UBL verification.
+  version: '1.0.0'
+  title: OrderMS UBL Ordering
+
+servers:
+  - url: https://api.orderms.tech/v2
+
+tags:
+  - name: Auth
+    description: Operations for authentication
+  - name: Party
+    description: Operations for user party management
+  - name: Orders
+    description: Operations about the orders
+  - name: Products
+    description: Operations for a party's products
+  - name: Health
+    description: Operations about the system health
+  - name: Summary
+    description: AI summary operations
+
+paths:
+  '/health':
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Checks if the Order service is alive and running.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "healthy"
+                service: "order"
+                message: "Order Creation API is running."
+        '503':
+          description: Service is unhealthy
+
+  '/summary':
+    post:
+      tags:
+        - Summary
+      summary: Generates an AI summary of the users orders
+      description: | 
+        Generates an AI summary for all user orders or selected order IDs. 
+        
+        On submitting an empty body `{}` all  the user's orders will be summarised.
+
+        Line length determines the number of lines returned by the LLM. Max 10 lines.
+
+        ### Usage Limits
+        Currently set at 15 requests per day, but it may be increased on demand depending on usage. 
+        
+        The return object contains the number of remaining requests. 
+        
+        If the same data is used for a request, it does not count towards the limit.
+      parameters:
+        - $ref: '#/components/parameters/token'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SummaryRequest'
+      responses:
+        '200':
+          description: Summary generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryResponse'
+              example:
+                summary: "One order is for Red Paint with UNSW Engineering as both the buyer and the seller, settled in AUD. The other order is for Blue Paint, with Havard Engineering as the buyer and UNSW Engineering as the seller, settled in USD."
+                remainingDailyRequests: 7
+        '401':
+          description: Missing or invalid token
+        '429':
+          description: Daily AI rate limit reached.
+        '500':
+          description: Server, AI or database error
+
+  '/auth/register':
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      description: Registers a new user account for accessing the Order API and returns a session token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                userId: "b3bfab067ae94b4271d86dc0d389f3e9"
+                token: "c5e8ba22-64ad-452e-8e96-5479d9bb3dba"
+        '400':
+          description: |
+            If any of the following are true:
+            - Missing / invalid fields
+            - Weak password
+              - Password is less than 8 characters
+              - Password does not contain a letter or number
+            - Email already in use
+            - Invalid email format
+  '/auth/login':
+    post:
+      tags:
+        - Auth
+      summary: Login an user
+      description: Logs in an existing user and returns a token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                userId: "b3bfab067ae94b4271d86dc0d389f3e9"
+                token: "c5e8ba22-64ad-452e-8e96-5479d9bb3dba"
+        '400':
+          description: Missing fields
+        '401':
+          description: |
+            If any of the following is true:
+            - User not found
+            - Wrong password
+
+  '/auth/logout':
+    post:
+      tags:
+        - Auth
+      summary: Logout
+      description: Logs out the current user (invalidates token session).
+      parameters:
+        - $ref: '#/components/parameters/token'
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                status: "success"
+                message: "Logged out."
+        '401':
+          description: Token missing or invalid
+
+  '/party/register':
+    post:
+      tags:
+        - Party
+      summary: Register a party for the current user
+      description: |
+        Creates a new party linked to the current user.
+        Allows other users of the system to see your party and the products you successfully."
+        Supports all party UBL parameters - simply use the UBL parameter name in the JSON body.
+      parameters:
+        - name: token
+          in: header
+          required: true
+          schema: 
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyRegisterRequest'
+            example: |
+              {
+                "PartyName": [
+                  { "Name": "UNSW Bookshop" }
+                ],
+                "PostalAddress": {
+                  "StreetName": "High Street",
+                  "BuildingName": "Business Building",
+                  "BuildingNumber": "E12",
+                  "CityName": "Kensington",
+                  "PostalZone": "2033",
+                  "CountrySubentity": "NSW",
+                  "AddressLine": [
+                    { "Line": "Floor LG" }
+                  ],
+                  "Country": {
+                    "IdentificationCode": "AU"
+                  }
+                },
+                "PartyTaxScheme": [
+                  {
+                    "RegistrationName": "UNSW Bookshop",
+                    "CompanyID": "12356478",
+                    "TaxScheme": {
+                      "ID": "AU GST",
+                      "TaxTypeCode": "GST"
+                    }
+                  }
+                ],
+                "Contact": {
+                  "Name": "Prof. Martin Green",
+                  "Telephone": "03 12345678",
+                  "Telefax": "03 12345678",
+                  "ElectronicMail": "books@unsw.edu.au"
+                }
+              }
+      responses:
+        '201':
+          description: Party registered successfully
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyRegisterResponse'
+              example: |
+                {
+                  "userId": "b3bfab067ab94b4271d86dc0d389f3e9",
+                  "partyId": "7f3219e7cbddbd04e2b20f3ebaa022d7",
+                  "party": {
+                    "PartyName": [
+                      { "Name": "UNSW Bookshop" }
+                    ],
+                    "PostalAddress": {
+                      "StreetName": "High Street",
+                      "BuildingName": "Business Building",
+                      "BuildingNumber": "E12",
+                      "CityName": "Kensington",
+                      "PostalZone": "2033",
+                      "CountrySubentity": "NSW",
+                      "AddressLine": [
+                        { "Line": "Floor LG" }
+                      ],
+                      "Country": {
+                        "IdentificationCode": "AU"
+                      }
+                    },
+                    "PartyTaxScheme": [
+                      {
+                        "RegistrationName": "UNSW Bookshop",
+                        "CompanyID": "12356478",
+                        "TaxScheme": {
+                          "ID": "AU GST",
+                          "TaxTypeCode": "GST"
+                        }
+                      }
+                    ],
+                    "Contact": {
+                      "Name": "Prof. Martin Green",
+                      "Telephone": "03 12345678",
+                      "Telefax": "03 12345678",
+                      "ElectronicMail": "books@unsw.edu.au"
+                    }
+                  }
+                }
+        '401':
+          description: Missing or invalid token
+        '400':
+          description: Invalid JSON body
+
+  '/party':
+    delete:
+      tags:
+        - Party
+      summary: Delete the current user's party
+      description: Deletes the party linked to the authenticated user.
+      parameters:
+        - $ref: '#/components/parameters/token'
+      responses:
+        '200':
+          description: Party deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyDeleteResponse'
+              example:
+                status: "deleted"
+                message: "Party deleted successfully."
+                partyId: "7f3219e7cbddbd04e2b20f3ebaa022d7"
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Party not found for this user
+        
+  '/products':
+    post:
+      tags:
+        - Products
+      summary: Create a products
+      description: |
+        Creates a new product for your user's party.
+        Supports all UBL `lineItem` parameters. Include `Item` as a parameter in the JSON body to support all UBL `Item` parameters.
+
+        When creating the request body, the JSON parameters are the same name as the UBL spec parameters.
+      parameters:
+        - $ref: '#/components/parameters/token'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+
+      responses:
+        '201':
+          description: Product created successfully
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductCreateResponse'
+
+        '401':
+          description: Missing or invalid token
+        '400':
+          description: |
+            There is one of the following issues:
+            - Invalid JSON body
+            - User has not created a party yet
+    get:
+      tags:
+        - Products
+      summary: List products
+      description: |
+        Lists products created by the logged-in user.
+
+        Supports query-based filtering using UBL line item field paths and comparison operators.
+        Examples:
+        - `?lineItem.Item.Name=Ergonomic%20Chair`
+        - `?createdAt[gte]=2026-03-16T00:00:00.000Z`
+        - `?partyId=7f3219e7cbddbd04e2b20f3ebaa022d7`
+
+        Supported operators: `eq`, `ne`, `lt`, `lte`, `gt`, `gte`.
+
+        Top-level fields are queried directly: `userId`, `productId`, `createdAt`, `modifiedAt`, `partyId`.
+        Other fields are matched against the nested `lineItem` JSON.
+
+        Use new Date() in node for the value of `createdAt` or `modifiedAt`.
+      parameters:
+        - $ref: '#/components/parameters/token'
+        - name: lineItem.Item.Name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Exact match filter on nested product item name.
+          example: "Ergonomic Chair"
+        - name: createdAt[gte]
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Return products created on or after this timestamp.
+          example: "2026-03-16T00:00:00.000Z"
+        - name: partyId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Exact match on the linked party ID.
+          example: "7f3219e7cbddbd04e2b20f3ebaa022d7"
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: |
+            1-based page number for paginated results.
+            Must be provided together with `pageSize`.
+          example: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: |
+            Number of products to return per page.
+            Must be provided together with `page`.
+          example: 10
+      responses:
+        '200':
+          description: List of products with optional pagination metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+              example:
+                page: 1
+                pageSize: 10
+                orders:
+                  - userId: "b3bfab067ab94b4271d86dc0d389f3e9"
+                    partyId: "7f3219e7cbddbd04e2b20f3ebaa022d7"
+                    productId: "99c71fc6a5ca6b465f04c6f91ee0fca2"
+                    lineItem:
+                      ID: "LINE-001"
+                      Item:
+                        Name: "Ergonomic Chair"
+                        Description:
+                          - "Mesh back, black, adjustable lumbar support"
+                    createdAt: "2026-03-16T03:08:16.211Z"
+                    modifiedAt: "2026-03-16T03:09:24.022Z"
+        '400':
+          description: Invalid query filter or pagination parameters
+        '401':
+          description: Unauthorized
+
+  '/products/{productId}':
+    put:
+      tags:
+        - Products
+      summary: Update product
+      description: |
+        Updates an existing product belonging to the authenticated user.
+        The request body is the product `lineItem` itself, using UBL field names directly.
+        `Item` is required in the payload.
+      parameters:
+        - $ref: '#/components/parameters/token'
+        - name: productId
+          in: path
+          description: ID of the product to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Updated product line item data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+            example:
+              ID: "LINE-001"
+              Item:
+                Name: "32-inch Monitor"
+                Description:
+                  - "4K IPS monitor with HDMI and USB-C"
+                ModelName:
+                  - "MON-32-4K"
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductCreateResponse'
+              example:
+                userId: "b3bfab067ab94b4271d86dc0d389f3e9"
+                partyId: "7f3219e7cbddbd04e2b20f3ebaa022d7"
+                productId: "99c71fc6a5ca6b465f04c6f91ee0fca2"
+                lineItem:
+                  ID: "LINE-001"
+                  Item:
+                    Name: "32-inch Monitor"
+                    Description:
+                      - "4K IPS monitor with HDMI and USB-C"
+                    ModelName:
+                      - "MON-32-4K"
+                createdAt: "2026-03-16T03:08:16.211Z"
+                modifiedAt: "2026-03-16T03:09:24.022Z"
+        '400':
+          description: |
+            Invalid request data.
+            This includes:
+            - Missing `productId` path parameter
+            - Invalid product payload
+            - Missing required `Item` field
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Product not found for this user
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      description: Deletes an existing product belonging to the authenticated user.
+      parameters:
+        - $ref: '#/components/parameters/token'
+        - name: productId
+          in: path
+          description: ID of the product to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDeleteResponse'
+              example:
+                status: "deleted"
+                message: "Product deleted successfully."
+                productId: "99c71fc6a5ca6b465f04c6f91ee0fca2"
+        '400':
+          description: Missing productId
+        '401':
+          description: Missing or invalid token
+        '404':
+          description: Product not found for this user
+
+  '/orders':
+    post:
+      tags:
+        - Orders
+      summary: Create order
+      description: |
+        Creates a new Order and generates a UBL 2.1 XML Order document based on user-provided data. 
+        
+        Supports all UBL parameters. 
+        
+        When creating the request body, the JSON parameters are the same name as the UBL spec parameters.
+
+        sellerPartyId can be provided to link the order to a registered seller party, or set to an empty string if no seller party link is required.
+      parameters:
+        - name: token
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+            example:
+              data:
+                ID: "ORD-001"
+                IssueDate: "2026-03-16"
+                BuyerCustomerParty:
+                  Party:
+                    PartyName:
+                      - Name: "Test Buyer"
+                SellerSupplierParty:
+                  Party:
+                    PartyName:
+                      - Name: "Test Seller"
+                OrderLine:
+                  - LineItem:
+                      ID: "LINE-001"
+                      Item:
+                        Description:
+                          - "Test Item"
+                        Name: "Test Product"
+              sellerPartyId: ""
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCreateResponse'
+              example:
+                orderId: "34"
+                status: "success"
+                ublXmlUrl: "/order/orders/34/xml"
+        '400':
+          description: Missing required fields / invalid items / invalid date format / missing data field
+        '401':
+          description: Token missing or invalid
+        '404':
+          description: Seller party not found
+        '500':
+          description: XML generation failure
+    get:
+      tags:
+        - Orders
+      summary: List orders
+      description: |
+        Lists orders created by the logged-in user.
+
+        Supports query-based filtering using UBL field paths and comparison operators.
+        Examples:
+        - `?OrderLine.LineItem.Item.Name=Test%20Product`
+        - `?createdAt[gte]=2026-03-16T00:00:00.000Z`
+        - `?OrderLine.LineItem.LineExtensionAmount[lte]=200`
+
+        Supported operators: `eq`, `ne`, `lt`, `lte`, `gt`, `gte`.
+
+        Top-level fields are queried directly: `orderId`, `createdAt`, `modifiedAt`, `url`.
+        Other fields are matched against the nested UBL JSON.
+
+        Use new Date() in node for the value of createdAt or modifiedAt.
+      parameters:
+        - $ref: '#/components/parameters/token'
+        - name: OrderLine.LineItem.Item.Name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Exact match filter on nested UBL item name.
+          example: "Test Product"
+        - name: createdAt[gte]
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Return orders created on or after this timestamp.
+          example: "2026-03-16T00:00:00.000Z"
+        - name: createdAt[lte]
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Return orders created on or before this timestamp.
+          example: "2026-03-31T23:59:59.999Z"
+        - name: orderId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Exact match on top-level orderId.
+          example: "df31bd828ae2f3f2a36dc0f4bb1d4027"
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: |
+            1-based page number for paginated results.
+            Must be provided together with `pageSize`.
+          example: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: |
+            Number of orders to return per page.
+            Must be provided together with `page`.
+          example: 10
+      responses:
+        '200':
+          description: List of orders with optional pagination metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+              example:
+                page: 1
+                pageSize: 10
+                orders:
+                  - _id: "69b77420ef44623e06626ba5"
+                    data:
+                      ID: "ORD-001"
+                      IssueDate: "2026-03-16"
+                      BuyerCustomerParty:
+                        Party:
+                          PartyName:
+                            - Name: "Test Buyer updated"
+                      SellerSupplierParty:
+                        Party:
+                          PartyName:
+                            - Name: "Test Seller"
+                      OrderLine:
+                        - LineItem:
+                            ID: "LINE-001"
+                            Item:
+                              Description:
+                                - "Test Item"
+                              Name: "Test Product"
+                    orderId: "df31bd828ae2f3f2a36dc0f4bb1d4027"
+                    createdAt: "2026-03-16T03:08:16.211Z"
+                    modifiedAt: "2026-03-16T03:09:24.022Z"
+                    url: "https://api.orderms.tech/orders/df31bd828ae2f3f2a36dc0f4bb1d4027/xml"
+                    userId: "53a85f8e38ee13317cfc0332328ceeb2"
+        '400':
+          description: Invalid query filter or pagination parameters
+        '401':
+          description: Unauthorized
+
+  '/orders/{orderId}':
+    get:
+      tags:
+        - Orders
+      summary: Get order by ID
+      description: Retrieves a stored order. Returns the JSON version of the UBL document. Use the GET /orders/{orderId}/xml route to get the xml version of the UBL.
+      parameters:
+        - name: token
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: orderId
+          in: path
+          description: ID of the order
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderRecord'
+              example:
+                orderId: "df31bd828ae2f3f2a36dc0f4bb1d4027"
+                ID: "ORD-001"
+                IssueDate: "2026-03-16"
+                BuyerCustomerParty:
+                  Party:
+                    PartyName:
+                      - Name: "Test Buyer updated"
+                SellerSupplierParty:
+                  Party:
+                    PartyName:
+                      - Name: "Test Seller"
+                OrderLine:
+                  - LineItem:
+                      ID: "LINE-001"
+                      Item:
+                        Description:
+                          - "Test Item"
+                        Name: "Test Product"
+        '400':
+          description: Malformed orderId
+        '401':
+          description: Token invalid
+        '403':
+          description: Not owner of the order
+        '404':
+          description: Order does not exist
+    put:
+      tags:
+        - Orders
+      summary: Update order
+      description: |
+        Updates an existing order. GET order can be used to retrieve the order so that changes can be made to it.
+
+        sellerPartyId can be provided to link the order to a registered seller party, or set to an empty string if no seller party link is required.
+      parameters:
+        - name: token
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: orderId
+          in: path
+          description: ID of the order to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Updated order data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+            example:
+              data:
+                ID: "ORD-001"
+                IssueDate: "2026-03-16"
+                BuyerCustomerParty:
+                  Party:
+                    PartyName:
+                      - Name: "Test Buyer"
+                SellerSupplierParty:
+                  Party:
+                    PartyName:
+                      - Name: "Test Seller"
+                OrderLine:
+                  - LineItem:
+                      ID: "LINE-001"
+                      Item:
+                        Description:
+                          - "Test Item"
+                        Name: "Test Product"
+              sellerPartyId: ""
+      responses:
+        '200':
+          description: Order updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderCreateResponse'
+              example:
+                orderId: 34
+                ublXmlUrl: "/order/orders/34/xml"
+        '400':
+          description: Invalid update payload / missing data field
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Order not found or seller party not found
+    delete:
+      tags:
+        - Orders
+      summary: Delete order
+      description: Deletes an order from the system.
+      parameters:
+        - name: token
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: orderId
+          in: path
+          description: ID of the order to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                status: "deleted"
+                message: "Order deleted successfully."
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+
+  '/orders/{orderId}/xml':
+    get:
+      tags:
+        - Orders
+      summary: Get order as UBL 2.1 XML
+      description: |
+        Returns the generated UBL 2.1 XML Order document.
+      parameters:
+        - name: token
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: orderId
+          in: path
+          description: ID of the order
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: UBL 2.1 XML document
+          content:
+            application/xml:
+              schema:
+                type: object
+                xml:
+                  name: Order
+                  namespace: 'urn:oasis:names:specification:ubl:schema:xsd:Order-2'
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <Order xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+                       xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+                       xmlns="urn:oasis:names:specification:ubl:schema:xsd:Order-2">
+                  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+                  <cbc:CustomizationID>urn:oasis:names:specification:ubl:xpath:Order-2.1:sbs-1.0</cbc:CustomizationID>
+                  <cbc:ProfileID>bpid:urn:oasis:names:bpss:ubl-2-sbs-order-with-simple-response</cbc:ProfileID>
+                  <cbc:ID>34</cbc:ID>
+                  <cbc:CopyIndicator>false</cbc:CopyIndicator>
+                  <cbc:UUID>6E09886B-DC6E-439F-82D1-7CCAC7F4E3B1</cbc:UUID>
+                  <cbc:IssueDate>2026-02-26</cbc:IssueDate>
+                  <cbc:DocumentCurrencyCode>AUD</cbc:DocumentCurrencyCode>
+                  <cac:BuyerCustomerParty>
+                    <cbc:CustomerAssignedAccountID>7300072311115</cbc:CustomerAssignedAccountID>
+                    <cac:Party>
+                      <cac:PartyName>
+                        <cbc:Name>UNSW Engineering</cbc:Name>
+                      </cac:PartyName>
+                      <cac:PostalAddress>
+                        <cbc:StreetName>High Street</cbc:StreetName>
+                        <cbc:CityName>Sydney</cbc:CityName>
+                        <cbc:PostalZone>2052</cbc:PostalZone>
+                        <cbc:CountrySubentity>New South Wales</cbc:CountrySubentity>
+                        <cac:Country>
+                          <cbc:IdentificationCode>AU</cbc:IdentificationCode>
+                        </cac:Country>
+                      </cac:PostalAddress>
+                      <cac:Contact>
+                        <cbc:Name>Procurement Office</cbc:Name>
+                        <cbc:ElectronicMail>procurement@unsw.edu.au</cbc:ElectronicMail>
+                      </cac:Contact>
+                    </cac:Party>
+                  </cac:BuyerCustomerParty>
+                  <cac:SellerSupplierParty>
+                    <cbc:CustomerAssignedAccountID>SIS001</cbc:CustomerAssignedAccountID>
+                    <cac:Party>
+                      <cac:PartyName>
+                        <cbc:Name>Sydney Industrial Supplies Pty Ltd</cbc:Name>
+                      </cac:PartyName>
+                      <cac:PostalAddress>
+                        <cbc:StreetName>Industrial Avenue</cbc:StreetName>
+                        <cbc:CityName>Sydney</cbc:CityName>
+                        <cbc:PostalZone>2000</cbc:PostalZone>
+                        <cbc:CountrySubentity>New South Wales</cbc:CountrySubentity>
+                        <cac:Country>
+                          <cbc:IdentificationCode>AU</cbc:IdentificationCode>
+                        </cac:Country>
+                      </cac:PostalAddress>
+                      <cac:Contact>
+                        <cbc:Name>Sales Department</cbc:Name>
+                        <cbc:ElectronicMail>sales@sydneyindustrial.com.au</cbc:ElectronicMail>
+                      </cac:Contact>
+                    </cac:Party>
+                  </cac:SellerSupplierParty>
+                  <cac:Delivery>
+                    <cac:RequestedDeliveryPeriod>
+                      <cbc:StartDate>2026-02-26</cbc:StartDate>
+                      <cbc:StartTime>12:30:00Z</cbc:StartTime>
+                    </cac:RequestedDeliveryPeriod>
+                  </cac:Delivery>
+                  <cac:TransactionConditions>
+                    <cbc:Description>order response required; payment is by EFT</cbc:Description>
+                  </cac:TransactionConditions>
+                  <cac:AnticipatedMonetaryTotal>
+                    <cbc:LineExtensionAmount currencyID="AUD">6000.00</cbc:LineExtensionAmount>
+                    <cbc:PayableAmount currencyID="AUD">6000.00</cbc:PayableAmount>
+                  </cac:AnticipatedMonetaryTotal>
+                  <cac:OrderLine>
+                    <cac:LineItem>
+                      <cbc:ID>1</cbc:ID>
+                      <cbc:LineStatusCode>NoStatus</cbc:LineStatusCode>
+                      <cbc:Quantity unitCode="LTR">120</cbc:Quantity>
+                      <cbc:LineExtensionAmount currencyID="AUD">6000.00</cbc:LineExtensionAmount>
+                      <cac:Price>
+                        <cbc:PriceAmount currencyID="AUD">50.00</cbc:PriceAmount>
+                        <cbc:BaseQuantity unitCode="LTR">120</cbc:BaseQuantity>
+                      </cac:Price>
+                      <cac:Item>
+                        <cbc:Name>Red paint</cbc:Name>
+                      </cac:Item>
+                    </cac:LineItem>
+                  </cac:OrderLine>
+                </Order>
+        '401':
+          description: Invalid bearer token is provided
+        '403':
+          description: Order does not belong to this user
+        '404':
+          description: Order not found
+
+components:
+  securitySchemes:
+    bearer_auth:
+      type: apiKey
+      in: header
+      name: Authorization
+
+  parameters:
+    token:
+      in: header
+      name: token
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    SummaryRequest:
+      type: object
+      required:
+        - orderIds
+        - lineLength
+      properties:
+        orderIds:
+          type: array
+          nullable: true
+          description: Optional list of order IDs to summarise. If left empty, or not given, then all the user's orders are summarised.
+          items:
+            type: string
+          example: ["df31bd828ae2f3f2a36dc0f4bb1d4027", "a1b2c3d4e5f6789012345678901234ab"]
+        lineLength:
+          type: integer
+          nullable: true
+          description: Number of summary lines requested. If not provided, defaults to 3. Maximum of 10 lines.
+          example: 3
+
+    SummaryResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: AI-generated order summary.
+          example: "One order is for Red Paint with UNSW Engineering as both the buyer and the seller, settled in AUD. The other order is for Blue Paint, with Havard Engineering as the buyer and UNSW Engineering as the seller, settled in USD."
+        remainingDailyRequests:
+          type: integer
+          description: Remaining number of daily AI summary requests for the user.
+          example: 7
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "healthy"
+        service:
+          type: string
+          example: "order"
+        message:
+          type: string
+          example: "Order Creation API is running."
+
+    MessageResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "deleted"
+        message:
+          type: string
+          example: "Operation successful."
+
+    PartyRegisterRequest:
+      type: object
+      description: Party registration payload using UBL party field names.
+      required:
+        - PartyName
+        - PostalAddress
+        - PartyTaxScheme
+        - Contact
+      properties:
+        PartyName:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartyNameEntry'
+        PostalAddress:
+          $ref: '#/components/schemas/PostalAddress'
+        PartyTaxScheme:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartyTaxSchemeEntry'
+        Contact:
+          $ref: '#/components/schemas/Contact'
+
+    PartyRegisterResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: "user-123"
+        partyId:
+          type: string
+          example: "7f3219e7cbddbd04e2b20f3ebaa022d7"
+        party:
+          $ref: '#/components/schemas/PartyRegisterRequest'
+
+    PartyDeleteResponse:
+      type: object
+      required:
+        - status
+        - message
+        - partyId
+      properties:
+        status:
+          type: string
+          example: "deleted"
+        message:
+          type: string
+          example: "Party deleted successfully."
+        partyId:
+          type: string
+          example: "7f3219e7cbddbd04e2b20f3ebaa022d7"
+
+    PartyNameEntry:
+      type: object
+      required:
+        - Name
+      properties:
+        Name:
+          type: string
+          example: "UNSW Bookshop"
+
+    PostalAddress:
+      type: object
+      required:
+        - StreetName
+        - BuildingName
+        - BuildingNumber
+        - CityName
+        - PostalZone
+        - CountrySubentity
+        - AddressLine
+        - Country
+      properties:
+        StreetName:
+          type: string
+          example: "High Street"
+        BuildingName:
+          type: string
+          example: "Business Building"
+        BuildingNumber:
+          type: string
+          example: "E12"
+        CityName:
+          type: string
+          example: "Kensington"
+        PostalZone:
+          type: string
+          example: "2033"
+        CountrySubentity:
+          type: string
+          example: "NSW"
+        AddressLine:
+          type: array
+          items:
+            $ref: '#/components/schemas/AddressLine'
+        Country:
+          $ref: '#/components/schemas/Country'
+
+    AddressLine:
+      type: object
+      required:
+        - Line
+      properties:
+        Line:
+          type: string
+          example: "Floor LG"
+
+    Country:
+      type: object
+      required:
+        - IdentificationCode
+      properties:
+        IdentificationCode:
+          type: string
+          example: "AU"
+
+    PartyTaxSchemeEntry:
+      type: object
+      required:
+        - RegistrationName
+        - CompanyID
+        - TaxScheme
+      properties:
+        RegistrationName:
+          type: string
+          example: "UNSW Bookshop"
+        CompanyID:
+          type: string
+          example: "12356478"
+        TaxScheme:
+          $ref: '#/components/schemas/TaxScheme'
+
+    TaxScheme:
+      type: object
+      required:
+        - ID
+        - TaxTypeCode
+      properties:
+        ID:
+          type: string
+          example: "AU GST"
+        TaxTypeCode:
+          type: string
+          example: "GST"
+
+    Contact:
+      type: object
+      required:
+        - Name
+        - Telephone
+        - Telefax
+        - ElectronicMail
+      properties:
+        Name:
+          type: string
+          example: "Prof. Martin Green"
+        Telephone:
+          type: string
+          example: "03 12345678"
+        Telefax:
+          type: string
+          example: "03 12345678"
+        ElectronicMail:
+          type: string
+          format: email
+          example: "books@unsw.edu.au"
+
+    ProductCreateRequest:
+      type: object
+      description: Product creation payload based on the UBL LineItem structure.
+      required:
+        - Item
+      properties:
+        UBLExtensions:
+          type: object
+          description: Optional UBL extensions container.
+          example: {}
+        ID:
+          type: string
+          description: Optional product line identifier. Auto-generated if omitted.
+          example: "LINE-001"
+        Item:
+          $ref: '#/components/schemas/ProductItem'
+
+    ProductItem:
+      type: object
+      description: Core UBL Item fields for product creation.
+      required:
+        - Name
+      properties:
+        Name:
+          type: string
+          example: "Ergonomic Chair"
+        Description:
+          type: array
+          items:
+            type: string
+          example:
+            - "Mesh back, black, adjustable lumbar support"
+        ModelName:
+          type: array
+          items:
+            type: string
+          example:
+            - "ERGO-MESH-BLK"
+
+    ProductCreateResponse:
+      type: object
+      required:
+        - userId
+        - partyId
+        - productId
+        - lineItem
+        - createdAt
+        - modifiedAt
+      properties:
+        userId:
+          type: string
+          example: "b3bfab067ab94b4271d86dc0d389f3e9"
+        partyId:
+          type: string
+          example: "7f3219e7cbddbd04e2b20f3ebaa022d7"
+        productId:
+          type: string
+          example: "99c71fc6a5ca6b465f04c6f91ee0fca2"
+        lineItem:
+          $ref: '#/components/schemas/ProductCreateRequest'
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-03-16T03:08:16.211Z"
+        modifiedAt:
+          type: string
+          format: date-time
+          example: "2026-03-16T03:09:24.022Z"
+
+    ProductDeleteResponse:
+      type: object
+      required:
+        - status
+        - message
+        - productId
+      properties:
+        status:
+          type: string
+          example: "deleted"
+        message:
+          type: string
+          example: "Product deleted successfully."
+        productId:
+          type: string
+          example: "99c71fc6a5ca6b465f04c6f91ee0fca2"
+
+    ProductListResponse:
+      type: object
+      description: List-products response with optional pagination metadata
+      properties:
+        page:
+          type: integer
+          example: 1
+          nullable: true
+          description: Requested page number when pagination is used.
+        pageSize:
+          type: integer
+          example: 10
+          nullable: true
+          description: Requested page size when pagination is used.
+        orders:
+          type: array
+          description: Array of product records returned by the current implementation.
+          items:
+            $ref: '#/components/schemas/ProductCreateResponse'
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - nameFirst
+        - nameLast
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: "user@example.com"
+        password:
+          type: string
+          minLength: 8
+          description: User password
+          example: "StrongPassword123!"
+        nameFirst:
+          type: string
+          description: User first name
+          example: "Dennis"
+        nameLast:
+          type: string
+          description: User last name
+          example: "Ritchie"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: "user@example.com"
+        password:
+          type: string
+          description: User password
+          example: "StrongPassword123!"
+
+    AuthResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: Unique identifier of the authenticated user
+          example: "b3bfab067ae94b4271d86dc0d389f3e9"
+        token:
+          type: string
+          description: Bearer token for subsequent authenticated requests
+          example: "c5e8ba22-64ad-452e-8e96-5479d9bb3dba"
+
+    Party:
+      type: object
+      required:
+        - name
+        - endpointId
+      properties:
+        name:
+          type: string
+          description: Organisation name
+          example: "UNSW Engineering"
+        endpointId:
+          type: string
+          description: GLN or other endpoint identifier
+          example: "7300072311115"
+
+    OrderItem:
+      type: object
+      required:
+        - lineId
+        - name
+        - quantity
+        - unitCode
+        - price
+      properties:
+        lineId:
+          type: string
+          description: Line item identifier
+          example: "1"
+        name:
+          type: string
+          description: Item name
+          example: "Red Paint"
+        quantity:
+          type: integer
+          description: Quantity ordered
+          example: 120
+        unitCode:
+          type: string
+          description: Unit of measure code (UN/ECE Rec 20)
+          example: "LTR"
+        price:
+          type: number
+          format: float
+          description: Unit price
+          example: 50.00
+
+    OrderCreateRequest:
+      type: object
+      description: Order creation/update payload wrapping the UBL JSON data
+      example:
+        data:
+          ID: "ORD-001"
+          IssueDate: "2026-03-16"
+          BuyerCustomerParty:
+            Party:
+              PartyName:
+                - Name: "Test Buyer"
+          SellerSupplierParty:
+            Party:
+              PartyName:
+                - Name: "Test Seller"
+          OrderLine:
+            - LineItem:
+                ID: "LINE-001"
+                Item:
+                  Description:
+                    - "Test Item"
+                  Name: "Test Product"
+        sellerPartyId: "fc1f9d3d0a4e3edb5a64ab33c12554f2"
+      required:
+        - data
+      properties:
+        data:
+          type: object
+          description: The UBL JSON object to be parsed and stored. Field names match the UBL 2.1 spec.
+          example:
+            ID: "ORD-001"
+            IssueDate: "2026-03-16"
+            BuyerCustomerParty:
+              Party:
+                PartyName:
+                  - Name: "Test Buyer"
+            SellerSupplierParty:
+              Party:
+                PartyName:
+                  - Name: "Test Seller"
+            OrderLine:
+              - LineItem:
+                  ID: "LINE-001"
+                  Item:
+                    Description:
+                      - "Test Item"
+                    Name: "Test Product"
+        sellerPartyId:
+          type: string
+          description: |
+            Optional registered seller party ID to associate with this order.
+            Pass an empty string or omit to leave unset.
+            If a non-empty value is provided, it must correspond to a valid registered party.
+          example: "fc1f9d3d0a4e3edb5a64ab33c12554f2"
+
+    OrderCreateResponse:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: Unique identifier of the created/updated order
+          example: 34
+        status:
+          type: string
+          example: "success"
+        ublXmlUrl:
+          type: string
+          description: URL to retrieve the generated UBL XML
+          example: "/order/orders/34/xml"
+
+    OrderRecord:
+      type: object
+      description: Full order record including metadata and input fields
+      properties:
+        _id:
+          type: string
+          example: "69b77420ef44623e06626ba5"
+        data:
+          type: object
+          description: Raw UBL-style order payload
+        orderId:
+          type: string
+          example: "df31bd828ae2f3f2a36dc0f4bb1d4027"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-03-16T03:08:16.211Z"
+        modifiedAt:
+          type: string
+          format: date-time
+          example: "2026-03-16T03:09:24.022Z"
+        url:
+          type: string
+          example: "https://api.orderms.tech/orders/df31bd828ae2f3f2a36dc0f4bb1d4027/xml"
+        userId:
+          type: string
+          example: "53a85f8e38ee13317cfc0332328ceeb2"
+
+    OrderSummary:
+      type: object
+      description: Summary of an order for list responses
+      properties:
+        orderId:
+          type: string
+          example: "34"
+        issueDate:
+          type: string
+          format: date
+          example: "2026-02-26"
+        currency:
+          type: string
+          example: "SEK"
+
+    OrderListResponse:
+      type: object
+      description: List-orders response with optional pagination metadata
+      properties:
+        page:
+          type: integer
+          example: 1
+          nullable: true
+          description: Requested page number when pagination is used.
+        pageSize:
+          type: integer
+          example: 10
+          nullable: true
+          description: Requested page size when pagination is used.
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderRecord'
