@@ -10,6 +10,7 @@ jest.mock('../../../../src/api/v2/invoices/invoices.service', () => ({
   storeInvoicePdf: jest.fn(),
   findInvoicePdfByHash: jest.fn(),
   deleteInvoiceById: jest.fn(),
+  deleteInvoiceByIdForUser: jest.fn(),
 }))
 
 jest.mock('../../../../src/api/v2/invoices/invoices.validation', () => ({
@@ -193,23 +194,36 @@ describe('invoices.controller', () => {
   })
 
   it('deletes invoices and returns 204', async () => {
-    mockedInvoicesService.deleteInvoiceById.mockResolvedValue({ _id: 'invoice-1' } as any)
+    mockedInvoicesService.deleteInvoiceByIdForUser.mockResolvedValue({ _id: 'invoice-1' } as any)
     const response = createResponse()
 
-    await invoicesController.deleteInvoice({ params: { invoiceId: '507f1f77bcf86cd799439011' } } as any, response)
+    await invoicesController.deleteInvoice(
+      {
+        params: { invoiceId: '507f1f77bcf86cd799439011' },
+        user: { userId: 'user-1' },
+      } as any,
+      response,
+    )
 
     expect(response.status).toHaveBeenCalledWith(204)
     expect(response.send).toHaveBeenCalled()
   })
 
   it('rejects missing invoice ids and missing invoices', async () => {
-    await expect(invoicesController.deleteInvoice({ params: {} } as any, createResponse())).rejects.toMatchObject({
+    await expect(
+      invoicesController.deleteInvoice({ params: {}, user: { userId: 'user-1' } } as any, createResponse()),
+    ).rejects.toMatchObject({
       statusCode: 400,
       message: 'Invoice ID is required as a non-empty string',
     })
 
-    mockedInvoicesService.deleteInvoiceById.mockResolvedValue(null)
-    await expect(invoicesController.deleteInvoice({ params: { invoiceId: '507f1f77bcf86cd799439011' } } as any, createResponse())).rejects.toMatchObject({
+    mockedInvoicesService.deleteInvoiceByIdForUser.mockResolvedValue(null)
+    await expect(
+      invoicesController.deleteInvoice(
+        { params: { invoiceId: '507f1f77bcf86cd799439011' }, user: { userId: 'user-1' } } as any,
+        createResponse(),
+      ),
+    ).rejects.toMatchObject({
       statusCode: 404,
       message: 'Invoice not found',
     })
