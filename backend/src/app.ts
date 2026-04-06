@@ -40,7 +40,7 @@ app.use(
 
       return cb(null, false);
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Accept", "Authorization", "x-api-key", "X-News-Admin-Key"],
     exposedHeaders: [
       "X-Invoice-Url",

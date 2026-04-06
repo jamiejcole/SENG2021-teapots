@@ -14,6 +14,9 @@ import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { Verify2FAPage } from '@/pages/auth/Verify2FAPage'
 import { AccountPage } from '@/pages/AccountPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { OrdersPage } from '@/pages/OrdersPage'
+import { OrderEditorPage } from '@/pages/OrderEditorPage'
+import { DespatchPage } from '@/pages/DespatchPage'
 import { useAuth } from '@/components/auth/AuthContext'
 import { PublicLayout } from '@/pages/public/PublicLayout'
 import { PrivacyPage } from '@/pages/public/PrivacyPage'
@@ -71,6 +74,10 @@ export default function App() {
         <Route path="/validate" element={<ProtectedRoute element={<ValidateOrderPage />} />} />
         <Route path="/invoices" element={<ProtectedRoute element={<InvoiceHistoryPage />} />} />
         <Route path="/invoices/:invoiceId" element={<ProtectedRoute element={<InvoiceDetailPage />} />} />
+        <Route path="/orders" element={<ProtectedRoute element={<OrdersPage />} />} />
+        <Route path="/orders/create" element={<ProtectedRoute element={<OrderEditorPage />} />} />
+        <Route path="/orders/:orderKey" element={<ProtectedRoute element={<OrderEditorPage />} />} />
+        <Route path="/despatch" element={<ProtectedRoute element={<DespatchPage />} />} />
         <Route path="/account" element={<ProtectedRoute element={<AccountPage />} />} />
         <Route path="/settings" element={<ProtectedRoute element={<SettingsPage />} />} />
       </Route>

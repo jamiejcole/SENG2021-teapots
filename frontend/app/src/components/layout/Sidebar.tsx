@@ -25,7 +25,7 @@ function Item({
   return (
     <NavLink
       to={to}
-      end={to === '/'}
+      end={to === '/dashboard'}
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(

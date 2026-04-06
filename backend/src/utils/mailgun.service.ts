@@ -128,6 +128,38 @@ export async function sendInvoiceReadyEmail(
   }
 }
 
+export async function sendDespatchAdviceEmail(
+  email: string,
+  subject: string,
+  html: string,
+  text: string
+): Promise<void> {
+  try {
+    const { domain, fromEmail, replyTo } = getMailgunConfig();
+    const mg = getMailgunClient();
+
+    await withTimeout(
+      mg.messages.create(domain, {
+        from: fromEmail,
+        to: email,
+        subject,
+        html,
+        text,
+        "h:Reply-To": replyTo,
+        "o:tracking": "no",
+      }),
+      MAILGUN_SEND_TIMEOUT_MS,
+      "Mailgun despatch send"
+    );
+  } catch (error) {
+    console.error("Failed to send despatch email:", error);
+    const errorMessage = error instanceof Error ? error.message : "Failed to send despatch email";
+    const err = new Error(errorMessage);
+    (err as any).cause = error;
+    throw err;
+  }
+}
+
 export async function sendPasswordResetEmail(
   email: string,
   variables: PasswordResetTemplateVariables

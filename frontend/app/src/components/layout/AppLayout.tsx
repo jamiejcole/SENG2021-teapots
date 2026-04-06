@@ -29,7 +29,7 @@ export function AppLayout() {
             <main id="main" className="mx-auto w-full flex-1 px-4 py-6 md:px-6 md:py-8">
               <Outlet />
             </main>
-            <div className="h-16 md:hidden" />
+            <div className="h-28 md:hidden" />
             <MobileBottomNav />
           </div>
         </div>

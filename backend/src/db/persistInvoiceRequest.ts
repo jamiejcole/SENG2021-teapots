@@ -170,6 +170,7 @@ export async function persistInvoiceRequest(args: PersistInvoiceRequestArgs): Pr
 
   const orderDoc = {
     status: "RECEIVED",
+    orderStatus: "created" as const,
     orderId: ublText(orderObj.ID) ?? UNKNOWN_TEXT,
     issueDate: ublText(orderObj.IssueDate) ?? isoDateToday(),
     currency: invoiceSupplement.currencyCode,

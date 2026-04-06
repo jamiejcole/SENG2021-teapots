@@ -6,6 +6,7 @@ import { InvoiceBuilder } from '../../../domain/InvoiceBuilder';
 import mongoose from 'mongoose';
 import { InvoiceModel } from '../../../models/invoice.model';
 import { OrderModel } from '../../../models/order.model';
+import { DespatchModel } from '../../../models/despatch.model';
 import { InvoicePdfModel } from '../../../models/invoicePdf.model';
 import { sha256 } from '../../../models/hash';
 import { buildInvoiceSetFields } from '../../../db/persistInvoiceRequest';
@@ -317,7 +318,12 @@ export type DashboardStatsResult = {
     validatedCount: number;
     failedSendCount: number;
     pendingCount: number;
-    throughputByDay: { date: string; count: number }[];
+    totalOrders: number;
+    ordersCancelled: number;
+    ordersOpen: number;
+    totalDespatches: number;
+    despatchesFulfilmentCancelled: number;
+    throughputByDay: { date: string; count: number; revenue: number }[];
     recentActivity: {
         id: string;
         invoiceMongoId: string;
@@ -337,6 +343,11 @@ export async function getDashboardForUser(userId: string): Promise<DashboardStat
         validatedCount: 0,
         failedSendCount: 0,
         pendingCount: 0,
+        totalOrders: 0,
+        ordersCancelled: 0,
+        ordersOpen: 0,
+        totalDespatches: 0,
+        despatchesFulfilmentCancelled: 0,
         throughputByDay: [],
         recentActivity: [],
     };
@@ -395,18 +406,25 @@ export async function getDashboardForUser(userId: string): Promise<DashboardStat
             $group: {
                 _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
                 count: { $sum: 1 },
+                revenue: { $sum: "$totals.payableAmount" },
             },
         },
         { $sort: { _id: 1 } },
     ]).exec();
 
-    const dayMap = new Map(daily.map((d) => [d._id as string, d.count as number]));
-    const throughputByDay: { date: string; count: number }[] = [];
+    const dayMap = new Map(
+        daily.map((d) => [
+            d._id as string,
+            { count: d.count as number, revenue: (d.revenue as number) ?? 0 },
+        ])
+    );
+    const throughputByDay: { date: string; count: number; revenue: number }[] = [];
     for (let i = 0; i < 14; i++) {
         const d = new Date(fourteenDaysAgo);
         d.setUTCDate(fourteenDaysAgo.getUTCDate() + i);
         const key = d.toISOString().slice(0, 10);
-        throughputByDay.push({ date: key, count: dayMap.get(key) ?? 0 });
+        const row = dayMap.get(key);
+        throughputByDay.push({ date: key, count: row?.count ?? 0, revenue: row?.revenue ?? 0 });
     }
 
     const rawActivity = await InvoiceModel.aggregate([
@@ -435,6 +453,18 @@ export async function getDashboardForUser(userId: string): Promise<DashboardStat
         at: (row.at as Date).toISOString(),
     }));
 
+    const [totalOrders, ordersCancelled, totalDespatches, despatchesFulfilmentCancelled] = await Promise.all([
+        OrderModel.countDocuments({ createdBy: uid }).exec(),
+        OrderModel.countDocuments({ createdBy: uid, orderStatus: "cancelled" }).exec(),
+        DespatchModel.countDocuments({ createdBy: uid }).exec(),
+        DespatchModel.countDocuments({ createdBy: uid, despatchStatus: "fulfilment_cancelled" }).exec(),
+    ]);
+
+    const ordersOpen = await OrderModel.countDocuments({
+        createdBy: uid,
+        orderStatus: { $nin: ["cancelled", "fulfilled"] },
+    }).exec();
+
     return {
         totalInvoices: agg?.totalInvoices ?? 0,
         revenueTotal: agg?.revenueTotal ?? 0,
@@ -442,6 +472,11 @@ export async function getDashboardForUser(userId: string): Promise<DashboardStat
         validatedCount: agg?.validatedCount ?? 0,
         failedSendCount: agg?.failedSendCount ?? 0,
         pendingCount: agg?.pendingCount ?? 0,
+        totalOrders,
+        ordersCancelled,
+        ordersOpen,
+        totalDespatches,
+        despatchesFulfilmentCancelled,
         throughputByDay,
         recentActivity,
     };

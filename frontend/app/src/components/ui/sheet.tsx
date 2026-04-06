@@ -35,8 +35,9 @@ function Sheet({
 const sideClasses = {
   top: "inset-x-0 top-0 border-b",
   bottom: "inset-x-0 bottom-0 border-t",
-  left: "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
-  right: "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
+  left: "inset-y-0 left-0 h-dvh max-h-dvh w-[min(100vw-1rem,24rem)] border-r sm:max-w-sm",
+  right:
+    "inset-y-0 right-0 h-dvh max-h-dvh w-full border-l sm:max-w-lg sm:w-[min(36rem,calc(100vw-1rem))]",
 } as const
 
 const slideClasses = {
@@ -72,7 +73,7 @@ function SheetContent({
       <div
         data-state={open ? "open" : "closed"}
         className={cn(
-          "fixed z-50 gap-4 bg-background p-6 shadow-lg transition-transform duration-300 ease-out",
+          "fixed z-50 flex flex-col gap-0 overflow-hidden bg-background p-6 shadow-lg transition-transform duration-300 ease-out",
           sideClasses[side],
           slideClasses[side],
           className
