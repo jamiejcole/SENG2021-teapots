@@ -1,0 +1,34 @@
+opencollection: 1.0.0
+
+info:
+  name: Microslop
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  auth:
+    type: apikey
+    key: token
+    value: 620b79ed-5eb3-4e17-914f-a70df690a438
+    placement: header
+  variables:
+    - name: userId
+      value: ec732c35dc63a23197984a76bf5039c6
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git
+    presets:
+      request:
+        type: http

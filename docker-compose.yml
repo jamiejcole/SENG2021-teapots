@@ -64,7 +64,7 @@ services:
         awslogs-region: "ap-southeast-2"
         awslogs-group: "api-logs"
         awslogs-create-group: "true"
-        awslogs-stream: "caddy"
+        awslogs-stream: "backend"
   watchtower:
     image: containrrr/watchtower:latest
     container_name: seng2021-teapots-watchtower

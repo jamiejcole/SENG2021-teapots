@@ -1,0 +1,18 @@
+info:
+  name: List Orders
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: https://api.orderms.tech/v1/orders
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
