@@ -1,4 +1,5 @@
 import * as libxml from "libxmljs2";
+import mongoose from "mongoose";
 import type { OrderData, UBLValue } from "../types/order.types";
 import type { InvoiceSupplement } from "../types/invoice.types";
 import { InvoiceCalculator } from "../domain/InvoiceCalculator";
@@ -11,6 +12,8 @@ type PersistInvoiceRequestArgs = {
   orderObj: OrderData;
   invoiceXml: string;
   invoiceSupplement: InvoiceSupplement;
+  /** Authenticated user (Mongo ObjectId string) when invoice is created via v2 API */
+  userId?: string;
 };
 
 const UNKNOWN_TEXT = "UNKNOWN";
@@ -45,6 +48,96 @@ function pickText(doc: libxml.Document, xpath: string, namespaces: Record<string
   return node?.text();
 }
 
+const INV_NAMESPACES = {
+  inv: "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
+  cbc: "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+};
+
+/**
+ * Core scalar + party + line projection for an invoice document (XML body + queryable fields).
+ * Used on first save and when regenerating UBL from the stored order.
+ */
+export function buildInvoiceSetFields(
+  orderObj: OrderData,
+  invoiceSupplement: InvoiceSupplement,
+  normalizedInvoiceXml: string
+) {
+  const normalized = normalizedInvoiceXml.trim().replace(/\r\n/g, "\n");
+  const invoiceXmlHash = sha256(normalized);
+
+  const orderLines = toArray(orderObj.OrderLine);
+  const calculator = new InvoiceCalculator(orderLines as any[], invoiceSupplement.taxRate);
+
+  const buyerParty = orderObj.BuyerCustomerParty?.Party;
+  const sellerParty = orderObj.SellerSupplierParty?.Party;
+
+  const orderDoc = {
+    orderId: ublText(orderObj.ID) ?? UNKNOWN_TEXT,
+    issueDate: ublText(orderObj.IssueDate) ?? isoDateToday(),
+    currency: invoiceSupplement.currencyCode,
+
+    buyer: {
+      name: ublText(buyerParty?.PartyName?.Name) ?? "Buyer",
+      id: ublText(buyerParty?.EndpointID),
+      email: ublText(buyerParty?.Contact?.ElectronicMail),
+      address: mapPartyAddress(buyerParty),
+    },
+
+    seller: {
+      name: ublText(sellerParty?.PartyName?.Name) ?? "Seller",
+      id: ublText(sellerParty?.EndpointID),
+      email: ublText(sellerParty?.Contact?.ElectronicMail),
+      address: mapPartyAddress(sellerParty),
+    },
+
+    lines: orderLines.map((l: any, idx: number) => ({
+      lineId: String(ublText(l.LineItem?.ID) ?? idx + 1),
+      description: String(ublText(l.LineItem?.Item?.Name) ?? "Item"),
+      quantity: Number(ublText(l.LineItem?.Quantity) ?? 1),
+      unitCode: l.LineItem?.Quantity?.["@unitCode"],
+      unitPrice: Number(ublText(l.LineItem?.Price?.PriceAmount) ?? 0),
+      taxRate: invoiceSupplement.taxRate,
+    })),
+
+    totals: {
+      subTotal: Number(calculator.summary.lineExtensionTotal),
+      taxTotal: Number(calculator.summary.taxTotal),
+      payableAmount: Number(calculator.summary.payableAmount),
+    },
+  };
+
+  const invDoc = libxml.parseXml(normalized);
+  const parsedInvoiceId = pickText(invDoc, "/inv:Invoice/cbc:ID", INV_NAMESPACES);
+  const parsedIssueDate = pickText(invDoc, "/inv:Invoice/cbc:IssueDate", INV_NAMESPACES);
+  const parsedCurrency = pickText(invDoc, "/inv:Invoice/cbc:DocumentCurrencyCode", INV_NAMESPACES);
+
+  return {
+    invoiceId: parsedInvoiceId ?? `INV-${Date.now()}`,
+    issueDate: parsedIssueDate ?? isoDateToday(),
+    currency: parsedCurrency ?? invoiceSupplement.currencyCode,
+
+    seller: orderDoc.seller,
+    buyer: orderDoc.buyer,
+
+    lines: orderDoc.lines.map((l: any, idx: number) => ({
+      lineId: String(idx + 1),
+      description: l.description,
+      quantity: l.quantity,
+      unitCode: l.unitCode,
+      unitPrice: l.unitPrice,
+      taxRate: l.taxRate,
+    })),
+
+    orderReference: { orderId: orderDoc.orderId },
+    paymentTerms: invoiceSupplement.paymentTerms?.note,
+
+    totals: orderDoc.totals,
+
+    invoiceXml: normalized,
+    xmlSha256: invoiceXmlHash,
+  };
+}
+
 /**
  * Persists a successfully-validated Order + generated Invoice to MongoDB.
  *
@@ -53,15 +146,21 @@ function pickText(doc: libxml.Document, xpath: string, namespaces: Record<string
  * - a "projection" of useful fields (IDs, parties, totals, lines) for querying.
  *
  * Inserts are idempotent on `xmlSha256` to avoid duplicate documents for the same XML payload.
+ *
+ * @returns Mongo `_id` of the invoice row (new or existing with the same XML hash).
  */
-export async function persistInvoiceRequest(args: PersistInvoiceRequestArgs): Promise<void> {
-  const { orderXml, orderObj, invoiceXml, invoiceSupplement } = args;
+export async function persistInvoiceRequest(args: PersistInvoiceRequestArgs): Promise<string | null> {
+  const { orderXml, orderObj, invoiceXml, invoiceSupplement, userId } = args;
+
+  const createdBy =
+    userId && mongoose.Types.ObjectId.isValid(userId)
+      ? new mongoose.Types.ObjectId(userId)
+      : undefined;
 
   const normalizedOrderXml = orderXml.trim().replace(/\r\n/g, "\n");
   const normalizedInvoiceXml = invoiceXml.trim().replace(/\r\n/g, "\n");
 
   const orderXmlHash = sha256(normalizedOrderXml);
-  const invoiceXmlHash = sha256(normalizedInvoiceXml);
 
   const orderLines = toArray(orderObj.OrderLine);
   const calculator = new InvoiceCalculator(orderLines as any[], invoiceSupplement.taxRate);
@@ -122,46 +221,27 @@ export async function persistInvoiceRequest(args: PersistInvoiceRequestArgs): Pr
     await OrderModel.updateOne({ _id: existingOrder._id }, { $set: orderDoc }).exec();
   }
 
-  const invDoc = libxml.parseXml(normalizedInvoiceXml);
-  const namespaces = {
-    inv: "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
-    cbc: "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
-  };
-
-  const parsedInvoiceId = pickText(invDoc, "/inv:Invoice/cbc:ID", namespaces);
-  const parsedIssueDate = pickText(invDoc, "/inv:Invoice/cbc:IssueDate", namespaces);
-  const parsedCurrency = pickText(invDoc, "/inv:Invoice/cbc:DocumentCurrencyCode", namespaces);
+  const coreFields = buildInvoiceSetFields(orderObj, invoiceSupplement, normalizedInvoiceXml);
 
   const invoiceDoc = {
-    status: "GENERATED",
-    invoiceId: parsedInvoiceId ?? `INV-${Date.now()}`,
-    issueDate: parsedIssueDate ?? isoDateToday(),
-    currency: parsedCurrency ?? invoiceSupplement.currencyCode,
-
-    seller: orderDoc.seller,
-    buyer: orderDoc.buyer,
-
-    lines: orderDoc.lines.map((l: any, idx: number) => ({
-      lineId: String(idx + 1),
-      description: l.description,
-      quantity: l.quantity,
-      unitCode: l.unitCode,
-      unitPrice: l.unitPrice,
-      taxRate: l.taxRate,
-    })),
-
-    orderReference: { orderId: orderDoc.orderId },
-    paymentTerms: invoiceSupplement.paymentTerms?.note,
-
-    totals: orderDoc.totals,
-
-    invoiceXml: normalizedInvoiceXml,
-    xmlSha256: invoiceXmlHash,
+    status: "GENERATED" as const,
+    ...(createdBy ? { createdBy } : {}),
+    lifecycleStatus: "SAVED" as const,
+    activity: [
+      {
+        at: new Date(),
+        type: "CREATED",
+        message: "Invoice generated and stored from UBL order",
+      },
+    ],
+    ...coreFields,
   };
 
-  const existingInvoice = await InvoiceModel.findOne({ xmlSha256: invoiceXmlHash }).exec();
+  const existingInvoice = await InvoiceModel.findOne({ xmlSha256: coreFields.xmlSha256 }).exec();
   if (existingInvoice === null) {
-    await InvoiceModel.create(invoiceDoc);
+    const doc = await InvoiceModel.create(invoiceDoc);
+    return doc._id.toString();
   }
+  return existingInvoice._id.toString();
 }
 

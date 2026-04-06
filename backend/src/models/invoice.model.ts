@@ -41,8 +41,48 @@ const MoneySchema = new Schema(
     { _id: false }
 );
 
+const ActivityEntrySchema = new Schema(
+    {
+        at: { type: Date, default: () => new Date() },
+        type: { type: String, required: true, trim: true },
+        message: { type: String, required: true, trim: true },
+        meta: { type: Schema.Types.Mixed },
+    },
+    { _id: false }
+);
+
 const InvoiceSchema = new Schema(
     {
+        /** Ownership for multi-tenant list/dashboard (optional for legacy rows). */
+        createdBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            index: true,
+            default: null,
+        },
+
+        /**
+         * Business lifecycle for dashboard and email workflow.
+         * Extends legacy `status` (GENERATED/UPDATED) which reflects XML regeneration.
+         */
+        lifecycleStatus: {
+            type: String,
+            enum: ["DRAFT", "SAVED", "VALIDATED", "SENT", "SEND_FAILED", "PAID", "OVERDUE"],
+            default: "SAVED",
+            index: true,
+        },
+
+        activity: {
+            type: [ActivityEntrySchema],
+            default: [],
+        },
+
+        sentTo: { type: String, trim: true, lowercase: true },
+        sentAt: { type: Date },
+        lastError: { type: String, trim: true },
+        /** SHA-256 of normalized invoice XML when PDF was stored via /invoices/pdf */
+        pdfInvoiceHash: { type: String, trim: true, lowercase: true },
+
         status: {
             type: String,
             enum: ["GENERATED", "UPDATED"],

@@ -18,7 +18,7 @@ jest.mock('../../src/models/order.model', () => ({
 jest.mock('../../src/models/invoice.model', () => ({
   InvoiceModel: {
     findOne: jest.fn(),
-    create: jest.fn(),
+    create: jest.fn().mockResolvedValue({ _id: 'new-invoice-id' }),
   },
 }));
 

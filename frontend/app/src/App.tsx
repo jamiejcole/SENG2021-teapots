@@ -5,6 +5,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { GenerateInvoicePage } from '@/pages/GenerateInvoicePage'
 import { ValidateOrderPage } from '@/pages/ValidateOrderPage'
 import { InvoiceHistoryPage } from '@/pages/InvoiceHistoryPage'
+import { InvoiceDetailPage } from '@/pages/InvoiceDetailPage'
 import { AuthLayout } from '@/pages/auth/AuthLayout'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { SignInPage } from '@/pages/auth/SignInPage'
@@ -69,6 +70,7 @@ export default function App() {
         <Route path="/generate" element={<ProtectedRoute element={<GenerateInvoicePage />} />} />
         <Route path="/validate" element={<ProtectedRoute element={<ValidateOrderPage />} />} />
         <Route path="/invoices" element={<ProtectedRoute element={<InvoiceHistoryPage />} />} />
+        <Route path="/invoices/:invoiceId" element={<ProtectedRoute element={<InvoiceDetailPage />} />} />
         <Route path="/account" element={<ProtectedRoute element={<AccountPage />} />} />
         <Route path="/settings" element={<ProtectedRoute element={<SettingsPage />} />} />
       </Route>
