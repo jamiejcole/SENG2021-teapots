@@ -91,6 +91,12 @@ describe('persistInvoiceRequest', () => {
     jest.clearAllMocks();
     (OrderModel.findOne as jest.Mock).mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
     (InvoiceModel.findOne as jest.Mock).mockReturnValue({ exec: jest.fn().mockResolvedValue(null) });
+    (OrderModel.create as jest.Mock).mockResolvedValue({
+      _id: { toString: () => '507f1f77bcf86cd799439011' },
+    });
+    (InvoiceModel.create as jest.Mock).mockResolvedValue({
+      _id: { toString: () => '507f191e810c19729de860ea' },
+    });
   });
 
   it('creates order and invoice docs when hashes do not exist', async () => {
