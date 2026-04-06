@@ -1,5 +1,5 @@
 import { HttpError } from '../../../../src/errors/HttpError';
-import { createInvoice, validateInvoice, createPdf, deleteInvoice } from '../../../../src/api/v1/invoices/invoices.controller';
+import { createInvoice, validateInvoice, createPdf, deleteInvoice, updateInvoice, getInvoice, listInvoices } from '../../../../src/api/v1/invoices/invoices.controller';
 import * as validation from '../../../../src/api/v1/invoices/invoices.validation';
 import * as service from '../../../../src/api/v1/invoices/invoices.service';
 import * as persist from '../../../../src/db/persistInvoiceRequest';
@@ -14,6 +14,9 @@ jest.mock('../../../../src/api/v1/invoices/invoices.service', () => ({
   createFullUblObject: jest.fn(),
   convertJsonToUblInvoice: jest.fn(),
   deleteInvoiceById: jest.fn(),
+  getInvoiceById: jest.fn(),
+  getAllInvoices: jest.fn(),
+  updateInvoiceById: jest.fn(),
 }));
 
 jest.mock('../../../../src/db/persistInvoiceRequest', () => ({
@@ -131,5 +134,70 @@ describe('invoices.controller', () => {
     expect(res.set).not.toHaveBeenCalled();
     expect(res.status).not.toHaveBeenCalled();
     expect(res.send).not.toHaveBeenCalled();
+  });
+
+  it('updateInvoice validates, updates, and returns XML 200', async () => {
+    const req = {
+      params: { invoiceId: '507f1f77bcf86cd799439011' },
+      body: {
+        orderXml: '<Order></Order>',
+        invoiceSupplement: { currencyCode: 'AUD', taxRate: 0.1 },
+      },
+    } as any;
+
+    const res = {
+      contentType: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    } as any;
+
+    (service.createFullUblObject as jest.Mock).mockResolvedValue({ data: { ID: 'ORDER-1' } });
+    (service.convertJsonToUblInvoice as jest.Mock).mockReturnValue('<Invoice />');
+    (service.updateInvoiceById as jest.Mock).mockResolvedValue({ _id: 'invoice-1' });
+
+    await new Promise<void>((resolve, reject) => {
+      res.send.mockImplementation(() => {
+        resolve();
+      });
+      updateInvoice(req, res, (err?: unknown) => {
+        if (err) reject(err);
+      });
+    });
+
+    expect(validation.validateCreateInvoiceRequest).toHaveBeenCalledWith(req.body);
+    expect(service.updateInvoiceById).toHaveBeenCalledWith(
+      '507f1f77bcf86cd799439011',
+      '<Order></Order>',
+      { ID: 'ORDER-1' },
+      '<Invoice />',
+      req.body.invoiceSupplement,
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith('<Invoice />');
+  });
+
+  it('getInvoice returns 404 for missing invoices and 200 for existing ones', async () => {
+    (service.getInvoiceById as jest.Mock).mockResolvedValueOnce(null);
+    await expect(getInvoice({ params: { invoiceId: 'bad' } } as any, {} as any)).rejects.toThrow('Invoice not found');
+
+    const res = { set: jest.fn().mockReturnThis(), status: jest.fn().mockReturnThis(), send: jest.fn() } as any;
+    (service.getInvoiceById as jest.Mock).mockResolvedValueOnce({ _id: 'invoice-1' });
+
+    await getInvoice({ params: { invoiceId: '507f1f77bcf86cd799439011' } } as any, res);
+
+    expect(res.set).toHaveBeenCalledWith('Content-Type', 'application/json');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith({ _id: 'invoice-1' });
+  });
+
+  it('listInvoices returns the full invoice list', async () => {
+    const res = { set: jest.fn().mockReturnThis(), status: jest.fn().mockReturnThis(), send: jest.fn() } as any;
+    (service.getAllInvoices as jest.Mock).mockResolvedValue([{ _id: 'invoice-1' }]);
+
+    await listInvoices({} as any, res);
+
+    expect(res.set).toHaveBeenCalledWith('Content-Type', 'application/json');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith([{ _id: 'invoice-1' }]);
   });
 });

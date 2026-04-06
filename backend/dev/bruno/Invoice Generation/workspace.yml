@@ -5,9 +5,11 @@ info:
 
 collections:
   - name: "Invoice Creation"
-    path: "collections\\Invoice Creation"
+    path: "collections/Invoice Creation"
   - name: "Invoice Creation"
     path: "collections/Invoice Creation"
+  - name: "Microslop"
+    path: "collections/Microslop"
 
 specs:
 
