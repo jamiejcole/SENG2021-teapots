@@ -127,6 +127,7 @@ export function validateUBL(xmlString: string, schemaType: 'Order' | 'Invoice') 
 // @ts-expect-error no-types-for-this-file
 import SaxonJS from 'saxon-js';
 import puppeteer from 'puppeteer';
+import { inlineTailwindStylesheet } from '../../../utils/invoicePdfStyles';
 
 export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
     const sefPath = path.join(__dirname, '../../../schemas/ubl2.4/xslt/s4.sef.json');
@@ -137,11 +138,11 @@ export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
         destination: "serialized"
     }, "sync");
 
-    const htmlResult = result.principalResult;
+    const htmlResult = inlineTailwindStylesheet(result.principalResult);
 
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
     const page = await browser.newPage();
-    await page.setContent(htmlResult, { waitUntil: 'networkidle0' });
+    await page.setContent(htmlResult, { waitUntil: 'domcontentloaded' });
     const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
     await browser.close();
 

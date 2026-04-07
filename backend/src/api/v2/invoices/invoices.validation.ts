@@ -139,6 +139,7 @@ import { existsSync } from 'node:fs';
 // @ts-expect-error no-types-for-this-file
 import SaxonJS from 'saxon-js';
 import puppeteer from 'puppeteer';
+import { inlineTailwindStylesheet } from '../../../utils/invoicePdfStyles';
 
 const PDF_RENDER_TIMEOUT_MS = 60_000;
 
@@ -197,7 +198,7 @@ export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
         destination: "serialized"
     }, "sync");
 
-    const htmlResult = result.principalResult;
+    const htmlResult = inlineTailwindStylesheet(result.principalResult);
 
     const browser = await withTimeout(
         puppeteer.launch({

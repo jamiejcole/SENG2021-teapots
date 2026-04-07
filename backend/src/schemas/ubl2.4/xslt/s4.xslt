@@ -16,7 +16,7 @@
         <xsl:text>Invoice </xsl:text>
         <xsl:value-of select="//cbc:ID"/>
     </title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet"/>
+    <link href="tailwind.min.css" rel="stylesheet"/>
 </head>
 
 <body>
