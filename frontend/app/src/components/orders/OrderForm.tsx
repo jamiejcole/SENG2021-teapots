@@ -389,6 +389,77 @@ export function defaultOrderPayload(): CreateOrderPayload {
   }
 }
 
+/** Realistic demo payload for UBL / XSD validation (new order flow). */
+export function sampleOrderPayload(): CreateOrderPayload {
+  const today = new Date().toISOString().slice(0, 10)
+  const end = new Date()
+  end.setDate(end.getDate() + 14)
+  const deliveryEnd = end.toISOString().slice(0, 10)
+  return {
+    orderId: `ORD-DEMO-${Date.now().toString(36).toUpperCase()}`,
+    issueDate: today,
+    currency: 'AUD',
+    taxRate: 0.1,
+    note: 'Please deliver hardware directly to the loading dock.',
+    buyer: {
+      name: 'Acme Enterprises Corp',
+      id: '47555123456',
+      email: 'purchasing@acme.example.com',
+      address: {
+        street: '100 Corporate Boulevard',
+        city: 'Sydney',
+        postalCode: '2000',
+        country: 'AU',
+      },
+    },
+    seller: {
+      name: 'TechSupplies Pty Ltd',
+      id: '88123456789',
+      email: 'sales@techsupplies.example.com',
+      address: {
+        street: '50 Enterprise Drive',
+        city: 'Melbourne',
+        postalCode: '3000',
+        country: 'AU',
+      },
+    },
+    lines: [
+      {
+        lineId: '1',
+        description: 'ProBook Laptop 15-inch',
+        quantity: 2,
+        unitPrice: 1500,
+        unitCode: 'C62',
+      },
+      {
+        lineId: '2',
+        description: 'UltraSharp 27-inch Monitor',
+        quantity: 4,
+        unitPrice: 300,
+        unitCode: 'C62',
+      },
+      {
+        lineId: '3',
+        description: 'On-site hardware installation',
+        quantity: 1,
+        unitPrice: 500,
+        unitCode: 'C62',
+      },
+    ],
+    delivery: {
+      address: {
+        street: '100 Corporate Boulevard',
+        city: 'Sydney',
+        postalCode: '2000',
+        country: 'AU',
+      },
+      requestedDeliveryEnd: deliveryEnd,
+    },
+    deliveryTerms: 'DAP buyer warehouse dock',
+    orderStatus: 'created',
+  }
+}
+
 export function orderSummaryToPayload(row: StoredOrderSummary): CreateOrderPayload {
   return {
     orderId: row.orderId,
