@@ -43,10 +43,14 @@ export function mapParty(parent: any, partyData: any, taxSchemeOverride?: PartyT
     
     const party = parent.ele('cac:Party');
 
-    const earlyKeys = ['EndpointID', 'PartyIdentification', 'PartyName', 'PostalAddress', 'PhysicalLocation'];
-    const earlyData = Object.fromEntries(
-        Object.entries(partyData).filter(([key]) => earlyKeys.includes(key))
-    );
+    /* Emit in UBL 2.4 PartyType sequence order (see CommonAggregateComponents PartyType). */
+    const earlyKeys = ['EndpointID', 'PartyIdentification', 'PartyName', 'PostalAddress', 'PhysicalLocation'] as const;
+    const earlyData: Record<string, unknown> = {};
+    for (const key of earlyKeys) {
+        if (partyData[key] !== undefined && partyData[key] !== null) {
+            earlyData[key] = partyData[key];
+        }
+    }
     autoMapUbl(party, earlyData);
 
     const endpointId = partyData.EndpointID?.value || partyData.EndpointID;
@@ -62,10 +66,13 @@ export function mapParty(parent: any, partyData: any, taxSchemeOverride?: PartyT
         pts.up();
     }
 
-    const lateKeys = ['PartyLegalEntity', 'Contact', 'Person'];
-    const lateData = Object.fromEntries(
-        Object.entries(partyData).filter(([key]) => lateKeys.includes(key))
-    );
+    const lateKeys = ['PartyLegalEntity', 'Contact', 'Person'] as const;
+    const lateData: Record<string, unknown> = {};
+    for (const key of lateKeys) {
+        if (partyData[key] !== undefined && partyData[key] !== null) {
+            lateData[key] = partyData[key];
+        }
+    }
     autoMapUbl(party, lateData);
 
     party.up();

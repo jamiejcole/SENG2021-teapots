@@ -18,9 +18,12 @@ function partyDtoToUbl(p: OrderPartyDto) {
     const parts = street.split(/\s+/);
     const buildingNumber = parts.length > 1 ? parts[parts.length - 1] : "";
     const streetName = parts.length > 1 ? parts.slice(0, -1).join(" ") : street;
+    /* UBL 2.4 PartyType sequence: EndpointID before PartyName (and before PostalAddress, Contact). */
     return {
+        ...(p.id?.trim()
+            ? { EndpointID: { value: p.id.trim(), "@schemeID": "0151" } }
+            : {}),
         PartyName: { Name: p.name },
-        ...(p.id ? { EndpointID: { value: p.id } } : {}),
         PostalAddress: {
             StreetName: streetName,
             ...(buildingNumber ? { BuildingNumber: buildingNumber } : {}),
