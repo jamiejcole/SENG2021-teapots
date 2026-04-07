@@ -32,6 +32,7 @@ const swaggerDefinition = {
     { name: "V2 Auth", description: "Authentication and 2FA (v2)" },
     { name: "V2 Invoices", description: "Invoice generation and validation (v2)" },
     { name: "V2 Orders", description: "Order validation (v2)" },
+    { name: "V2 Despatch", description: "Despatch generation, cancellation, and email flows (v2)" },
   ],
   components: {
     securitySchemes: {
@@ -219,6 +220,7 @@ const versionedTagMap: Record<string, Record<string, string>> = {
     Auth: "V2 Auth",
     Invoices: "V2 Invoices",
     Orders: "V2 Orders",
+    Despatch: "V2 Despatch",
   },
 };
 
