@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Copy, Download, ShieldCheck, Trash2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Copy, Download, ShieldCheck, Sparkles, Trash2 } from 'lucide-react'
 import {
   createOrder,
   deleteOrder,
@@ -9,7 +9,7 @@ import {
   updateOrder,
   validateOrderPayload,
 } from '@/api/orders'
-import { OrderForm, defaultOrderPayload, orderSummaryToPayload } from '@/components/orders/OrderForm'
+import { OrderForm, defaultOrderPayload, orderSummaryToPayload, sampleOrderPayload } from '@/components/orders/OrderForm'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/lib/toast'
 import { ApiError } from '@/api/client'
@@ -143,6 +143,20 @@ export function OrderEditorPage() {
           <p className="mt-1 text-sm text-muted-foreground">Structured UBL order — validate before save if you want a quick XSD check.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {isCreate ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-lg border-amber-300"
+              onClick={() => {
+                setPayload(sampleOrderPayload())
+                toast.success('Sample order filled in', { description: 'Edit or validate, then create when ready.' })
+              }}
+            >
+              <Sparkles className="size-4" /> Sample order
+            </Button>
+          ) : null}
           <Button variant="outline" size="sm" className="rounded-lg border-amber-300" onClick={() => void onValidate()}>
             <ShieldCheck className="size-4" /> Validate payload
           </Button>
