@@ -43,6 +43,9 @@ const MoneySchema = new Schema(
 
 const OrderSchema = new Schema(
     {
+        /**
+         * Legacy shipment/receipt flag (used when order flows from invoice persistence).
+         */
         status: {
             type: String,
             enum: ["RECEIVED", "INVOICED", "REJECTED"],
@@ -50,6 +53,36 @@ const OrderSchema = new Schema(
             required: true,
             index: true,
         },
+
+        /** User-facing lifecycle for the Orders UI (v2). */
+        orderStatus: {
+            type: String,
+            enum: ["draft", "created", "cancelled", "fulfilled", "partially_fulfilled"],
+            default: "created",
+            index: true,
+        },
+
+        /** Optional note linking to invoice workflow (display only). */
+        invoiceStatusNote: { type: String, trim: true },
+
+        createdBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            index: true,
+            default: null,
+        },
+
+        /** Ship-to / delivery metadata (optional). */
+        delivery: {
+            street: { type: String, trim: true },
+            city: { type: String, trim: true },
+            postalCode: { type: String, trim: true },
+            country: { type: String, trim: true },
+            deliveryStart: { type: String, trim: true },
+            deliveryEnd: { type: String, trim: true },
+        },
+
+        deliveryTerms: { type: String, trim: true },
 
         orderId: {
             type: String,

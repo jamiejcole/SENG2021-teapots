@@ -8,6 +8,8 @@ import {
   CircleHelp,
   Shield,
   FileText,
+  Package,
+  Truck,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -17,10 +19,12 @@ export type NavItem = {
 }
 
 export const primaryNav: NavItem[] = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard },
-  { to: '/generate', label: 'Generate Invoice', icon: ReceiptText },
-  { to: '/validate', label: 'Validate Order', icon: ShieldCheck },
+  { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { to: '/orders', label: 'Orders', icon: Package },
+  { to: '/generate', label: 'Generate invoice', icon: ReceiptText },
+  { to: '/despatch', label: 'Despatch', icon: Truck },
   { to: '/invoices', label: 'Invoice history', icon: History },
+  { to: '/validate', label: 'Validate order', icon: ShieldCheck },
 ]
 
 export const secondaryNav: NavItem[] = [

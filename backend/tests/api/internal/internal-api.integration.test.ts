@@ -22,7 +22,7 @@ const invoiceFixturePath = path.resolve(
 )
 
 const orderFixture = fs.readFileSync(orderFixturePath, 'utf8')
-const orderXmlMatch = orderFixture.match(/body:xml \{\n([\s\S]*?)\n\}\n\nvars:pre-request/)
+const orderXmlMatch = orderFixture.match(/body:xml \{[\r\n]+([\s\S]*?)[\r\n]+\}[\r\n]+[\r\n]*vars:pre-request/)
 
 if (!orderXmlMatch) {
   throw new Error('Unable to extract the sample order XML from the Bruno fixture')

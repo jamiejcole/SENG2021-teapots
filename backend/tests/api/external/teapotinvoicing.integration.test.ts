@@ -117,7 +117,7 @@ const brunoFixturePath = path.resolve(
 
 function extractOrderXmlFromBrunoFixture() {
   const fixture = fs.readFileSync(brunoFixturePath, 'utf8');
-  const match = fixture.match(/body:xml \{\n([\s\S]*?)\n\}\n\nvars:pre-request/);
+  const match = fixture.match(/body:xml \{[\r\n]+([\s\S]*?)[\r\n]+\}[\r\n]+[\r\n]*vars:pre-request/);
 
   if (!match) {
     throw new Error('Unable to extract the sample order XML from the Bruno fixture');

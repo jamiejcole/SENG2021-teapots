@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { Copy, Download, Mail, ReceiptText, ShieldCheck } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Copy, Download, Mail, Package, ReceiptText, ShieldCheck } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   createInvoice,
   createInvoicePdf,
@@ -10,6 +10,8 @@ import {
   validateStoredInvoice,
   type InvoiceSupplement,
 } from '@/api/invoices'
+import { fetchOrderXml, getOrder, listOrders, type StoredOrderSummary } from '@/api/orders'
+import { ApiError } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -48,7 +50,13 @@ function downloadBlob(filename: string, blob: Blob) {
 }
 
 export function GenerateInvoicePage() {
+  const [searchParams] = useSearchParams()
+  const orderKeyFromUrl = searchParams.get('orderKey')?.trim() ?? ''
+
   const [orderXml, setOrderXml] = useState('')
+  const [storedOrders, setStoredOrders] = useState<StoredOrderSummary[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [selectedOrderKey, setSelectedOrderKey] = useState('')
 
   const [currencyCode, setCurrencyCode] = useState('AUD')
   const [taxRate, setTaxRate] = useState('0.1')
@@ -70,6 +78,76 @@ export function GenerateInvoicePage() {
   const [isValidatingInvoice, setIsValidatingInvoice] = useState(false)
   const [isEmailSending, setIsEmailSending] = useState(false)
   const [emailTo, setEmailTo] = useState('')
+
+  const loadOrdersList = useCallback(async () => {
+    setOrdersLoading(true)
+    try {
+      const r = await listOrders()
+      setStoredOrders(r.orders ?? [])
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Could not load orders'
+      toast.error('Orders list failed', { description: msg })
+    } finally {
+      setOrdersLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadOrdersList()
+  }, [loadOrdersList])
+
+  useEffect(() => {
+    if (!orderKeyFromUrl) return
+    setSelectedOrderKey(orderKeyFromUrl)
+    let cancelled = false
+    ;(async () => {
+      try {
+        const xml = await fetchOrderXml(orderKeyFromUrl)
+        if (cancelled) return
+        setOrderXml(xml)
+        setInvoiceXml(null)
+        setStoredInvoiceId(null)
+        try {
+          const row = await getOrder(orderKeyFromUrl)
+          if (!cancelled && row.buyer.email?.trim()) setEmailTo(row.buyer.email.trim())
+        } catch {
+          /* optional */
+        }
+        toast.success('Loaded order XML from your account')
+      } catch (e) {
+        if (!cancelled) {
+          const msg = e instanceof ApiError ? e.message : 'Could not load order XML'
+          toast.error('Load order failed', { description: msg })
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [orderKeyFromUrl])
+
+  async function loadSelectedOrderIntoEditor() {
+    if (!selectedOrderKey) {
+      toast.error('Select a stored order')
+      return
+    }
+    try {
+      const xml = await fetchOrderXml(selectedOrderKey)
+      setOrderXml(xml)
+      setInvoiceXml(null)
+      setStoredInvoiceId(null)
+      try {
+        const row = await getOrder(selectedOrderKey)
+        if (row.buyer.email?.trim()) setEmailTo(row.buyer.email.trim())
+      } catch {
+        /* optional */
+      }
+      toast.success('Order XML loaded — ready to generate invoice')
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Could not load order XML'
+      toast.error('Load failed', { description: msg })
+    }
+  }
 
   const supplement: InvoiceSupplement | null = useMemo(() => {
     const parsedTaxRate = Number(taxRate)
@@ -179,11 +257,25 @@ export function GenerateInvoicePage() {
     }
   }
 
-  async function onCopy() {
-    if (!invoiceXml) return
+  async function onCopyOrderXml() {
+    const t = orderXml.trim()
+    if (!t) {
+      toast.error('No order XML to copy')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(t)
+      toast.success('Order XML copied')
+    } catch {
+      toast.error('Copy failed')
+    }
+  }
+
+  async function onCopyInvoiceXml() {
+    if (!invoiceXml?.trim()) return
     try {
       await navigator.clipboard.writeText(invoiceXml)
-      toast.success('Copied to clipboard')
+      toast.success('Invoice XML copied')
     } catch {
       toast.error('Copy failed')
     }
@@ -270,18 +362,76 @@ export function GenerateInvoicePage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-3 rounded-xl border border-amber-200/50 bg-amber-50/40 p-3 dark:border-amber-800/40 dark:bg-amber-950/25">
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-foreground">From stored order</span>
+                <p className="text-xs text-muted-foreground">
+                  Load UBL order XML saved under Orders — same payload used when generating an invoice from scratch.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <Label htmlFor="stored-order-pick" className="text-xs">
+                    Order
+                  </Label>
+                  <select
+                    id="stored-order-pick"
+                    className="flex h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                    value={selectedOrderKey}
+                    onChange={(e) => setSelectedOrderKey(e.target.value)}
+                    disabled={ordersLoading}
+                  >
+                    <option value="">{ordersLoading ? 'Loading…' : 'Select an order…'}</option>
+                    {storedOrders.map((o) => (
+                      <option key={o._id} value={o._id}>
+                        {o.orderId} · {o.orderStatus} · {o.currency}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="h-9 shrink-0 rounded-lg"
+                  disabled={!selectedOrderKey || ordersLoading}
+                  onClick={() => void loadSelectedOrderIntoEditor()}
+                >
+                  Load order XML
+                </Button>
+                <Button type="button" variant="outline" size="sm" className="h-9 shrink-0 rounded-lg" asChild>
+                  <Link to="/orders" className="inline-flex items-center gap-1.5">
+                    <Package className="size-4" /> Orders
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <Label htmlFor="orderXml">Order XML</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-8 shrink-0 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
-                  onClick={() => void loadSampleUbl()}
-                >
-                  Load sample UBL
-                </Button>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 shrink-0 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                    disabled={!orderXml.trim()}
+                    onClick={() => void onCopyOrderXml()}
+                  >
+                    <Copy className="size-3.5" />
+                    Copy
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 shrink-0 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                    onClick={() => void loadSampleUbl()}
+                  >
+                    Load sample UBL
+                  </Button>
+                </div>
               </div>
               <Textarea
                 id="orderXml"
@@ -418,14 +568,13 @@ export function GenerateInvoicePage() {
 
             <div className="flex flex-wrap gap-2">
               <Button
-                onClick={onCopy}
+                onClick={() => void onCopyInvoiceXml()}
                 disabled={!invoiceXml}
                 variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 hover:text-amber-950 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-400 dark:hover:text-slate-900"
-                title="Copy"
+                className="h-9 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 hover:text-amber-950 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-400 dark:hover:text-slate-900"
               >
                 <Copy className="size-4" />
+                Copy XML
               </Button>
               <Button
                 variant="outline"

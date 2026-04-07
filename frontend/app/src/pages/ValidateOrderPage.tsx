@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { ShieldCheck } from 'lucide-react'
+import { Copy, ShieldCheck } from 'lucide-react'
 import { validateOrder, validateInvoice } from '@/api/invoices'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +28,21 @@ function ValidationSection({
   isLoading,
 }: ValidationSectionProps) {
   const canSubmit = xml.trim().length > 0 && !isLoading
+  const canCopyXml = xml.trim().length > 0 && !isLoading
+
+  async function copySectionXml() {
+    const t = xml.trim()
+    if (!t) {
+      toast.error('Nothing to copy')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(t)
+      toast.success('XML copied')
+    } catch {
+      toast.error('Copy failed')
+    }
+  }
 
   return (
     <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
@@ -57,6 +72,16 @@ function ValidationSection({
             className="rounded-lg bg-amber-400 font-semibold text-slate-900 shadow-md shadow-amber-400/25 hover:bg-amber-500"
           >
             {isLoading ? 'Validating…' : 'Validate'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40"
+            disabled={!canCopyXml}
+            onClick={() => void copySectionXml()}
+          >
+            <Copy className="size-4" />
+            Copy XML
           </Button>
           <Button variant="outline" onClick={() => setXml('')} disabled={isLoading} className="rounded-lg">
             Clear

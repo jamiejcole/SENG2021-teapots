@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { Coins, ReceiptText, ShieldCheck, Sparkles } from 'lucide-react'
+import { Coins, Package, ReceiptText, ShieldCheck, Sparkles, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatCard } from '@/components/dashboard/StatCard'
@@ -70,6 +70,11 @@ export function DashboardPage() {
             validatedCount: 0,
             failedSendCount: 0,
             pendingCount: 0,
+            totalOrders: 0,
+            ordersCancelled: 0,
+            ordersOpen: 0,
+            totalDespatches: 0,
+            despatchesFulfilmentCancelled: 0,
             throughputByDay: [],
             recentActivity: [],
           })
@@ -146,18 +151,65 @@ export function DashboardPage() {
         </div>
       )}
 
+      {loading || !stats ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={`ord-${i}`} className="h-28 rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className={cn(ready && 'dashboard-float-in')} style={floatStyle(320, ready)}>
+            <StatCard
+              label="Orders stored"
+              value={String(stats.totalOrders ?? 0)}
+              change={`${stats.ordersOpen ?? 0} open · ${stats.ordersCancelled ?? 0} cancelled`}
+              tone="neutral"
+              icon={Package}
+            />
+          </div>
+          <div className={cn(ready && 'dashboard-float-in')} style={floatStyle(340, ready)}>
+            <StatCard
+              label="Despatches"
+              value={String(stats.totalDespatches ?? 0)}
+              change={`${stats.despatchesFulfilmentCancelled ?? 0} fulfilment cancelled`}
+              tone="neutral"
+              icon={Truck}
+            />
+          </div>
+          <div className={cn(ready && 'dashboard-float-in')} style={floatStyle(360, ready)}>
+            <StatCard
+              label="Orders open"
+              value={String(stats.ordersOpen ?? 0)}
+              change="Excludes cancelled"
+              tone="positive"
+              icon={Package}
+            />
+          </div>
+          <div className={cn(ready && 'dashboard-float-in')} style={floatStyle(380, ready)}>
+            <StatCard
+              label="Orders cancelled"
+              value={String(stats.ordersCancelled ?? 0)}
+              change="Account-scoped"
+              tone={(stats.ordersCancelled ?? 0) > 0 ? 'negative' : 'positive'}
+              icon={Package}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-3">
         <Card
           className={cn(
             'border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 lg:col-span-2 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20',
             ready && 'dashboard-float-in',
           )}
-          style={floatStyle(360, ready)}
+          style={floatStyle(400, ready)}
         >
           <CardHeader className="flex-row items-start justify-between space-y-0">
             <div className="space-y-1">
-              <CardTitle className="text-base">Invoice throughput</CardTitle>
-              <CardDescription>Invoices created per day (last 14 days)</CardDescription>
+              <CardTitle className="text-base">Revenue trend</CardTitle>
+              <CardDescription>Daily payable totals (AUD) from new invoices — last 14 days</CardDescription>
             </div>
             <Button variant="secondary" size="sm" className="rounded-full" asChild>
               <Link to="/invoices">View invoices</Link>
@@ -171,7 +223,7 @@ export function DashboardPage() {
         {loading ? (
           <Skeleton className="min-h-64 rounded-xl border border-amber-200/60 dark:border-amber-900/40" />
         ) : (
-          <div className={cn(ready && 'dashboard-float-in')} style={floatStyle(430, ready)}>
+          <div className={cn(ready && 'dashboard-float-in')} style={floatStyle(470, ready)}>
             <RecentActivity
               className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20"
               items={

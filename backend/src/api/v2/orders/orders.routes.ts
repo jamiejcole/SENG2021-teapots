@@ -23,29 +23,19 @@ router.use(authMiddleware);
  *     responses:
  *       200:
  *         description: UBL Order is valid
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/SuccessMessageResponse'
  *       400:
  *         description: Invalid request or invalid UBL payload
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Unauthorized - missing or invalid authentication
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Unauthorized
  */
 router.post("/validate", controller.validateOrder);
+
+router.get("/", controller.listOrders);
+router.post("/", controller.createOrder);
+
+router.get("/:orderKey/xml", controller.getOrderXml);
+router.get("/:orderKey", controller.getOrder);
+router.put("/:orderKey", controller.updateOrder);
+router.delete("/:orderKey", controller.deleteOrder);
 
 export default router;

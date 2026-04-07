@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
+  Copy,
   Download,
   Mail,
   RefreshCw,
@@ -41,6 +42,11 @@ function downloadBlob(filename: string, blob: Blob) {
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
+}
+
+function downloadText(filename: string, text: string, mime: string) {
+  const blob = new Blob([text], { type: mime })
+  downloadBlob(filename, blob)
 }
 
 const LIFECYCLE_EDIT = ['DRAFT', 'SAVED', 'PAID', 'OVERDUE'] as const
@@ -197,6 +203,22 @@ export function InvoiceDetailPage() {
     }
   }
 
+  async function onCopyInvoiceXml() {
+    if (!doc?.invoiceXml?.trim()) return
+    try {
+      await navigator.clipboard.writeText(doc.invoiceXml)
+      toast.success('Invoice XML copied')
+    } catch {
+      toast.error('Copy failed')
+    }
+  }
+
+  function onDownloadInvoiceXml() {
+    if (!doc?.invoiceXml) return
+    downloadText(`${doc.invoiceId}.xml`.replace(/[^a-zA-Z0-9._-]/g, '_'), doc.invoiceXml, 'application/xml')
+    toast.success('XML downloaded')
+  }
+
   async function onEmail() {
     if (!doc?.invoiceXml || !emailTo.trim() || !invoiceId) return
     setBusy('email')
@@ -277,6 +299,26 @@ export function InvoiceDetailPage() {
           <Button variant="outline" size="sm" className={outlineBtn} disabled={!!busy} onClick={() => void onPdf()}>
             <Download className="size-4" />
             PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className={outlineBtn}
+            disabled={!!busy || !doc.invoiceXml}
+            onClick={() => void onCopyInvoiceXml()}
+          >
+            <Copy className="size-4" />
+            Copy XML
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className={outlineBtn}
+            disabled={!!busy || !doc.invoiceXml}
+            onClick={onDownloadInvoiceXml}
+          >
+            <Download className="size-4" />
+            XML
           </Button>
           <Button
             variant="outline"

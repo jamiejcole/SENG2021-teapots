@@ -10,25 +10,33 @@ export function MobileBottomNav() {
     >
       <div className="mx-auto max-w-6xl px-2 py-2">
         <div className="grid grid-cols-3 gap-1">
-        {primaryNav.slice(0, 3).map((item) => {
-          const Icon = item.icon
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                cn(
-                  'flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
-                  isActive && 'bg-accent text-accent-foreground',
-                )
-              }
-            >
-              <Icon className="size-4" />
-              <span className="truncate">{item.label.replace('Invoice', '').trim()}</span>
-            </NavLink>
-          )
-        })}
+          {primaryNav.map((item) => {
+            const Icon = item.icon
+            const short =
+              item.label === 'Invoice history'
+                ? 'Invoices'
+                : item.label === 'Generate invoice'
+                  ? 'Generate'
+                  : item.label === 'Validate order'
+                    ? 'Validate'
+                    : item.label
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/dashboard'}
+                className={({ isActive }) =>
+                  cn(
+                    'flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+                    isActive && 'bg-accent text-accent-foreground',
+                  )
+                }
+              >
+                <Icon className="size-4" />
+                <span className="truncate">{short}</span>
+              </NavLink>
+            )
+          })}
         </div>
 
         <div className="mt-2 grid grid-cols-3 gap-1 border-t border-border/60 pt-2">

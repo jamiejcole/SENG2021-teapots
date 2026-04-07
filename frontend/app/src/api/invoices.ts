@@ -79,7 +79,12 @@ export type DashboardStats = {
   validatedCount: number
   failedSendCount: number
   pendingCount: number
-  throughputByDay: { date: string; count: number }[]
+  totalOrders: number
+  ordersCancelled: number
+  ordersOpen: number
+  totalDespatches: number
+  despatchesFulfilmentCancelled: number
+  throughputByDay: { date: string; count: number; revenue: number }[]
   recentActivity: {
     id: string
     invoiceMongoId: string
