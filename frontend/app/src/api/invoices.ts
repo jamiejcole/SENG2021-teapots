@@ -37,6 +37,8 @@ export type InvoiceStudioPreviewDraft = {
   businessEmail: string
   businessAddress: string
   customerName: string
+  customerPhone: string
+  customerEmail: string
   customerAddress: string
   invoiceNumber: string
   issueDate: string
@@ -44,6 +46,10 @@ export type InvoiceStudioPreviewDraft = {
   jobSummary: string
   notes: string
   paymentNotes: string
+  extraNotes: string
+  accountName: string
+  accountNumber: string
+  bsb: string
   taxRate: number
   theme?: 'light' | 'dark'
   lineItems: InvoiceStudioLineItem[]

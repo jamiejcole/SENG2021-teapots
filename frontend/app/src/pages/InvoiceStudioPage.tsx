@@ -26,6 +26,8 @@ type StudioDraft = {
   businessEmail: string
   businessAddress: string
   customerName: string
+  customerPhone: string
+  customerEmail: string
   customerAddress: string
   invoiceNumber: string
   issueDate: string
@@ -33,6 +35,10 @@ type StudioDraft = {
   jobSummary: string
   notes: string
   paymentNotes: string
+  extraNotes: string
+  accountName: string
+  accountNumber: string
+  bsb: string
   taxRate: number
   lineItems: StudioLineItem[]
 }
@@ -49,6 +55,8 @@ function sampleDraft(): StudioDraft {
     businessEmail: 'hello@northsidehandyman.co',
     businessAddress: '14 Workshop Lane, Newcastle NSW 2300',
     customerName: 'Jordan Taylor',
+    customerPhone: '+61 409 111 222',
+    customerEmail: 'jordan@example.com',
     customerAddress: '12 Station Street, Newcastle NSW 2300',
     invoiceNumber: 'STUDIO-1001',
     issueDate: today,
@@ -56,6 +64,10 @@ function sampleDraft(): StudioDraft {
     jobSummary: 'Fix loose gate latch, replace one damaged hinge, and do a quick tidy-up.',
     notes: 'Thanks for supporting a local sole trader.',
     paymentNotes: 'Pay by bank transfer within 7 days.',
+    extraNotes: 'Please call before arrival.',
+    accountName: 'Northside Handyman Co.',
+    accountNumber: '12345678',
+    bsb: '032-000',
     taxRate: 0.1,
     lineItems: [
       makeLineItem('1', 'Call-out fee', 'Initial visit and diagnosis', 1, 85),
@@ -187,12 +199,19 @@ export function InvoiceStudioPage() {
         <div className="space-y-6 lg:sticky lg:top-24 lg:h-[calc(100dvh-9rem)] lg:overflow-y-auto lg:pr-1">
           <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
             <CardHeader>
-              <CardTitle className="text-base">Job details</CardTitle>
+              <CardTitle className="inline-flex items-center gap-2 text-base">
+                <BriefcaseBusiness className="size-4" />
+                Your business
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="businessName">Your business</Label>
+                <Label htmlFor="businessName">Business name</Label>
                 <Input id="businessName" value={draft.businessName} onChange={(e) => updateDraft('businessName', e.target.value)} className="h-9 rounded-lg" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="businessAddress">Business address</Label>
+                <Textarea id="businessAddress" value={draft.businessAddress} onChange={(e) => updateDraft('businessAddress', e.target.value)} className="min-h-20 rounded-xl resize-y" />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -203,54 +222,64 @@ export function InvoiceStudioPage() {
                   <Label htmlFor="businessEmail">Email</Label>
                   <Input id="businessEmail" value={draft.businessEmail} onChange={(e) => updateDraft('businessEmail', e.target.value)} className="h-9 rounded-lg" />
                 </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="businessAddress">Business address</Label>
-                  <Input id="businessAddress" value={draft.businessAddress} onChange={(e) => updateDraft('businessAddress', e.target.value)} className="h-9 rounded-lg" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="customerName">Customer</Label>
-                <Input id="customerName" value={draft.customerName} onChange={(e) => updateDraft('customerName', e.target.value)} className="h-9 rounded-lg" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="customerAddress">Job address</Label>
-                <Input id="customerAddress" value={draft.customerAddress} onChange={(e) => updateDraft('customerAddress', e.target.value)} className="h-9 rounded-lg" />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="invoiceNumber">Invoice number</Label>
-                  <Input id="invoiceNumber" value={draft.invoiceNumber} onChange={(e) => updateDraft('invoiceNumber', e.target.value)} className="h-9 rounded-lg" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="taxRate">GST / tax</Label>
-                  <Input id="taxRate" type="number" step="0.01" min="0" max="1" value={draft.taxRate} onChange={(e) => updateDraft('taxRate', Number(e.target.value) || 0)} className="h-9 rounded-lg" />
-                </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="issueDate" className="inline-flex items-center gap-2"><CalendarDays className="size-3.5" />Issue date</Label>
+                  <Label htmlFor="issueDate" className="inline-flex items-center gap-2">
+                    <CalendarDays className="size-3.5" />
+                    Issue date
+                  </Label>
                   <Input id="issueDate" type="date" value={draft.issueDate} onChange={(e) => updateDraft('issueDate', e.target.value)} className="h-9 rounded-lg" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="dueDate">Due date</Label>
                   <Input id="dueDate" type="date" value={draft.dueDate} onChange={(e) => updateDraft('dueDate', e.target.value)} className="h-9 rounded-lg" />
                 </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="taxRate">GST / tax</Label>
+                  <Input id="taxRate" type="number" step="0.01" min="0" max="1" value={draft.taxRate} onChange={(e) => updateDraft('taxRate', Number(e.target.value) || 0)} className="h-9 rounded-lg" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
+            <CardHeader>
+              <CardTitle className="text-base">Customer details</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="customerName">Customer name</Label>
+                <Input id="customerName" value={draft.customerName} onChange={(e) => updateDraft('customerName', e.target.value)} className="h-9 rounded-lg" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="customerEmail">Email</Label>
+                  <Input id="customerEmail" value={draft.customerEmail} onChange={(e) => updateDraft('customerEmail', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="customerPhone">Phone</Label>
+                  <Input id="customerPhone" value={draft.customerPhone} onChange={(e) => updateDraft('customerPhone', e.target.value)} className="h-9 rounded-lg" />
+                </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="jobSummary" className="inline-flex items-center gap-2"><BriefcaseBusiness className="size-3.5" />What was the job?</Label>
-                <Textarea id="jobSummary" value={draft.jobSummary} onChange={(e) => updateDraft('jobSummary', e.target.value)} className="min-h-24 rounded-xl resize-y" />
+                <Label htmlFor="customerAddress">Job address</Label>
+                <Textarea id="customerAddress" value={draft.customerAddress} onChange={(e) => updateDraft('customerAddress', e.target.value)} className="min-h-24 rounded-xl resize-y" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
             <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">What you charged for</CardTitle>
+              <CardTitle className="text-base">Job details</CardTitle>
               <Button variant="outline" size="sm" className="rounded-lg border-amber-300" onClick={addLineItem}>
                 <Plus className="size-4" /> Add item
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="jobSummary">Job description</Label>
+                <Textarea id="jobSummary" value={draft.jobSummary} onChange={(e) => updateDraft('jobSummary', e.target.value)} className="min-h-20 rounded-xl resize-y" />
+              </div>
+
               {draft.lineItems.map((item, index) => (
                 <div key={item.id} className="rounded-2xl border border-border/60 bg-background/70 p-3 shadow-sm">
                   <div className="mb-3 flex items-center justify-between gap-2">
@@ -284,16 +313,30 @@ export function InvoiceStudioPage() {
 
           <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
             <CardHeader>
-              <CardTitle className="text-base">Payment notes</CardTitle>
+              <CardTitle className="text-base">Payment info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="bsb">BSB</Label>
+                  <Input id="bsb" value={draft.bsb} onChange={(e) => updateDraft('bsb', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="accountNumber">Account number</Label>
+                  <Input id="accountNumber" value={draft.accountNumber} onChange={(e) => updateDraft('accountNumber', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="accountName">Account name</Label>
+                  <Input id="accountName" value={draft.accountName} onChange={(e) => updateDraft('accountName', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+              </div>
               <div className="space-y-1.5">
-                <Label htmlFor="paymentNotes">How should they pay?</Label>
+                <Label htmlFor="paymentNotes">Payment notes</Label>
                 <Textarea id="paymentNotes" value={draft.paymentNotes} onChange={(e) => updateDraft('paymentNotes', e.target.value)} className="min-h-20 rounded-xl resize-y" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="notes">Extra notes</Label>
-                <Textarea id="notes" value={draft.notes} onChange={(e) => updateDraft('notes', e.target.value)} className="min-h-20 rounded-xl resize-y" />
+                <Label htmlFor="extraNotes">Extra notes</Label>
+                <Textarea id="extraNotes" value={draft.extraNotes} onChange={(e) => updateDraft('extraNotes', e.target.value)} className="min-h-20 rounded-xl resize-y" />
               </div>
             </CardContent>
           </Card>
@@ -303,13 +346,13 @@ export function InvoiceStudioPage() {
           <div className={themePanelClass(previewTheme)}>
             <div className={themeInnerClass(previewTheme)}>
               <div className={previewShellClass(previewTheme)}>
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-dashed border-border px-4 py-3 sm:px-5">
-                  <div className="space-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-4 sm:p-6">
+                  <div>
                     <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
                       <Check className="size-3.5" />
                       Exact PDF preview
                     </div>
-                    <p className="text-sm text-muted-foreground">Rendered from the same XSLT HTML used by export.</p>
+                    <p className="mt-2 text-sm text-muted-foreground">Rendered from the same XSLT HTML used by export.</p>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -346,7 +389,7 @@ export function InvoiceStudioPage() {
                   </div>
                 </div>
 
-                <div className={previewTheme === 'dark' ? 'bg-slate-900 p-3' : 'bg-slate-100 p-3'}>
+                <div className={previewTheme === 'dark' ? 'bg-slate-900 p-3 sm:p-4' : 'bg-slate-100 p-3 sm:p-4'}>
                   {previewLoading && !previewHtml ? (
                     <Skeleton className="h-[72rem] w-full rounded-[20px]" />
                   ) : previewError ? (
@@ -372,5 +415,5 @@ export function InvoiceStudioPage() {
         </div>
       </div>
     </div>
-  )
-}
+    )
+  }

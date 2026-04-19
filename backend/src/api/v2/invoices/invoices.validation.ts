@@ -224,8 +224,8 @@ function getChromeExecutablePath() {
     return executablePath;
 }
 
-function renderInvoiceHtml(xmlString: string): string {
-    const sefPath = path.join(__dirname, '../../../schemas/ubl2.4/xslt/s4.sef.json');
+function renderInvoiceHtml(xmlString: string, sefFileName: string): string {
+    const sefPath = path.join(__dirname, '../../../schemas/ubl2.4/xslt', sefFileName);
 
     const result = SaxonJS.transform({
         stylesheetLocation: sefPath,
@@ -237,12 +237,16 @@ function renderInvoiceHtml(xmlString: string): string {
 }
 
 export async function generateInvoiceHtml(xmlString: string): Promise<string> {
-    return renderInvoiceHtml(xmlString);
+    return renderInvoiceHtml(xmlString, 's4.sef.json');
+}
+
+export async function generateStudioInvoiceHtml(xmlString: string): Promise<string> {
+    return renderInvoiceHtml(xmlString, 's4-studio.sef.json');
 }
 
 export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
     console.log('[invoice-pdf] Starting PDF generation');
-    const htmlResult = renderInvoiceHtml(xmlString);
+    const htmlResult = renderInvoiceHtml(xmlString, 's4.sef.json');
 
     const browser = await withTimeout(
         puppeteer.launch({

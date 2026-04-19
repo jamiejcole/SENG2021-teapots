@@ -77,6 +77,8 @@ export const previewStudioInvoice = asyncHandler(async (req: Request, res: Respo
         businessEmail?: string;
         businessAddress?: string;
         customerName?: string;
+        customerPhone?: string;
+        customerEmail?: string;
         customerAddress?: string;
         invoiceNumber?: string;
         issueDate?: string;
@@ -84,6 +86,10 @@ export const previewStudioInvoice = asyncHandler(async (req: Request, res: Respo
         jobSummary?: string;
         notes?: string;
         paymentNotes?: string;
+        extraNotes?: string;
+        accountName?: string;
+        accountNumber?: string;
+        bsb?: string;
         taxRate?: number;
         theme?: 'light' | 'dark';
         lineItems?: Array<{ id?: string; name?: string; details?: string; quantity?: number; rate?: number }>;
@@ -103,6 +109,8 @@ export const previewStudioInvoice = asyncHandler(async (req: Request, res: Respo
         businessEmail: draft.businessEmail ?? '',
         businessAddress: draft.businessAddress ?? '',
         customerName: draft.customerName,
+        customerPhone: draft.customerPhone ?? '',
+        customerEmail: draft.customerEmail ?? '',
         customerAddress: draft.customerAddress ?? '',
         invoiceNumber: draft.invoiceNumber,
         issueDate: draft.issueDate ?? new Date().toISOString().slice(0, 10),
@@ -110,6 +118,10 @@ export const previewStudioInvoice = asyncHandler(async (req: Request, res: Respo
         jobSummary: draft.jobSummary ?? '',
         notes: draft.notes ?? '',
         paymentNotes: draft.paymentNotes ?? '',
+        extraNotes: draft.extraNotes ?? '',
+        accountName: draft.accountName ?? draft.businessName,
+        accountNumber: draft.accountNumber ?? '',
+        bsb: draft.bsb ?? '',
         taxRate: typeof draft.taxRate === 'number' && Number.isFinite(draft.taxRate) ? draft.taxRate : 0.1,
         lineItems: draft.lineItems.map((lineItem, index) => ({
             id: lineItem.id ?? String(index + 1),

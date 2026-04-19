@@ -11,7 +11,7 @@ import { InvoicePdfModel } from '../../../models/invoicePdf.model';
 import { sha256 } from '../../../models/hash';
 import { buildInvoiceSetFields } from '../../../db/persistInvoiceRequest';
 import { HttpError } from '../../../errors/HttpError';
-import { generateInvoiceHtml, validateUBL } from './invoices.validation';
+import { generateStudioInvoiceHtml, validateUBL } from './invoices.validation';
 import { InvoiceCalculator } from '../../../domain/InvoiceCalculator';
 
 /**
@@ -59,6 +59,8 @@ type StudioPreviewDraft = {
     businessEmail: string;
     businessAddress: string;
     customerName: string;
+    customerPhone: string;
+    customerEmail: string;
     customerAddress: string;
     invoiceNumber: string;
     issueDate: string;
@@ -66,6 +68,10 @@ type StudioPreviewDraft = {
     jobSummary: string;
     notes: string;
     paymentNotes: string;
+    extraNotes: string;
+        accountName: string;
+        accountNumber: string;
+        bsb: string;
     taxRate: number;
     lineItems: StudioLineItemDraft[];
   };
@@ -133,11 +139,13 @@ function buildStudioOrderData(draft: StudioPreviewDraft): OrderData {
             Party: {
                 PartyName: { Name: draft.customerName.trim() || 'Customer' },
                 PostalAddress: parseAddress(draft.customerAddress || draft.jobSummary),
-                ...(draft.businessPhone.trim()
-                    ? { Contact: { Telephone: draft.businessPhone.trim() } }
-                    : {}),
-                ...(draft.businessEmail.trim()
-                    ? { Contact: { ElectronicMail: draft.businessEmail.trim() } }
+                ...((draft.customerPhone.trim() || draft.customerEmail.trim())
+                    ? {
+                        Contact: {
+                            ...(draft.customerPhone.trim() ? { Telephone: draft.customerPhone.trim() } : {}),
+                            ...(draft.customerEmail.trim() ? { ElectronicMail: draft.customerEmail.trim() } : {}),
+                        },
+                    }
                     : {}),
             },
         },
@@ -158,22 +166,25 @@ function buildStudioOrderData(draft: StudioPreviewDraft): OrderData {
 }
 
 function buildStudioInvoiceSupplement(draft: StudioPreviewDraft): InvoiceSupplement {
+    const paymentTermsNote = [draft.paymentNotes.trim(), draft.extraNotes.trim()].filter(Boolean).join('\n\n') || undefined;
+
     return {
         invoiceNumber: draft.invoiceNumber.trim() || undefined,
         issueDate: draft.issueDate.trim() || undefined,
         dueDate: draft.dueDate?.trim() || undefined,
-        note: draft.notes.trim() || undefined,
+        note: draft.jobSummary.trim() || undefined,
         currencyCode: 'AUD',
         taxRate: draft.taxRate,
         taxScheme: { id: 'GST', taxTypeCode: 'GST' },
         paymentMeans: {
             code: '30',
             payeeFinancialAccount: {
-                id: draft.businessPhone.trim() || '000000',
-                name: draft.businessName.trim() || 'Bank account',
+                id: draft.accountNumber.trim() || '00000000',
+                name: draft.accountName.trim() || draft.businessName.trim() || 'Bank account',
+                ...(draft.bsb.trim() ? { branchId: draft.bsb.trim() } : {}),
             },
         },
-        ...(draft.paymentNotes.trim() ? { paymentTerms: { note: draft.paymentNotes.trim() } } : {}),
+        ...(paymentTermsNote ? { paymentTerms: { note: paymentTermsNote } } : {}),
     };
 }
 
@@ -294,7 +305,7 @@ export async function buildStudioPreviewHtml(draft: StudioPreviewDraft, theme: S
     const orderData = buildStudioOrderData(draft);
     const invoiceSupplement = buildStudioInvoiceSupplement(draft);
     const invoiceXml = convertJsonToUblInvoice(orderData, invoiceSupplement);
-        const html = await generateInvoiceHtml(invoiceXml);
+    const html = await generateStudioInvoiceHtml(invoiceXml);
         return injectStudioPreviewTheme(html, theme);
 }
 
