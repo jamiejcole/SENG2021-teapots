@@ -15,6 +15,7 @@ export function AccountPage() {
   const email = user?.email ?? ''
   const [phone, setPhone] = useState(user?.phone ?? '')
   const [company, setCompany] = useState(user?.company ?? '')
+  const [businessAddress, setBusinessAddress] = useState(user?.businessAddress ?? '')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -26,6 +27,7 @@ export function AccountPage() {
     setLastName(user?.lastName ?? '')
     setPhone(user?.phone ?? '')
     setCompany(user?.company ?? '')
+    setBusinessAddress(user?.businessAddress ?? '')
   }, [user])
 
   const passwordMismatch = useMemo(() => {
@@ -50,6 +52,7 @@ export function AccountPage() {
         lastName: lastName.trim(),
         phone: phone.trim(),
         company: company.trim(),
+        businessAddress: businessAddress.trim(),
       })
       // Update AuthContext and localStorage
       updateUserContext({
@@ -57,6 +60,7 @@ export function AccountPage() {
         lastName: result.lastName,
         phone: result.phone,
         company: result.company,
+        businessAddress: result.businessAddress,
       })
       toast.success(`Profile updated! Welcome, ${result.firstName}.`)
     } catch (err) {
@@ -140,6 +144,15 @@ export function AccountPage() {
                 placeholder="Teapots Pty Ltd"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="businessAddress">Business address</Label>
+              <Input
+                id="businessAddress"
+                placeholder="14 Workshop Lane, Newcastle NSW 2300"
+                value={businessAddress}
+                onChange={(e) => setBusinessAddress(e.target.value)}
               />
             </div>
           </div>

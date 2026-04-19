@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { useAuth } from '@/components/auth/AuthContext'
 import { ApiError } from '@/api/client'
 import { previewStudioInvoice, type InvoiceStudioPreviewDraft } from '@/api/invoices'
 import { toast } from '@/lib/toast'
@@ -77,6 +78,15 @@ function sampleDraft(): StudioDraft {
   }
 }
 
+function buildBusinessDraftFromUser(user: { email: string; firstName?: string; lastName?: string; phone?: string | null; company?: string | null; businessAddress?: string | null } | null) {
+  return {
+    ...(user?.company?.trim() ? { businessName: user.company.trim() } : {}),
+    ...(user?.phone?.trim() ? { businessPhone: user.phone.trim() } : {}),
+    ...(user?.email?.trim() ? { businessEmail: user.email.trim() } : {}),
+    ...(user?.businessAddress?.trim() ? { businessAddress: user.businessAddress.trim() } : {}),
+  }
+}
+
 function themePanelClass(theme: 'light' | 'dark') {
   return theme === 'dark'
     ? 'rounded-[34px] border border-slate-800 bg-slate-950 p-3 shadow-2xl shadow-black/30'
@@ -96,11 +106,24 @@ function previewShellClass(theme: 'light' | 'dark') {
 }
 
 export function InvoiceStudioPage() {
+  const { user } = useAuth()
   const [draft, setDraft] = useState<StudioDraft>(sampleDraft)
   const [previewTheme, setPreviewTheme] = useState<'light' | 'dark'>('light')
   const [previewHtml, setPreviewHtml] = useState('')
   const [previewLoading, setPreviewLoading] = useState(true)
   const [previewError, setPreviewError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    const businessDraft = buildBusinessDraftFromUser(user)
+    setDraft((current) => ({
+      ...current,
+      ...businessDraft,
+    }))
+  }, [user])
 
   function updateDraft<K extends keyof StudioDraft>(key: K, value: StudioDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }))

@@ -2,7 +2,6 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopNav } from '@/components/layout/TopNav'
-import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { InvoiceSearchProvider } from '@/context/InvoiceSearchContext'
 

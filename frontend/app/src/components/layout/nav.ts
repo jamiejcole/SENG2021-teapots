@@ -1,7 +1,5 @@
 import {
   LayoutDashboard,
-  ReceiptText,
-  ShieldCheck,
   History,
   UserRound,
   Settings2,

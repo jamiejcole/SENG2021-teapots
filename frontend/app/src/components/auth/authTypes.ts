@@ -6,6 +6,7 @@ export type User = {
   lastName?: string
   phone?: string | null
   company?: string | null
+  businessAddress?: string | null
 }
 
 export type AuthContextType = {
