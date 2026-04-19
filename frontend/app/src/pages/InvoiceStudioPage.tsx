@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowRight, BriefcaseBusiness, CalendarDays, Coins, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowRight, BriefcaseBusiness, CalendarDays, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -103,7 +103,7 @@ export function InvoiceStudioPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-0 w-full space-y-6 px-4 py-6 md:px-6 lg:px-8">
       <div className="relative overflow-hidden rounded-3xl border border-amber-200/70 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.22),_transparent_34%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(255,248,232,0.88))] p-6 shadow-sm dark:border-amber-900/40 dark:bg-[radial-gradient(circle_at_top_left,_rgba(120,53,15,0.4),_transparent_34%),linear-gradient(135deg,_rgba(15,23,42,0.96),_rgba(30,41,59,0.94))]">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.24)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.24)_1px,transparent_1px)] bg-[size:24px_24px] opacity-20 dark:opacity-10" />
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -116,10 +116,10 @@ export function InvoiceStudioPage() {
               </Badge>
             </div>
             <h1 className="max-w-2xl font-display text-3xl tracking-tight text-balance sm:text-4xl">
-              Build an invoice like you would in the shed, on the ute, or at the kitchen table.
+              Build an invoice like you would in the garage, on the ute, or at the kitchen table.
             </h1>
             <p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
-              This first pass is focused on tradies and sole traders: plain-language fields, live pricing, and a printed
+              Focused on sole traders: plain-language fields, live pricing, and a live
               invoice preview that updates as you type.
             </p>
           </div>
@@ -136,8 +136,8 @@ export function InvoiceStudioPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
-        <div className="space-y-6">
+      <div className="grid min-h-[calc(100dvh-18rem)] gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        <div className="space-y-6 lg:sticky lg:top-24 lg:h-[calc(100dvh-9rem)] lg:overflow-y-auto lg:pr-1">
           <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
             <CardHeader>
               <CardTitle className="text-base">Job details</CardTitle>
@@ -248,10 +248,10 @@ export function InvoiceStudioPage() {
           </Card>
         </div>
 
-        <div className="lg:sticky lg:top-24 lg:self-start">
+        <div className="min-w-0 lg:sticky lg:top-24 lg:h-[calc(100dvh-9rem)] lg:overflow-y-auto lg:self-start">
           <div className="rounded-[34px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/20 to-amber-50/60 p-3 shadow-2xl shadow-amber-500/10 dark:border-amber-900/40 dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/20">
             <div className="rounded-[28px] bg-[linear-gradient(rgba(255,255,255,0.32)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.32)_1px,transparent_1px)] bg-[size:26px_26px] p-4 sm:p-6">
-              <div className="overflow-hidden rounded-[24px] border border-black/5 bg-white p-5 shadow-lg dark:bg-slate-950">
+              <div className="overflow-hidden rounded-[24px] border border-black/5 bg-white p-5 shadow-lg dark:bg-slate-950 lg:min-h-[calc(100dvh-14rem)]">
                 <div className="flex flex-col gap-4 border-b border-dashed border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-2">
                     <Badge variant="secondary" className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
@@ -333,14 +333,6 @@ export function InvoiceStudioPage() {
                     </div>
                   </div>
                 </div>
-
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-border pt-4 text-xs text-muted-foreground">
-                  <span>Designed for local jobs, small teams, and sole traders.</span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Coins className="size-3.5" />
-                    Live preview updates instantly
-                  </span>
-                </div>
               </div>
             </div>
           </div>
@@ -352,9 +344,6 @@ export function InvoiceStudioPage() {
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
-            <p className="text-xs text-muted-foreground sm:max-w-sm">
-              This is the first slice of the editor. Next steps can connect the draft to the backend preview and PDF workflow.
-            </p>
           </div>
         </div>
       </div>
