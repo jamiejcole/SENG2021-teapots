@@ -209,6 +209,13 @@ export async function listFulfilmentCancelled(userId: string) {
         .exec();
 }
 
+export async function deleteDespatchById(userId: string, despatchId: string): Promise<boolean> {
+    const uid = userOid(userId);
+    if (!uid) return false;
+    const result = await DespatchModel.deleteOne({ despatchId: despatchId.trim(), createdBy: uid }).exec();
+    return result.deletedCount > 0;
+}
+
 export async function emailDespatchAdviceForUser(userId: string, despatchId: string, to: string) {
     const doc = await getDespatch(userId, despatchId);
     if (!doc) throw new HttpError(404, "Despatch not found");

@@ -67,6 +67,15 @@ export const cancelFulfilmentList = asyncHandler(async (req: Request, res: Respo
     res.status(200).json({ despatches });
 });
 
+export const deleteDespatch = asyncHandler(async (req: Request, res: Response) => {
+    const userId = requireUserId(req);
+    const id = paramStr(req.params.despatchId);
+    if (!id) throw new HttpError(400, "despatchId required");
+    const deleted = await service.deleteDespatchById(userId, id);
+    if (!deleted) throw new HttpError(404, "Despatch not found");
+    res.status(200).json({ message: "Despatch deleted" });
+});
+
 export const emailDespatch = asyncHandler(async (req: Request, res: Response) => {
     const userId = requireUserId(req);
     const despatchId = typeof req.body?.despatchId === "string" ? req.body.despatchId.trim() : "";

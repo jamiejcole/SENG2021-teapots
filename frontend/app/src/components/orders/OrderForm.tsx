@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Select } from '@/components/ui/select'
+import { CollapsibleSection } from '@/components/shared/CollapsibleSection'
 import { cn } from '@/lib/utils'
 import type { StoredOrderSummary } from '@/api/orders'
 import type { CreateOrderPayload, OrderLineDto } from '@/types/orders'
@@ -10,84 +12,72 @@ import { DocumentUploader } from '@/components/ai/DocumentUploader'
 import type { ExtractedFields } from '@/api/ai'
 
 const card =
-  'rounded-xl border border-amber-200/60 bg-white/80 p-4 dark:border-amber-900/40 dark:bg-slate-900/40'
+  'rounded-xl border border-amber-200/60 bg-white/80 p-3 shadow-sm dark:border-amber-900/40 dark:bg-slate-900/40'
 
-function PartyBlock({
-  title,
-  prefix,
-  payload,
-  onChange,
-}: {
-  title: string
-  prefix: 'buyer' | 'seller'
-  payload: CreateOrderPayload
-  onChange: (next: CreateOrderPayload) => void
-}) {
-  const p = payload[prefix]
-  const setAddr = (k: keyof typeof p.address, v: string) => {
-    onChange({
-      ...payload,
-      [prefix]: { ...p, address: { ...p.address, [k]: v } },
-    })
-  }
-  return (
-    <div className={cn(card, 'space-y-3')}>
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Name</Label>
-          <Input
-            value={p.name}
-            onChange={(e) => onChange({ ...payload, [prefix]: { ...p, name: e.target.value } })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Endpoint / ID</Label>
-          <Input
-            value={p.id ?? ''}
-            onChange={(e) => onChange({ ...payload, [prefix]: { ...p, id: e.target.value } })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Email</Label>
-          <Input
-            type="email"
-            value={p.email ?? ''}
-            onChange={(e) => onChange({ ...payload, [prefix]: { ...p, email: e.target.value } })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Street</Label>
-          <Input value={p.address.street} onChange={(e) => setAddr('street', e.target.value)} className="h-9 rounded-lg" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>City</Label>
-          <Input value={p.address.city} onChange={(e) => setAddr('city', e.target.value)} className="h-9 rounded-lg" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Postal code</Label>
-          <Input
-            value={p.address.postalCode}
-            onChange={(e) => setAddr('postalCode', e.target.value)}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Country</Label>
-          <Input
-            value={p.address.country}
-            onChange={(e) => setAddr('country', e.target.value)}
-            className="h-9 rounded-lg"
-            placeholder="AU"
-          />
-        </div>
-      </div>
-    </div>
-  )
+const sectionPairGrid = 'grid gap-3 sm:grid-cols-1 lg:grid-cols-2 lg:items-start'
+
+function summarizeBuyer(p: CreateOrderPayload): string {
+  const name = p.buyer.name?.trim()
+  const id = p.buyer.id?.trim()
+  const email = p.buyer.email?.trim()
+  const bits = [name, id, email].filter(Boolean)
+  return bits.length ? bits.join(' · ') : 'Add buyer name, ID, or email'
 }
+
+function summarizePartyAddress(addr: {
+  street: string
+  city: string
+  postalCode: string
+  country: string
+}): string {
+  const city = addr.city?.trim()
+  const pc = addr.postalCode?.trim()
+  const c = addr.country?.trim()
+  const locality = [city, pc].filter(Boolean).join(', ')
+  if (locality && c) return `${locality} · ${c}`
+  if (locality) return locality
+  if (c) return c
+  if (addr.street?.trim()) return addr.street.trim().slice(0, 48) + (addr.street.length > 48 ? '…' : '')
+  return 'Add street, city, and country'
+}
+
+function summarizeSeller(p: CreateOrderPayload): string {
+  const name = p.seller.name?.trim()
+  const id = p.seller.id?.trim()
+  const email = p.seller.email?.trim()
+  const bits = [name, id, email].filter(Boolean)
+  return bits.length ? bits.join(' · ') : 'Add seller name, ID, or email'
+}
+
+function summarizeOrderDetails(p: CreateOrderPayload): string {
+  const bits: string[] = []
+  bits.push(p.orderStatus === 'draft' ? 'Draft' : 'Created')
+  if (p.invoiceStatusNote?.trim()) bits.push(p.invoiceStatusNote.trim())
+  if (p.note?.trim()) {
+    const n = p.note.trim()
+    bits.push(n.length > 56 ? `${n.slice(0, 56)}…` : n)
+  }
+  return bits.join(' · ')
+}
+
+function summarizeDelivery(p: CreateOrderPayload): string {
+  if (p.delivery) {
+    const a = p.delivery.address
+    const place = [a.city?.trim(), a.country?.trim()].filter(Boolean).join(', ')
+    const start = p.delivery.requestedDeliveryStart?.trim()
+    const end = p.delivery.requestedDeliveryEnd?.trim()
+    const window =
+      start && end ? `${start} → ${end}` : start || end || ''
+    const head = place || a.street?.trim() || 'Address set'
+    const mid = window ? ` · ${window}` : ''
+    const terms = p.deliveryTerms?.trim()
+    const tail = terms ? ` · ${terms.length > 32 ? `${terms.slice(0, 32)}…` : terms}` : ''
+    return `${head}${mid}${tail}`
+  }
+  if (p.deliveryTerms?.trim()) return `Terms only · ${p.deliveryTerms.trim()}`
+  return 'Optional ship-to and dates · add delivery block if needed'
+}
+
 
 function applyExtractedFields(payload: CreateOrderPayload, fields: ExtractedFields): CreateOrderPayload {
   const next = { ...payload }
@@ -163,81 +153,250 @@ export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <DocumentUploader
         onExtracted={(fields) => onChange(applyExtractedFields(payload, fields))}
       />
-      <div className={cn(card, 'grid gap-3 sm:grid-cols-2')}>
-        <div className="space-y-1.5">
-          <Label>Order ID</Label>
-          <Input value={payload.orderId} onChange={(e) => onChange({ ...payload, orderId: e.target.value })} className="h-9 rounded-lg" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Issue date</Label>
-          <Input
-            type="date"
-            value={payload.issueDate}
-            onChange={(e) => onChange({ ...payload, issueDate: e.target.value })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Currency</Label>
-          <Input value={payload.currency} onChange={(e) => onChange({ ...payload, currency: e.target.value })} className="h-9 rounded-lg" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Tax rate (decimal)</Label>
-          <Input
-            value={String(payload.taxRate ?? 0)}
-            onChange={(e) => onChange({ ...payload, taxRate: Number(e.target.value) || 0 })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Order status</Label>
-          <select
-            className="flex h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-            value={payload.orderStatus ?? 'created'}
-            onChange={(e) =>
-              onChange({ ...payload, orderStatus: e.target.value as 'draft' | 'created' })
-            }
-          >
-            <option value="created">Created</option>
-            <option value="draft">Draft</option>
-          </select>
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Invoice linkage note (optional)</Label>
-          <Input
-            value={payload.invoiceStatusNote ?? ''}
-            onChange={(e) => onChange({ ...payload, invoiceStatusNote: e.target.value })}
-            className="h-9 rounded-lg"
-            placeholder="e.g. awaiting INV-1001"
-          />
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Note</Label>
-          <Textarea value={payload.note ?? ''} onChange={(e) => onChange({ ...payload, note: e.target.value })} className="min-h-16 rounded-lg" />
+
+      {/* Essential fields — compact 2×2 summary header */}
+      <div className={cn(card)}>
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Order summary</p>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Order ID</Label>
+            <Input
+              value={payload.orderId}
+              onChange={(e) => onChange({ ...payload, orderId: e.target.value })}
+              className="h-9 rounded-lg text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Issue date</Label>
+            <Input
+              type="date"
+              value={payload.issueDate}
+              onChange={(e) => onChange({ ...payload, issueDate: e.target.value })}
+              className="h-9 rounded-lg text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Currency</Label>
+            <Input
+              value={payload.currency}
+              onChange={(e) => onChange({ ...payload, currency: e.target.value })}
+              className="h-9 rounded-lg text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Tax rate (decimal)</Label>
+            <Input
+              value={String(payload.taxRate ?? 0)}
+              onChange={(e) => onChange({ ...payload, taxRate: Number(e.target.value) || 0 })}
+              className="h-9 rounded-lg text-sm"
+            />
+          </div>
         </div>
       </div>
 
-      <PartyBlock title="Buyer" prefix="buyer" payload={payload} onChange={onChange} />
-      <PartyBlock title="Seller / supplier" prefix="seller" payload={payload} onChange={onChange} />
+      <div className={sectionPairGrid}>
+        <CollapsibleSection title="Buyer" defaultOpen={false} summary={summarizeBuyer(payload)}>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Name</Label>
+              <Input
+                value={payload.buyer.name}
+                onChange={(e) => onChange({ ...payload, buyer: { ...payload.buyer, name: e.target.value } })}
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Endpoint / ID</Label>
+              <Input
+                value={payload.buyer.id ?? ''}
+                onChange={(e) => onChange({ ...payload, buyer: { ...payload.buyer, id: e.target.value } })}
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={payload.buyer.email ?? ''}
+                onChange={(e) => onChange({ ...payload, buyer: { ...payload.buyer, email: e.target.value } })}
+                className="h-9 rounded-lg"
+              />
+            </div>
+          </div>
+        </CollapsibleSection>
 
-      <div className={cn(card, 'space-y-3')}>
-        <h3 className="text-sm font-semibold">Delivery (optional)</h3>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <CollapsibleSection
+          title="Buyer address"
+          defaultOpen={false}
+          summary={summarizePartyAddress(payload.buyer.address)}
+        >
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Street</Label>
+              <Input
+                value={payload.buyer.address.street}
+                onChange={(e) =>
+                  onChange({
+                    ...payload,
+                    buyer: { ...payload.buyer, address: { ...payload.buyer.address, street: e.target.value } },
+                  })
+                }
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>City</Label>
+              <Input
+                value={payload.buyer.address.city}
+                onChange={(e) =>
+                  onChange({
+                    ...payload,
+                    buyer: { ...payload.buyer, address: { ...payload.buyer.address, city: e.target.value } },
+                  })
+                }
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Postal code</Label>
+              <Input
+                value={payload.buyer.address.postalCode}
+                onChange={(e) =>
+                  onChange({
+                    ...payload,
+                    buyer: { ...payload.buyer, address: { ...payload.buyer.address, postalCode: e.target.value } },
+                  })
+                }
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Country</Label>
+              <Input
+                value={payload.buyer.address.country}
+                onChange={(e) =>
+                  onChange({
+                    ...payload,
+                    buyer: { ...payload.buyer, address: { ...payload.buyer.address, country: e.target.value } },
+                  })
+                }
+                className="h-9 rounded-lg"
+                placeholder="AU"
+              />
+            </div>
+          </div>
+        </CollapsibleSection>
+      </div>
+
+      <div className={sectionPairGrid}>
+        <CollapsibleSection title="Seller / supplier" defaultOpen={false} summary={summarizeSeller(payload)}>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Name</Label>
+              <Input
+                value={payload.seller.name}
+                onChange={(e) => onChange({ ...payload, seller: { ...payload.seller, name: e.target.value } })}
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Endpoint / ID</Label>
+              <Input
+                value={payload.seller.id ?? ''}
+                onChange={(e) => onChange({ ...payload, seller: { ...payload.seller, id: e.target.value } })}
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={payload.seller.email ?? ''}
+                onChange={(e) => onChange({ ...payload, seller: { ...payload.seller, email: e.target.value } })}
+                className="h-9 rounded-lg"
+              />
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Seller address"
+          defaultOpen={false}
+          summary={summarizePartyAddress(payload.seller.address)}
+        >
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Street</Label>
+              <Input
+                value={payload.seller.address.street}
+                onChange={(e) =>
+                  onChange({
+                    ...payload,
+                    seller: { ...payload.seller, address: { ...payload.seller.address, street: e.target.value } },
+                  })
+                }
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>City</Label>
+              <Input
+                value={payload.seller.address.city}
+                onChange={(e) =>
+                  onChange({
+                    ...payload,
+                    seller: { ...payload.seller, address: { ...payload.seller.address, city: e.target.value } },
+                  })
+                }
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Postal code</Label>
+              <Input
+                value={payload.seller.address.postalCode}
+                onChange={(e) =>
+                  onChange({
+                    ...payload,
+                    seller: { ...payload.seller, address: { ...payload.seller.address, postalCode: e.target.value } },
+                  })
+                }
+                className="h-9 rounded-lg"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Country</Label>
+              <Input
+                value={payload.seller.address.country}
+                onChange={(e) =>
+                  onChange({
+                    ...payload,
+                    seller: { ...payload.seller, address: { ...payload.seller.address, country: e.target.value } },
+                  })
+                }
+                className="h-9 rounded-lg"
+                placeholder="AU"
+              />
+            </div>
+          </div>
+        </CollapsibleSection>
+      </div>
+
+      <div className={sectionPairGrid}>
+        <CollapsibleSection title="Delivery" defaultOpen={false} summary={summarizeDelivery(payload)}>
+          <div className="space-y-2">
           {payload.delivery ? (
-            <>
+            <div className="grid gap-2 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label>Ship-to street</Label>
                 <Input
                   value={payload.delivery.address.street}
                   onChange={(e) =>
-                    onChange({
-                      ...payload,
-                      delivery: { ...payload.delivery!, address: { ...payload.delivery!.address, street: e.target.value } },
-                    })
+                    onChange({ ...payload, delivery: { ...payload.delivery!, address: { ...payload.delivery!.address, street: e.target.value } } })
                   }
                   className="h-9 rounded-lg"
                 />
@@ -247,10 +406,7 @@ export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; 
                 <Input
                   value={payload.delivery.address.city}
                   onChange={(e) =>
-                    onChange({
-                      ...payload,
-                      delivery: { ...payload.delivery!, address: { ...payload.delivery!.address, city: e.target.value } },
-                    })
+                    onChange({ ...payload, delivery: { ...payload.delivery!, address: { ...payload.delivery!.address, city: e.target.value } } })
                   }
                   className="h-9 rounded-lg"
                 />
@@ -260,13 +416,7 @@ export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; 
                 <Input
                   value={payload.delivery.address.postalCode}
                   onChange={(e) =>
-                    onChange({
-                      ...payload,
-                      delivery: {
-                        ...payload.delivery!,
-                        address: { ...payload.delivery!.address, postalCode: e.target.value },
-                      },
-                    })
+                    onChange({ ...payload, delivery: { ...payload.delivery!, address: { ...payload.delivery!.address, postalCode: e.target.value } } })
                   }
                   className="h-9 rounded-lg"
                 />
@@ -276,13 +426,7 @@ export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; 
                 <Input
                   value={payload.delivery.address.country}
                   onChange={(e) =>
-                    onChange({
-                      ...payload,
-                      delivery: {
-                        ...payload.delivery!,
-                        address: { ...payload.delivery!.address, country: e.target.value },
-                      },
-                    })
+                    onChange({ ...payload, delivery: { ...payload.delivery!, address: { ...payload.delivery!.address, country: e.target.value } } })
                   }
                   className="h-9 rounded-lg"
                 />
@@ -293,10 +437,7 @@ export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; 
                   type="date"
                   value={payload.delivery.requestedDeliveryStart ?? ''}
                   onChange={(e) =>
-                    onChange({
-                      ...payload,
-                      delivery: { ...payload.delivery!, requestedDeliveryStart: e.target.value },
-                    })
+                    onChange({ ...payload, delivery: { ...payload.delivery!, requestedDeliveryStart: e.target.value } })
                   }
                   className="h-9 rounded-lg"
                 />
@@ -307,17 +448,14 @@ export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; 
                   type="date"
                   value={payload.delivery.requestedDeliveryEnd ?? ''}
                   onChange={(e) =>
-                    onChange({
-                      ...payload,
-                      delivery: { ...payload.delivery!, requestedDeliveryEnd: e.target.value },
-                    })
+                    onChange({ ...payload, delivery: { ...payload.delivery!, requestedDeliveryEnd: e.target.value } })
                   }
                   className="h-9 rounded-lg"
                 />
               </div>
-            </>
+            </div>
           ) : null}
-          <div className="sm:col-span-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"
@@ -332,39 +470,79 @@ export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; 
                 })
               }
             >
-              {payload.delivery ? 'Clear delivery block' : 'Add delivery address'}
+              {payload.delivery ? 'Reset delivery' : 'Add delivery address'}
             </Button>
-            {payload.delivery ? (
+            {payload.delivery && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="ml-2"
+                className="text-red-600 hover:text-red-700"
                 onClick={() => onChange({ ...payload, delivery: undefined })}
               >
                 Remove
               </Button>
-            ) : null}
+            )}
           </div>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Delivery terms</Label>
-          <Input
-            value={payload.deliveryTerms ?? ''}
-            onChange={(e) => onChange({ ...payload, deliveryTerms: e.target.value })}
-            className="h-9 rounded-lg"
-          />
-        </div>
+          <div className="space-y-1.5">
+            <Label>Delivery terms</Label>
+            <Input
+              value={payload.deliveryTerms ?? ''}
+              onChange={(e) => onChange({ ...payload, deliveryTerms: e.target.value })}
+              className="h-9 rounded-lg"
+            />
+          </div>
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Order details"
+          defaultOpen={false}
+          summary={summarizeOrderDetails(payload)}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Order status</Label>
+              <Select
+                value={payload.orderStatus ?? 'created'}
+                onValueChange={(v) =>
+                  onChange({ ...payload, orderStatus: v as 'draft' | 'created' })
+                }
+                options={[
+                  { value: 'created', label: 'Created' },
+                  { value: 'draft', label: 'Draft' },
+                ]}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Invoice linkage note</Label>
+              <Input
+                value={payload.invoiceStatusNote ?? ''}
+                onChange={(e) => onChange({ ...payload, invoiceStatusNote: e.target.value })}
+                className="h-9 rounded-lg"
+                placeholder="e.g. awaiting INV-1001"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Note</Label>
+              <Textarea
+                value={payload.note ?? ''}
+                onChange={(e) => onChange({ ...payload, note: e.target.value })}
+                className="min-h-14 rounded-lg"
+              />
+            </div>
+          </div>
+        </CollapsibleSection>
       </div>
 
-      <div className={cn(card, 'space-y-3')}>
+      <div className={cn(card, 'space-y-2')}>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">Line items</h3>
           <Button type="button" size="sm" variant="outline" className="h-8 gap-1 rounded-lg" onClick={addLine}>
             <Plus className="size-4" /> Add line
           </Button>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2">
           {payload.lines.map((line, idx) => (
             <div key={idx} className="grid gap-2 rounded-lg border border-amber-200/40 p-3 sm:grid-cols-12 dark:border-amber-900/30">
               <div className="sm:col-span-2">

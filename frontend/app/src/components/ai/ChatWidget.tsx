@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Bot, MessageSquare, Send, X, ChevronDown } from 'lucide-react'
-import { streamChat, type ChatMessage } from '@/api/ai'
+import { streamChat, type ChatMessage, type ChatNavSuggestion } from '@/api/ai'
 
 const WELCOME = `Hi! I'm your Teapots AI assistant. I can help you with:
 
@@ -11,12 +12,29 @@ const WELCOME = `Hi! I'm your Teapots AI assistant. I can help you with:
 
 How can I help you today?`
 
-interface BubbleProps {
-  msg: ChatMessage & { pending?: boolean }
+type UiMessage = ChatMessage & { pending?: boolean; navigation?: ChatNavSuggestion[] }
+
+function isOnRoute(pathname: string, to: string): boolean {
+  if (pathname === to) return true
+  if (to === '/') return false
+  return pathname.startsWith(`${to}/`)
 }
 
-function Bubble({ msg }: BubbleProps) {
+function Bubble({
+  msg,
+  pathname,
+  onGoTo,
+}: {
+  msg: UiMessage
+  pathname: string
+  onGoTo: (to: string) => void
+}) {
   const isUser = msg.role === 'user'
+  const navItems =
+    !isUser && msg.navigation?.length
+      ? msg.navigation.filter((n) => !isOnRoute(pathname, n.to))
+      : []
+
   return (
     <div className={`flex gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
@@ -24,24 +42,42 @@ function Bubble({ msg }: BubbleProps) {
           <Bot className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
         </div>
       )}
-      <div
-        className={[
-          'max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
-          isUser
-            ? 'rounded-tr-sm bg-amber-400 text-slate-900'
-            : 'rounded-tl-sm bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100',
-          msg.pending ? 'animate-pulse opacity-70' : '',
-        ].join(' ')}
-      >
-        {msg.content || (msg.pending ? '…' : '')}
+      <div className={`flex max-w-[85%] flex-col gap-1.5 ${isUser ? 'items-end' : 'items-start'}`}>
+        <div
+          className={[
+            'rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap',
+            isUser
+              ? 'rounded-tr-sm bg-amber-400 text-slate-900'
+              : 'rounded-tl-sm bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100',
+            msg.pending ? 'animate-pulse opacity-70' : '',
+          ].join(' ')}
+        >
+          {msg.content || (msg.pending ? '…' : '')}
+        </div>
+        {navItems.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pl-0.5">
+            {navItems.map((n) => (
+              <button
+                key={n.to}
+                type="button"
+                onClick={() => onGoTo(n.to)}
+                className="rounded-lg border border-amber-300/80 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-950 shadow-sm transition-colors hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-900/50"
+              >
+                Go to {n.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 export function ChatWidget() {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [messages, setMessages] = useState<UiMessage[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -81,9 +117,11 @@ export function ChatWidget() {
         streamingContentRef.current += chunk
         setMessages((prev) => {
           const copy = [...prev]
+          const last = copy[copy.length - 1]
           copy[copy.length - 1] = {
             role: 'assistant',
             content: streamingContentRef.current,
+            navigation: last?.navigation,
           }
           return copy
         })
@@ -95,7 +133,20 @@ export function ChatWidget() {
         setStreaming(false)
         setError(err.message)
         setMessages((prev) => prev.slice(0, -1))
-      }
+      },
+      (items) => {
+        setMessages((prev) => {
+          const copy = [...prev]
+          const last = copy[copy.length - 1]
+          if (last?.role === 'assistant') {
+            copy[copy.length - 1] = {
+              ...last,
+              navigation: items,
+            }
+          }
+          return copy
+        })
+      },
     )
   }
 
@@ -175,10 +226,25 @@ export function ChatWidget() {
           {/* Message list */}
           <div className="flex-1 space-y-3 overflow-y-auto p-4">
             {messages.length === 0 && (
-              <Bubble msg={{ role: 'assistant', content: WELCOME }} />
+              <Bubble
+                msg={{ role: 'assistant', content: WELCOME }}
+                pathname={pathname}
+                onGoTo={(to) => {
+                  navigate(to)
+                  setOpen(false)
+                }}
+              />
             )}
             {messages.map((m, i) => (
-              <Bubble key={i} msg={m} />
+              <Bubble
+                key={i}
+                msg={m}
+                pathname={pathname}
+                onGoTo={(to) => {
+                  navigate(to)
+                  setOpen(false)
+                }}
+              />
             ))}
             {error && (
               <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-950/30 dark:text-red-400">

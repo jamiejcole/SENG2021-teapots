@@ -42,11 +42,15 @@ export async function extractDocument(file: File): Promise<ExtractedFields> {
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string }
 
+/** Whitelisted app routes from the chat API — safe to pass to the router. */
+export type ChatNavSuggestion = { to: string; label: string }
+
 export async function streamChat(
   messages: ChatMessage[],
   onChunk: (text: string) => void,
   onDone: () => void,
-  onError: (err: Error) => void
+  onError: (err: Error) => void,
+  onNavigation?: (items: ChatNavSuggestion[]) => void,
 ): Promise<void> {
   const res = await fetch(`${getApiBaseUrl()}/ai/chat`, {
     method: 'POST',
@@ -86,12 +90,20 @@ export async function streamChat(
         const raw = line.slice(6).trim()
         if (!raw) continue
         try {
-          const parsed = JSON.parse(raw) as { text?: string; done?: boolean; error?: string }
+          const parsed = JSON.parse(raw) as {
+            text?: string
+            done?: boolean
+            error?: string
+            navigation?: ChatNavSuggestion[]
+          }
           if (parsed.error) {
             onError(new Error(parsed.error))
             return
           }
           if (parsed.text) onChunk(parsed.text)
+          if (parsed.navigation?.length && onNavigation) {
+            onNavigation(parsed.navigation)
+          }
           if (parsed.done) {
             onDone()
             return

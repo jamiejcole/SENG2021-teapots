@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Copy, Download, Mail, Package, ReceiptText, ShieldCheck } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { Select } from '@/components/ui/select'
 import {
   createInvoice,
   createInvoicePdf,
@@ -26,6 +27,14 @@ import { cn } from '@/lib/utils'
 /** Same outline treatment as the Output card “Validate” control */
 const outlineValidateStyle =
   'h-8 gap-1.5 rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900/40'
+
+const orderStatusBadge: Record<string, string> = {
+  draft: 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
+  created: 'border-sky-300/70 bg-sky-100 text-sky-800 dark:border-sky-800/50 dark:bg-sky-950/40 dark:text-sky-300',
+  cancelled: 'border-red-300/70 bg-red-100 text-red-800 dark:border-red-800/50 dark:bg-red-950/40 dark:text-red-300',
+  fulfilled: 'border-emerald-300/70 bg-emerald-100 text-emerald-800 dark:border-emerald-800/50 dark:bg-emerald-950/40 dark:text-emerald-300',
+  partially_fulfilled: 'border-amber-300/70 bg-amber-100 text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-300',
+}
 
 function downloadText(filename: string, text: string, mime: string) {
   const blob = new Blob([text], { type: mime })
@@ -96,6 +105,20 @@ export function GenerateInvoicePage() {
   useEffect(() => {
     void loadOrdersList()
   }, [loadOrdersList])
+
+  const orderPickOptions = useMemo(() => {
+    const placeholder = { value: '', label: ordersLoading ? 'Loading…' : 'Select an order…' }
+    if (ordersLoading) return [placeholder]
+    return [
+      placeholder,
+      ...storedOrders.map((o) => ({
+        value: o._id,
+        label: o.orderId,
+        secondary: `${o.currency} · ${o.buyer.name}`,
+        badge: { label: o.orderStatus, className: orderStatusBadge[o.orderStatus] ?? '' },
+      })),
+    ]
+  }, [storedOrders, ordersLoading])
 
   useEffect(() => {
     if (!orderKeyFromUrl) return
@@ -375,20 +398,16 @@ export function GenerateInvoicePage() {
                   <Label htmlFor="stored-order-pick" className="text-xs">
                     Order
                   </Label>
-                  <select
+                  <Select
                     id="stored-order-pick"
-                    className="flex h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
                     value={selectedOrderKey}
-                    onChange={(e) => setSelectedOrderKey(e.target.value)}
+                    onValueChange={setSelectedOrderKey}
+                    options={orderPickOptions}
                     disabled={ordersLoading}
-                  >
-                    <option value="">{ordersLoading ? 'Loading…' : 'Select an order…'}</option>
-                    {storedOrders.map((o) => (
-                      <option key={o._id} value={o._id}>
-                        {o.orderId} · {o.orderStatus} · {o.currency}
-                      </option>
-                    ))}
-                  </select>
+                    searchable={storedOrders.length > 5}
+                    searchPlaceholder="Search orders…"
+                    placeholder="Select an order…"
+                  />
                 </div>
                 <Button
                   type="button"

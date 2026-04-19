@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Select } from '@/components/ui/select'
 import { toast } from '@/lib/toast'
 import { ApiError } from '@/api/client'
 
@@ -370,18 +371,14 @@ export function InvoiceDetailPage() {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label>Set lifecycle (optional)</Label>
-              <select
-                className="flex h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
+              <Select
                 value={lifecyclePick}
-                onChange={(e) => setLifecyclePick(e.target.value)}
-              >
-                <option value="">No change (keep {doc.lifecycleStatus})</option>
-                {LIFECYCLE_EDIT.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setLifecyclePick}
+                options={[
+                  { value: '', label: `No change (keep ${doc.lifecycleStatus})` },
+                  ...LIFECYCLE_EDIT.map((s) => ({ value: s, label: s })),
+                ]}
+              />
               <p className="text-xs text-muted-foreground">
                 Email send sets SENT or SEND_FAILED automatically. Validated is set by the Validate UBL action.
               </p>

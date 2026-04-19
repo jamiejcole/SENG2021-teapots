@@ -82,6 +82,11 @@ export const chat = asyncHandler(async (req: Request, res: Response) => {
             (text) => {
                 if (!res.writableEnded) res.write(`data: ${JSON.stringify({ text })}\n\n`);
             },
+            (navigation) => {
+                if (!res.writableEnded && navigation.length > 0) {
+                    res.write(`data: ${JSON.stringify({ navigation })}\n\n`);
+                }
+            },
             () => {
                 if (!res.writableEnded) {
                     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);

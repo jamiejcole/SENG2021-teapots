@@ -3,6 +3,11 @@ import mongoose from "mongoose";
 import { InvoiceModel } from "../../../models/invoice.model";
 import { OrderModel } from "../../../models/order.model";
 import { DespatchModel } from "../../../models/despatch.model";
+import {
+    type NavSuggestion,
+    finalizeNavigationSuggestions,
+    resolveNavKeys,
+} from "./chatNavigation";
 
 const MODEL = "gemini-2.5-flash";
 
@@ -314,11 +319,33 @@ const CHAT_TOOLS: Tool[] = [
                 description: "Get a count of the user's despatch notices grouped by status.",
                 parameters: { type: Type.OBJECT, properties: {} as Record<string, Schema> },
             },
+            {
+                name: "suggest_navigation",
+                description:
+                    "Call when the user's question clearly relates to a specific area of the Teapots app so they can open the right page. Use 1–3 route keys from the allowed list. Do not invent URLs.",
+                parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                        routes: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description:
+                                "Most relevant first. Allowed keys: dashboard, invoice_studio, orders, orders_create, despatch, invoices, generate, validate, account, settings, support, privacy, terms.",
+                        } as Schema,
+                    } as Record<string, Schema>,
+                    required: ["routes"],
+                },
+            },
         ],
     },
 ];
 
-async function executeToolCall(toolName: string, args: Record<string, unknown>, userId: string): Promise<string> {
+async function executeToolCall(
+    toolName: string,
+    args: Record<string, unknown>,
+    userId: string,
+    navAcc: { items: NavSuggestion[] }
+): Promise<string> {
     let result: unknown;
     switch (toolName) {
         case "get_invoice_summary": result = await getInvoiceSummary(userId); break;
@@ -326,6 +353,15 @@ async function executeToolCall(toolName: string, args: Record<string, unknown>, 
         case "get_order_summary": result = await getOrderSummary(userId); break;
         case "search_orders": result = await searchOrders(userId, args as Parameters<typeof searchOrders>[1]); break;
         case "get_despatch_summary": result = await getDespatchSummary(userId); break;
+        case "suggest_navigation": {
+            const raw = args.routes;
+            const resolved = resolveNavKeys(Array.isArray(raw) ? raw : []);
+            for (const n of resolved) {
+                if (!navAcc.items.some((x) => x.to === n.to)) navAcc.items.push(n);
+            }
+            result = { ok: true, acceptedRoutes: resolved.length };
+            break;
+        }
         default: result = { error: "Unknown tool" };
     }
     return JSON.stringify(result);
@@ -337,6 +373,7 @@ function buildSystemInstruction(userName: string, userCompany: string): string {
 The logged-in user is ${userName}${userCompany ? ` from ${userCompany}` : ""}. Today is ${today}.
 You help users understand their invoices, orders, and despatch notices.
 You can look up their data using the provided tools.
+When the user's question clearly relates to a specific app area (e.g. viewing invoices, creating orders, despatch, validation, settings), call suggest_navigation with 1–3 relevant route keys from the tool description so they can open the right page. You may combine suggest_navigation with other tools in the same turn when appropriate.
 When answering about amounts, always include the currency if available.
 For PEPPOL/UBL questions, explain concepts clearly in plain language.
 Keep responses concise and actionable.`;
@@ -348,6 +385,7 @@ export async function streamChatCompletion(
     userCompany: string,
     messages: ChatMessage[],
     onChunk: (text: string) => void,
+    onNavigation: (items: NavSuggestion[]) => void,
     onDone: () => void
 ): Promise<void> {
     const ai = getClient();
@@ -362,6 +400,8 @@ export async function streamChatCompletion(
     const lastMsg = messages[messages.length - 1];
     const lastText = lastMsg?.content ?? "";
 
+    const navAcc: { items: NavSuggestion[] } = { items: [] };
+
     const chat = ai.chats.create({
         model: MODEL,
         config: { systemInstruction, tools: CHAT_TOOLS },
@@ -371,6 +411,12 @@ export async function streamChatCompletion(
     // Tool-call loop (up to 3 rounds)
     let nextMessage: Part[] | string = lastText;
 
+    const finish = () => {
+        const nav = finalizeNavigationSuggestions(navAcc.items, lastText);
+        onNavigation(nav);
+        onDone();
+    };
+
     for (let round = 0; round < 3; round++) {
         const response = await withRetry(() => chat.sendMessage({ message: nextMessage }));
 
@@ -378,7 +424,7 @@ export async function streamChatCompletion(
         if (functionCalls.length === 0) {
             const text = response.text ?? "";
             if (text) onChunk(text);
-            onDone();
+            finish();
             return;
         }
 
@@ -388,7 +434,8 @@ export async function streamChatCompletion(
             const toolResult = await executeToolCall(
                 fc.name ?? "",
                 (fc.args ?? {}) as Record<string, unknown>,
-                userId
+                userId,
+                navAcc
             );
             toolParts.push(
                 createPartFromFunctionResponse(
@@ -406,5 +453,5 @@ export async function streamChatCompletion(
     const finalResponse = await withRetry(() => chat.sendMessage({ message: nextMessage }));
     const finalText = finalResponse.text ?? "";
     if (finalText) onChunk(finalText);
-    onDone();
+    finish();
 }

@@ -94,6 +94,27 @@ router.get("/list", controller.listDespatch);
 router.get("/retrieve/:despatchId", controller.retrieveDespatch);
 /**
  * @openapi
+ * /api/v2/despatch/{despatchId}:
+ *   delete:
+ *     summary: Delete a despatch by ID
+ *     tags: [Despatch]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: despatchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Despatch deleted successfully
+ *       404:
+ *         description: Despatch not found
+ */
+router.delete("/:despatchId", controller.deleteDespatch);
+/**
+ * @openapi
  * /api/v2/despatch/email:
  *   post:
  *     summary: Email a despatch document
