@@ -272,8 +272,7 @@ router.post("/preview", controller.previewInvoice);
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             additionalProperties: true
+ *             $ref: '#/components/schemas/InvoiceStudioPreviewDraft'
  *     responses:
  *       200:
  *         description: HTML preview rendered successfully

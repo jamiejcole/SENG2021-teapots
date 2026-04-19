@@ -76,6 +76,100 @@ const swaggerDefinition = {
         },
         required: ["invoiceXml", "previewOnly"],
       },
+      InvoiceStudioLineItem: {
+        type: "object",
+        properties: {
+          id: {
+            type: "string",
+          },
+          name: {
+            type: "string",
+          },
+          details: {
+            type: "string",
+          },
+          quantity: {
+            type: "number",
+          },
+          rate: {
+            type: "number",
+          },
+        },
+        required: ["name", "quantity", "rate"],
+      },
+      InvoiceStudioPreviewDraft: {
+        type: "object",
+        properties: {
+          businessName: {
+            type: "string",
+          },
+          businessPhone: {
+            type: "string",
+          },
+          businessEmail: {
+            type: "string",
+          },
+          businessAddress: {
+            type: "string",
+          },
+          customerName: {
+            type: "string",
+          },
+          customerPhone: {
+            type: "string",
+          },
+          customerEmail: {
+            type: "string",
+          },
+          customerAddress: {
+            type: "string",
+          },
+          invoiceNumber: {
+            type: "string",
+          },
+          issueDate: {
+            type: "string",
+          },
+          dueDate: {
+            type: "string",
+          },
+          jobSummary: {
+            type: "string",
+          },
+          notes: {
+            type: "string",
+          },
+          paymentNotes: {
+            type: "string",
+          },
+          extraNotes: {
+            type: "string",
+          },
+          accountName: {
+            type: "string",
+          },
+          accountNumber: {
+            type: "string",
+          },
+          bsb: {
+            type: "string",
+          },
+          taxRate: {
+            type: "number",
+          },
+          theme: {
+            type: "string",
+            enum: ["light", "dark"],
+          },
+          lineItems: {
+            type: "array",
+            items: {
+              $ref: "#/components/schemas/InvoiceStudioLineItem",
+            },
+          },
+        },
+        required: ["businessName", "customerName", "invoiceNumber", "lineItems"],
+      },
       ...invoiceSupplementSchemas,
       ValidateInvoiceRequest: {
         type: "object",
