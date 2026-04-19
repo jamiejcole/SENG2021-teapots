@@ -50,15 +50,10 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const { firstName, lastName, phone, company, businessAddress } = req.body;
-
-  const result = await authService.updateUserProfile(
-    req.user.userId,
-    firstName,
-    lastName,
-    phone,
-    company,
-    businessAddress,
-  );
+  const result =
+    businessAddress !== undefined
+      ? await authService.updateUserProfile(req.user.userId, firstName, lastName, phone, company, businessAddress)
+      : await authService.updateUserProfile(req.user.userId, firstName, lastName, phone, company);
 
   res.status(200).json(result);
 });
