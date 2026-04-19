@@ -224,17 +224,25 @@ function getChromeExecutablePath() {
     return executablePath;
 }
 
-export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
+function renderInvoiceHtml(xmlString: string): string {
     const sefPath = path.join(__dirname, '../../../schemas/ubl2.4/xslt/s4.sef.json');
 
-    console.log('[invoice-pdf] Starting PDF generation');
     const result = SaxonJS.transform({
         stylesheetLocation: sefPath,
         sourceText: xmlString,
-        destination: "serialized"
-    }, "sync");
+        destination: 'serialized',
+    }, 'sync');
 
-    const htmlResult = inlineTailwindStylesheet(result.principalResult);
+    return inlineTailwindStylesheet(result.principalResult);
+}
+
+export async function generateInvoiceHtml(xmlString: string): Promise<string> {
+    return renderInvoiceHtml(xmlString);
+}
+
+export async function generateInvoicePdf(xmlString: string): Promise<Buffer> {
+    console.log('[invoice-pdf] Starting PDF generation');
+    const htmlResult = renderInvoiceHtml(xmlString);
 
     const browser = await withTimeout(
         puppeteer.launch({

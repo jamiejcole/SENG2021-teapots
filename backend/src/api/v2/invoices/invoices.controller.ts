@@ -66,6 +66,62 @@ export const previewInvoice = asyncHandler(async (req: Request, res: Response) =
     });
 });
 
+export const previewStudioInvoice = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.body || typeof req.body !== 'object') {
+        throw new HttpError(400, 'Request body must be a JSON object');
+    }
+
+    const draft = req.body as {
+        businessName?: string;
+        businessPhone?: string;
+        businessEmail?: string;
+        businessAddress?: string;
+        customerName?: string;
+        customerAddress?: string;
+        invoiceNumber?: string;
+        issueDate?: string;
+        dueDate?: string;
+        jobSummary?: string;
+        notes?: string;
+        paymentNotes?: string;
+        taxRate?: number;
+        lineItems?: Array<{ id?: string; name?: string; details?: string; quantity?: number; rate?: number }>;
+    };
+
+    if (!draft.businessName?.trim() || !draft.customerName?.trim() || !draft.invoiceNumber?.trim()) {
+        throw new HttpError(400, 'Studio draft must include businessName, customerName, and invoiceNumber');
+    }
+
+    if (!Array.isArray(draft.lineItems) || draft.lineItems.length === 0) {
+        throw new HttpError(400, 'Studio draft must include at least one line item');
+    }
+
+    const html = await service.buildStudioPreviewHtml({
+        businessName: draft.businessName,
+        businessPhone: draft.businessPhone ?? '',
+        businessEmail: draft.businessEmail ?? '',
+        businessAddress: draft.businessAddress ?? '',
+        customerName: draft.customerName,
+        customerAddress: draft.customerAddress ?? '',
+        invoiceNumber: draft.invoiceNumber,
+        issueDate: draft.issueDate ?? new Date().toISOString().slice(0, 10),
+        dueDate: draft.dueDate,
+        jobSummary: draft.jobSummary ?? '',
+        notes: draft.notes ?? '',
+        paymentNotes: draft.paymentNotes ?? '',
+        taxRate: typeof draft.taxRate === 'number' && Number.isFinite(draft.taxRate) ? draft.taxRate : 0.1,
+        lineItems: draft.lineItems.map((lineItem, index) => ({
+            id: lineItem.id ?? String(index + 1),
+            name: lineItem.name ?? 'Item',
+            details: lineItem.details ?? lineItem.name ?? 'Item',
+            quantity: typeof lineItem.quantity === 'number' && Number.isFinite(lineItem.quantity) ? lineItem.quantity : 1,
+            rate: typeof lineItem.rate === 'number' && Number.isFinite(lineItem.rate) ? lineItem.rate : 0,
+        })),
+    });
+
+    res.status(200).contentType('text/html').send(html);
+});
+
 export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
     const userId = requireUserId(req);
     const stats = await service.getDashboardForUser(userId);

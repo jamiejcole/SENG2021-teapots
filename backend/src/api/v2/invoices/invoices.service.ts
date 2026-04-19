@@ -11,7 +11,8 @@ import { InvoicePdfModel } from '../../../models/invoicePdf.model';
 import { sha256 } from '../../../models/hash';
 import { buildInvoiceSetFields } from '../../../db/persistInvoiceRequest';
 import { HttpError } from '../../../errors/HttpError';
-import { validateUBL } from './invoices.validation';
+import { generateInvoiceHtml, validateUBL } from './invoices.validation';
+import { InvoiceCalculator } from '../../../domain/InvoiceCalculator';
 
 /**
  * Returns a JSON obj based on a UBL XML String.
@@ -42,6 +43,143 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
         .addLegalMonetaryTotal()
         .addInvoiceLines()
         .build();
+}
+
+type StudioLineItemDraft = {
+    id: string;
+    name: string;
+    details: string;
+    quantity: number;
+    rate: number;
+};
+
+type StudioPreviewDraft = {
+    businessName: string;
+    businessPhone: string;
+    businessEmail: string;
+    businessAddress: string;
+    customerName: string;
+    customerAddress: string;
+    invoiceNumber: string;
+    issueDate: string;
+    dueDate?: string;
+    jobSummary: string;
+    notes: string;
+    paymentNotes: string;
+    taxRate: number;
+    lineItems: StudioLineItemDraft[];
+  };
+
+function parseAddress(address: string) {
+    const trimmed = address.trim();
+    const parts = trimmed.split(',').map((part) => part.trim()).filter(Boolean);
+
+    const street = parts[0] || trimmed || 'Unknown street';
+    const city = parts[1] || 'Unknown city';
+    const postalMatch = trimmed.match(/\b\d{4,6}\b/);
+    const postalCode = postalMatch?.[0] || '0000';
+
+    return {
+        street,
+        city,
+        postalCode,
+        country: 'Australia',
+    };
+}
+
+function buildStudioOrderData(draft: StudioPreviewDraft): OrderData {
+    const rawLines = draft.lineItems.map((lineItem, index) => ({
+        LineItem: {
+            ID: { value: String(lineItem.id || index + 1) },
+            Quantity: {
+                value: String(lineItem.quantity),
+                '@unitCode': 'EA',
+            },
+            Price: {
+                PriceAmount: {
+                    value: String(lineItem.rate),
+                    '@currencyID': 'AUD',
+                },
+            },
+            Item: {
+                Name: { value: lineItem.name },
+                Description: { value: lineItem.details || lineItem.name },
+            },
+        },
+    }));
+
+    const calculator = new InvoiceCalculator(rawLines as any[], draft.taxRate);
+
+    const lineItems = rawLines.map((line, index) => {
+        const totals = calculator.lineTotals[index];
+        return {
+            LineItem: {
+                ...line.LineItem,
+                LineExtensionAmount: {
+                    value: totals.lineExtensionAmount,
+                    '@currencyID': 'AUD',
+                },
+            },
+        };
+    });
+
+    return {
+        ID: { value: draft.invoiceNumber.trim() || `STUDIO-${Date.now()}` },
+        IssueDate: { value: draft.issueDate.trim() },
+        DocumentCurrencyCode: { value: 'AUD' },
+        BuyerCustomerParty: {
+            Party: {
+                PartyName: { Name: draft.customerName.trim() || 'Customer' },
+                PostalAddress: parseAddress(draft.customerAddress || draft.jobSummary),
+                ...(draft.businessPhone.trim()
+                    ? { Contact: { Telephone: draft.businessPhone.trim() } }
+                    : {}),
+                ...(draft.businessEmail.trim()
+                    ? { Contact: { ElectronicMail: draft.businessEmail.trim() } }
+                    : {}),
+            },
+        },
+        SellerSupplierParty: {
+            Party: {
+                PartyName: { Name: draft.businessName.trim() || 'Business' },
+                PostalAddress: parseAddress(draft.businessAddress || draft.businessName),
+                ...(draft.businessPhone.trim()
+                    ? { Contact: { Telephone: draft.businessPhone.trim() } }
+                    : {}),
+                ...(draft.businessEmail.trim()
+                    ? { Contact: { ElectronicMail: draft.businessEmail.trim() } }
+                    : {}),
+            },
+        },
+        OrderLine: lineItems.length === 1 ? lineItems[0] : lineItems,
+    };
+}
+
+function buildStudioInvoiceSupplement(draft: StudioPreviewDraft): InvoiceSupplement {
+    return {
+        invoiceNumber: draft.invoiceNumber.trim() || undefined,
+        issueDate: draft.issueDate.trim() || undefined,
+        dueDate: draft.dueDate?.trim() || undefined,
+        note: draft.notes.trim() || undefined,
+        currencyCode: 'AUD',
+        taxRate: draft.taxRate,
+        taxScheme: { id: 'GST', taxTypeCode: 'GST' },
+        paymentMeans: {
+            code: '30',
+            payeeFinancialAccount: {
+                id: draft.businessPhone.trim() || '000000',
+                name: draft.businessName.trim() || 'Bank account',
+            },
+        },
+        ...(draft.paymentNotes.trim() ? { paymentTerms: { note: draft.paymentNotes.trim() } } : {}),
+    };
+}
+
+export async function buildStudioPreviewHtml(draft: StudioPreviewDraft) {
+    const orderData = buildStudioOrderData(draft);
+    const invoiceSupplement = buildStudioInvoiceSupplement(draft);
+    const invoiceXml = convertJsonToUblInvoice(orderData, invoiceSupplement);
+    return await generateInvoiceHtml(invoiceXml);
 }
 
 export async function buildInvoiceXmlFromOrderXml(orderXml: string, invoiceSupplement: InvoiceSupplement) {

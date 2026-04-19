@@ -78,7 +78,7 @@ export class InvoiceBuilder {
             this.invoice
                 .ele('cac:OrderReference')
                 .ele('cbc:ID')
-                .txt(this.order.ID as string).up()
+                .txt(this.textValue(this.order.ID)).up()
                 .up();
         }
         return this;
@@ -205,7 +205,7 @@ export class InvoiceBuilder {
             .up();
 
             const cacItem = iLine.ele('cac:Item');
-            cacItem.ele('cbc:Name').txt(item.Item?.Name).up();
+            cacItem.ele('cbc:Name').txt(this.textValue(item.Item?.Name)).up();
             cacItem.ele('cac:ClassifiedTaxCategory')
                 .ele('cbc:ID').txt('S').up()
                 .ele('cbc:Percent').txt(taxPercent).up()
@@ -249,5 +249,16 @@ export class InvoiceBuilder {
     private normalizeOrderLines(): any[] {
         const lines = this.order.OrderLine;
         return Array.isArray(lines) ? lines : [lines];
+    }
+
+    private textValue(value: unknown): string {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            return String(value);
+        }
+        if (typeof value === 'object' && value !== null && 'value' in (value as { value?: unknown })) {
+            return this.textValue((value as { value?: unknown }).value);
+        }
+        return String(value);
     }
 }

@@ -1,12 +1,16 @@
-import { useMemo, useState } from 'react'
-import { ArrowRight, BriefcaseBusiness, CalendarDays, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowRight, BriefcaseBusiness, CalendarDays, Check, CloudMoon, CloudSun, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { ApiError } from '@/api/client'
+import { previewStudioInvoice, type InvoiceStudioPreviewDraft } from '@/api/invoices'
+import { toast } from '@/lib/toast'
 
 type StudioLineItem = {
   id: string
@@ -20,6 +24,7 @@ type StudioDraft = {
   businessName: string
   businessPhone: string
   businessEmail: string
+  businessAddress: string
   customerName: string
   customerAddress: string
   invoiceNumber: string
@@ -32,8 +37,6 @@ type StudioDraft = {
   lineItems: StudioLineItem[]
 }
 
-const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'AUD' })
-
 function makeLineItem(id: string, name: string, details: string, quantity: number, rate: number): StudioLineItem {
   return { id, name, details, quantity, rate }
 }
@@ -44,6 +47,7 @@ function sampleDraft(): StudioDraft {
     businessName: 'Northside Handyman Co.',
     businessPhone: '0400 123 456',
     businessEmail: 'hello@northsidehandyman.co',
+    businessAddress: '14 Workshop Lane, Newcastle NSW 2300',
     customerName: 'Jordan Taylor',
     customerAddress: '12 Station Street, Newcastle NSW 2300',
     invoiceNumber: 'STUDIO-1001',
@@ -61,18 +65,30 @@ function sampleDraft(): StudioDraft {
   }
 }
 
+function themePanelClass(theme: 'light' | 'dark') {
+  return theme === 'dark'
+    ? 'rounded-[34px] border border-slate-800 bg-slate-950 p-3 shadow-2xl shadow-black/30'
+    : 'rounded-[34px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/20 to-amber-50/60 p-3 shadow-2xl shadow-amber-500/10 dark:border-amber-900/40 dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/20'
+}
+
+function themeInnerClass(theme: 'light' | 'dark') {
+  return theme === 'dark'
+    ? 'rounded-[28px] bg-slate-900/70 p-4 sm:p-6'
+    : 'rounded-[28px] bg-[linear-gradient(rgba(255,255,255,0.32)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.32)_1px,transparent_1px)] bg-[size:26px_26px] p-4 sm:p-6'
+}
+
+function previewShellClass(theme: 'light' | 'dark') {
+  return theme === 'dark'
+    ? 'overflow-hidden rounded-[24px] border border-slate-700 bg-slate-950 shadow-lg lg:min-h-[calc(100dvh-14rem)]'
+    : 'overflow-hidden rounded-[24px] border border-black/5 bg-white shadow-lg dark:bg-slate-950 lg:min-h-[calc(100dvh-14rem)]'
+}
+
 export function InvoiceStudioPage() {
   const [draft, setDraft] = useState<StudioDraft>(sampleDraft)
-
-  const totals = useMemo(() => {
-    const subTotal = draft.lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0)
-    const tax = subTotal * draft.taxRate
-    return {
-      subTotal,
-      tax,
-      total: subTotal + tax,
-    }
-  }, [draft.lineItems, draft.taxRate])
+  const [previewTheme, setPreviewTheme] = useState<'light' | 'dark'>('light')
+  const [previewHtml, setPreviewHtml] = useState('')
+  const [previewLoading, setPreviewLoading] = useState(true)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
   function updateDraft<K extends keyof StudioDraft>(key: K, value: StudioDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }))
@@ -88,10 +104,7 @@ export function InvoiceStudioPage() {
   function addLineItem() {
     setDraft((current) => ({
       ...current,
-      lineItems: [
-        ...current.lineItems,
-        makeLineItem(String(Date.now()), 'New item', 'What was done?', 1, 0),
-      ],
+      lineItems: [...current.lineItems, makeLineItem(String(Date.now()), 'New item', 'What was done?', 1, 0)],
     }))
   }
 
@@ -101,6 +114,38 @@ export function InvoiceStudioPage() {
       lineItems: current.lineItems.filter((item) => item.id !== id),
     }))
   }
+
+  useEffect(() => {
+    let cancelled = false
+    const timeout = window.setTimeout(() => {
+      ;(async () => {
+        setPreviewLoading(true)
+        setPreviewError(null)
+
+        try {
+          const html = await previewStudioInvoice(draft as InvoiceStudioPreviewDraft)
+          if (!cancelled) {
+            setPreviewHtml(html)
+          }
+        } catch (error) {
+          if (!cancelled) {
+            const message = error instanceof ApiError ? error.message : 'Could not build the live preview'
+            setPreviewError(message)
+            toast.error('Preview refresh failed', { description: message })
+          }
+        } finally {
+          if (!cancelled) {
+            setPreviewLoading(false)
+          }
+        }
+      })()
+    }, 350)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timeout)
+    }
+  }, [draft])
 
   return (
     <div className="min-h-0 w-full space-y-6 px-4 py-6 md:px-6 lg:px-8">
@@ -115,12 +160,11 @@ export function InvoiceStudioPage() {
                 BETA
               </Badge>
             </div>
-            <h1 className="max-w-2xl font-display text-3xl tracking-tight text-balance sm:text-4xl">
+            <h1 className="max-w-2xl text-balance font-display text-3xl tracking-tight sm:text-4xl">
               Build an invoice like you would in the garage, on the ute, or at the kitchen table.
             </h1>
             <p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
-              Focused on sole traders: plain-language fields, live pricing, and a live
-              invoice preview that updates as you type.
+              Focused on sole traders: plain-language fields, live pricing, and a live invoice preview that updates as you type.
             </p>
           </div>
 
@@ -155,6 +199,10 @@ export function InvoiceStudioPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="businessEmail">Email</Label>
                   <Input id="businessEmail" value={draft.businessEmail} onChange={(e) => updateDraft('businessEmail', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="businessAddress">Business address</Label>
+                  <Input id="businessAddress" value={draft.businessAddress} onChange={(e) => updateDraft('businessAddress', e.target.value)} className="h-9 rounded-lg" />
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -249,89 +297,62 @@ export function InvoiceStudioPage() {
         </div>
 
         <div className="min-w-0 lg:sticky lg:top-24 lg:h-[calc(100dvh-9rem)] lg:overflow-y-auto lg:self-start">
-          <div className="rounded-[34px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/20 to-amber-50/60 p-3 shadow-2xl shadow-amber-500/10 dark:border-amber-900/40 dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/20">
-            <div className="rounded-[28px] bg-[linear-gradient(rgba(255,255,255,0.32)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.32)_1px,transparent_1px)] bg-[size:26px_26px] p-4 sm:p-6">
-              <div className="overflow-hidden rounded-[24px] border border-black/5 bg-white p-5 shadow-lg dark:bg-slate-950 lg:min-h-[calc(100dvh-14rem)]">
-                <div className="flex flex-col gap-4 border-b border-dashed border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-2">
-                    <Badge variant="secondary" className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
-                      DRAFT
-                    </Badge>
-                    <div>
-                      <h2 className="font-display text-2xl tracking-tight">{draft.businessName}</h2>
-                      <p className="text-sm text-muted-foreground">{draft.businessPhone} · {draft.businessEmail}</p>
+          <div className={themePanelClass(previewTheme)}>
+            <div className={themeInnerClass(previewTheme)}>
+              <div className={previewShellClass(previewTheme)}>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-dashed border-border px-4 py-3 sm:px-5">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+                      <Check className="size-3.5" />
+                      Exact PDF preview
                     </div>
+                    <p className="text-sm text-muted-foreground">Rendered from the same XSLT HTML used by export.</p>
                   </div>
-                  <div className="space-y-1 text-left sm:text-right">
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Invoice</p>
-                    <p className="font-mono text-lg font-semibold text-amber-800 dark:text-amber-300">{draft.invoiceNumber}</p>
-                    <p className="text-sm text-muted-foreground">Due {draft.dueDate || 'when you choose'}</p>
-                  </div>
-                </div>
 
-                <div className="grid gap-5 border-b border-dashed border-border py-5 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Customer</p>
-                    <p className="mt-1 text-lg font-medium">{draft.customerName}</p>
-                    <p className="text-sm text-muted-foreground">{draft.customerAddress}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Job summary</p>
-                    <p className="mt-1 text-sm leading-6 text-foreground">{draft.jobSummary}</p>
-                  </div>
-                </div>
-
-                <div className="py-5">
-                  <div className="overflow-hidden rounded-2xl border border-border/70">
-                    <div className="grid grid-cols-[minmax(0,1fr)_72px_88px] gap-3 border-b border-border/70 bg-amber-50/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:bg-amber-950/20">
-                      <span>Work</span>
-                      <span className="text-right">Qty</span>
-                      <span className="text-right">Amount</span>
-                    </div>
-                    <div className="divide-y divide-border/70">
-                      {draft.lineItems.map((item) => {
-                        const amount = item.quantity * item.rate
-                        return (
-                          <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_72px_88px] gap-3 px-4 py-3 text-sm">
-                            <div className="min-w-0">
-                              <p className="font-medium">{item.name}</p>
-                              <p className="truncate text-xs text-muted-foreground">{item.details}</p>
-                            </div>
-                            <p className="text-right tabular-nums">{item.quantity}</p>
-                            <p className="text-right tabular-nums">{money.format(amount)}</p>
-                          </div>
-                        )
-                      })}
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="previewTheme" className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Viewer
+                    </Label>
+                    <div className="inline-flex items-center rounded-full border border-border/70 bg-background p-1 shadow-sm">
+                      <button
+                        type="button"
+                        id="previewTheme"
+                        className={
+                          previewTheme === 'light'
+                            ? 'inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-900'
+                            : 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground'
+                        }
+                        onClick={() => setPreviewTheme('light')}
+                      >
+                        <CloudSun className="size-3.5" />
+                        Light
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          previewTheme === 'dark'
+                            ? 'inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white'
+                            : 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground'
+                        }
+                        onClick={() => setPreviewTheme('dark')}
+                      >
+                        <CloudMoon className="size-3.5" />
+                        Dark
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid gap-4 border-t border-dashed border-border pt-5 sm:grid-cols-[minmax(0,1fr)_240px]">
-                  <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Notes</p>
-                    <p className="text-sm leading-6 text-foreground">{draft.notes}</p>
-                    <div className="rounded-2xl bg-amber-50/70 p-4 text-sm text-amber-950 dark:bg-amber-950/20 dark:text-amber-100">
-                      <p className="font-semibold">Payment</p>
-                      <p className="mt-1 leading-6 text-amber-900/80 dark:text-amber-100/80">{draft.paymentNotes}</p>
+                <div className={previewTheme === 'dark' ? 'bg-slate-900 p-3' : 'bg-slate-100 p-3'}>
+                  {previewLoading && !previewHtml ? (
+                    <Skeleton className="h-[72rem] w-full rounded-[20px]" />
+                  ) : previewError ? (
+                    <div className="flex min-h-[32rem] items-center justify-center rounded-[20px] border border-dashed border-border bg-background/80 p-8 text-center text-sm text-muted-foreground">
+                      {previewError}
                     </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-border/70 bg-slate-50 p-4 dark:bg-slate-900">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">Subtotal</span>
-                        <span className="font-medium tabular-nums">{money.format(totals.subTotal)}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-muted-foreground">Tax</span>
-                        <span className="font-medium tabular-nums">{money.format(totals.tax)}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3 border-t border-border pt-2 text-base font-semibold">
-                        <span>Total</span>
-                        <span className="tabular-nums text-amber-700 dark:text-amber-300">{money.format(totals.total)}</span>
-                      </div>
-                    </div>
-                  </div>
+                  ) : (
+                    <iframe title="Invoice preview" className="h-[72rem] w-full rounded-[20px] border-0 bg-transparent" srcDoc={previewHtml} />
+                  )}
                 </div>
               </div>
             </div>

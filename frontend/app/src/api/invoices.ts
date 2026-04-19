@@ -23,6 +23,31 @@ export type InvoiceSupplement = {
   }
 }
 
+export type InvoiceStudioLineItem = {
+  id?: string
+  name: string
+  details?: string
+  quantity: number
+  rate: number
+}
+
+export type InvoiceStudioPreviewDraft = {
+  businessName: string
+  businessPhone: string
+  businessEmail: string
+  businessAddress: string
+  customerName: string
+  customerAddress: string
+  invoiceNumber: string
+  issueDate: string
+  dueDate?: string
+  jobSummary: string
+  notes: string
+  paymentNotes: string
+  taxRate: number
+  lineItems: InvoiceStudioLineItem[]
+}
+
 export type StoredInvoiceParty = {
   name: string
   id?: string
@@ -130,6 +155,16 @@ export async function createInvoicePdf(invoiceXml: string) {
       'Content-Type': 'application/xml',
     },
     body: invoiceXml,
+  })
+}
+
+export async function previewStudioInvoice(draft: InvoiceStudioPreviewDraft) {
+  return await apiText('/invoices/studio-preview', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(draft),
   })
 }
 
