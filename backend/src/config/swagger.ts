@@ -50,7 +50,7 @@ const swaggerDefinition = {
     schemas: {
       CreateInvoiceRequest: {
         type: "object",
-        required: ["orderXml"],
+        required: ["orderXml", "invoiceSupplement"],
         properties: {
           orderXml: {
             type: "string",
@@ -58,10 +58,23 @@ const swaggerDefinition = {
           },
           invoiceSupplement: {
             $ref: "#/components/schemas/InvoiceSupplement",
-            nullable: true,
             description: "Optional supplemental fields used during invoice generation",
           },
         },
+      },
+      PreviewInvoiceResponse: {
+        type: "object",
+        properties: {
+          invoiceXml: {
+            type: "string",
+            description: "Generated invoice XML preview",
+          },
+          previewOnly: {
+            type: "boolean",
+            example: true,
+          },
+        },
+        required: ["invoiceXml", "previewOnly"],
       },
       ...invoiceSupplementSchemas,
       ValidateInvoiceRequest: {

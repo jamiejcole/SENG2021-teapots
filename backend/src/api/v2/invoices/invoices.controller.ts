@@ -7,11 +7,10 @@ import {
     generateInvoicePdf,
 } from "./invoices.validation";
 import { asyncHandler } from "../../../utils/asyncHandler";
-import { OrderData } from "../../../types/order.types";
-import type { InvoiceSupplement } from "../../../types/invoice.types";
 import { HttpError } from "../../../errors/HttpError";
 import { persistInvoiceRequest } from "../../../db/persistInvoiceRequest";
 import { sendInvoiceReadyEmail } from "../../../utils/mailgun.service";
+import type { InvoiceSupplement } from "../../../types/invoice.types";
 import * as libxml from "libxmljs2";
 function extractInvoiceEmailData(invoiceXml: string) {
     const doc = libxml.parseXml(invoiceXml.trim());
@@ -53,6 +52,18 @@ export const listStoredInvoices = asyncHandler(async (req: Request, res: Respons
     const userId = requireUserId(req);
     const rows = await service.listInvoicesForUser(userId);
     res.status(200).json({ invoices: rows });
+});
+
+export const previewInvoice = asyncHandler(async (req: Request, res: Response) => {
+    validateCreateInvoiceRequest(req.body);
+    const { orderXml, invoiceSupplement } = req.body;
+
+    const { invoiceXml } = await service.buildInvoiceXmlFromOrderXml(orderXml, invoiceSupplement);
+
+    res.status(200).json({
+        invoiceXml,
+        previewOnly: true,
+    });
 });
 
 export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
@@ -110,14 +121,7 @@ export const regenerateStoredInvoice = asyncHandler(async (req: Request, res: Re
 export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
     validateCreateInvoiceRequest(req.body);
     const { orderXml, invoiceSupplement } = req.body;
-
-    validateUBL(orderXml, "Order");
-
-    const orderObj = (await service.createFullUblObject(orderXml)).data as OrderData;
-
-    const invoiceXml = service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
-
-    validateUBL(invoiceXml, "Invoice");
+    const { orderObj, invoiceXml } = await service.buildInvoiceXmlFromOrderXml(orderXml, invoiceSupplement);
 
     const userId = req.user?.userId;
     const storedId = await persistInvoiceRequest({

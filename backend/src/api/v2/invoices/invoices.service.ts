@@ -44,6 +44,17 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
         .build();
 }
 
+export async function buildInvoiceXmlFromOrderXml(orderXml: string, invoiceSupplement: InvoiceSupplement) {
+    validateUBL(orderXml, 'Order');
+
+    const orderObj = (await createFullUblObject(orderXml)).data as OrderData;
+    const invoiceXml = convertJsonToUblInvoice(orderObj, invoiceSupplement);
+
+    validateUBL(invoiceXml, 'Invoice');
+
+    return { orderObj, invoiceXml };
+}
+
 /**
  * Finds the requested Invoice in the database and deletes invoice and returns deleted invoice document or null if not found or invalid ID.
  */

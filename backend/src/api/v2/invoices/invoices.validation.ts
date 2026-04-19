@@ -62,6 +62,19 @@ export function validateInvoiceSupplementShape(supplement: unknown): asserts sup
         throw new HttpError(400, "invoiceSupplement.paymentMeans must be an object");
     }
 
+    if ('customizationId' in s && typeof s.customizationId !== 'string') {
+        throw new HttpError(400, "invoiceSupplement.customizationId must be a string when provided");
+    }
+    if ('profileId' in s && typeof s.profileId !== 'string') {
+        throw new HttpError(400, "invoiceSupplement.profileId must be a string when provided");
+    }
+    if ('supplierPartyTaxScheme' in s && (typeof s.supplierPartyTaxScheme !== 'object' || s.supplierPartyTaxScheme === null)) {
+        throw new HttpError(400, "invoiceSupplement.supplierPartyTaxScheme must be an object when provided");
+    }
+    if ('customerPartyTaxScheme' in s && (typeof s.customerPartyTaxScheme !== 'object' || s.customerPartyTaxScheme === null)) {
+        throw new HttpError(400, "invoiceSupplement.customerPartyTaxScheme must be an object when provided");
+    }
+
     const taxScheme = s.taxScheme as Record<string, unknown>;
     const paymentMeans = s.paymentMeans as Record<string, unknown>;
 
@@ -89,6 +102,29 @@ export function validateInvoiceSupplementShape(supplement: unknown): asserts sup
     }
     if (typeof acc.name !== 'string') {
         throw new HttpError(400, "invoiceSupplement.paymentMeans.payeeFinancialAccount is missing required field 'name'");
+    }
+    if ('branchId' in acc && typeof acc.branchId !== 'string') {
+        throw new HttpError(400, "invoiceSupplement.paymentMeans.payeeFinancialAccount.branchId must be a string when provided");
+    }
+
+    if (typeof s.supplierPartyTaxScheme === 'object' && s.supplierPartyTaxScheme !== null) {
+        const supplier = s.supplierPartyTaxScheme as Record<string, unknown>;
+        if ('companyId' in supplier && typeof supplier.companyId !== 'string') {
+            throw new HttpError(400, "invoiceSupplement.supplierPartyTaxScheme.companyId must be a string when provided");
+        }
+        if (typeof supplier.taxSchemeId !== 'string') {
+            throw new HttpError(400, "invoiceSupplement.supplierPartyTaxScheme is missing required field 'taxSchemeId'");
+        }
+    }
+
+    if (typeof s.customerPartyTaxScheme === 'object' && s.customerPartyTaxScheme !== null) {
+        const customer = s.customerPartyTaxScheme as Record<string, unknown>;
+        if ('companyId' in customer && typeof customer.companyId !== 'string') {
+            throw new HttpError(400, "invoiceSupplement.customerPartyTaxScheme.companyId must be a string when provided");
+        }
+        if (typeof customer.taxSchemeId !== 'string') {
+            throw new HttpError(400, "invoiceSupplement.customerPartyTaxScheme is missing required field 'taxSchemeId'");
+        }
     }
 }
 

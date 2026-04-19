@@ -47,11 +47,13 @@ export class InvoiceBuilder {
     addHeader(): this {
         const { supplement, invoice } = this;
         const issueDate = supplement.issueDate ?? new Date().toISOString().split('T')[0];
+        const customizationId = supplement.customizationId ?? INVOICE_CUSTOMIZATION_ID;
+        const profileId = supplement.profileId ?? INVOICE_PROFILE_ID;
 
         invoice
             .ele('cbc:UBLVersionID').txt('2.1').up()
-            .ele('cbc:CustomizationID').txt(INVOICE_CUSTOMIZATION_ID).up()
-            .ele('cbc:ProfileID').txt(INVOICE_PROFILE_ID).up()
+            .ele('cbc:CustomizationID').txt(customizationId).up()
+            .ele('cbc:ProfileID').txt(profileId).up()
             .ele('cbc:ID').txt(`INV-${supplement.invoiceNumber ?? Date.now()}`).up()
             .ele('cbc:IssueDate').txt(issueDate).up();
 
