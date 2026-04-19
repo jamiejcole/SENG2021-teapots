@@ -55,9 +55,9 @@ function sampleDraft(): StudioDraft {
     businessPhone: '0400 123 456',
     businessEmail: 'hello@northsidehandyman.co',
     businessAddress: '14 Workshop Lane, Newcastle NSW 2300',
-    customerName: 'Jordan Taylor',
-    customerPhone: '+61 409 111 222',
-    customerEmail: 'jordan@example.com',
+    customerName: 'John Doe',
+    customerPhone: '+61 400 000 000',
+    customerEmail: 'johndoe@example.com',
     customerAddress: '12 Station Street, Newcastle NSW 2300',
     invoiceNumber: 'STUDIO-1001',
     issueDate: today,
@@ -68,7 +68,7 @@ function sampleDraft(): StudioDraft {
     extraNotes: 'Please call before arrival.',
     accountName: 'Northside Handyman Co.',
     accountNumber: '12345678',
-    bsb: '032-000',
+    bsb: '123-456',
     taxRate: 0.1,
     lineItems: [
       makeLineItem('1', 'Call-out fee', 'Initial visit and diagnosis', 1, 85),
@@ -81,6 +81,7 @@ function sampleDraft(): StudioDraft {
 function buildBusinessDraftFromUser(user: { email: string; firstName?: string; lastName?: string; phone?: string | null; company?: string | null; businessAddress?: string | null } | null) {
   return {
     ...(user?.company?.trim() ? { businessName: user.company.trim() } : {}),
+    ...(user?.company?.trim() ? { accountName: user.company.trim() } : {}),
     ...(user?.phone?.trim() ? { businessPhone: user.phone.trim() } : {}),
     ...(user?.email?.trim() ? { businessEmail: user.email.trim() } : {}),
     ...(user?.businessAddress?.trim() ? { businessAddress: user.businessAddress.trim() } : {}),
