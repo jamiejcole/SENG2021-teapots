@@ -7,11 +7,10 @@ import {
     generateInvoicePdf,
 } from "./invoices.validation";
 import { asyncHandler } from "../../../utils/asyncHandler";
-import { OrderData } from "../../../types/order.types";
-import type { InvoiceSupplement } from "../../../types/invoice.types";
 import { HttpError } from "../../../errors/HttpError";
 import { persistInvoiceRequest } from "../../../db/persistInvoiceRequest";
 import { sendInvoiceReadyEmail } from "../../../utils/mailgun.service";
+import type { InvoiceSupplement } from "../../../types/invoice.types";
 import * as libxml from "libxmljs2";
 function extractInvoiceEmailData(invoiceXml: string) {
     const doc = libxml.parseXml(invoiceXml.trim());
@@ -53,6 +52,87 @@ export const listStoredInvoices = asyncHandler(async (req: Request, res: Respons
     const userId = requireUserId(req);
     const rows = await service.listInvoicesForUser(userId);
     res.status(200).json({ invoices: rows });
+});
+
+export const previewInvoice = asyncHandler(async (req: Request, res: Response) => {
+    validateCreateInvoiceRequest(req.body);
+    const { orderXml, invoiceSupplement } = req.body;
+
+    const { invoiceXml } = await service.buildInvoiceXmlFromOrderXml(orderXml, invoiceSupplement);
+
+    res.status(200).json({
+        invoiceXml,
+        previewOnly: true,
+    });
+});
+
+export const previewStudioInvoice = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.body || typeof req.body !== 'object') {
+        throw new HttpError(400, 'Request body must be a JSON object');
+    }
+
+    const draft = req.body as {
+        businessName?: string;
+        businessPhone?: string;
+        businessEmail?: string;
+        businessAddress?: string;
+        customerName?: string;
+        customerPhone?: string;
+        customerEmail?: string;
+        customerAddress?: string;
+        invoiceNumber?: string;
+        issueDate?: string;
+        dueDate?: string;
+        jobSummary?: string;
+        notes?: string;
+        paymentNotes?: string;
+        extraNotes?: string;
+        accountName?: string;
+        accountNumber?: string;
+        bsb?: string;
+        taxRate?: number;
+        theme?: 'light' | 'dark';
+        lineItems?: Array<{ id?: string; name?: string; details?: string; quantity?: number; rate?: number }>;
+    };
+
+    if (!draft.businessName?.trim() || !draft.customerName?.trim() || !draft.invoiceNumber?.trim()) {
+        throw new HttpError(400, 'Studio draft must include businessName, customerName, and invoiceNumber');
+    }
+
+    if (!Array.isArray(draft.lineItems) || draft.lineItems.length === 0) {
+        throw new HttpError(400, 'Studio draft must include at least one line item');
+    }
+
+    const html = await service.buildStudioPreviewHtml({
+        businessName: draft.businessName,
+        businessPhone: draft.businessPhone ?? '',
+        businessEmail: draft.businessEmail ?? '',
+        businessAddress: draft.businessAddress ?? '',
+        customerName: draft.customerName,
+        customerPhone: draft.customerPhone ?? '',
+        customerEmail: draft.customerEmail ?? '',
+        customerAddress: draft.customerAddress ?? '',
+        invoiceNumber: draft.invoiceNumber,
+        issueDate: draft.issueDate ?? new Date().toISOString().slice(0, 10),
+        dueDate: draft.dueDate,
+        jobSummary: draft.jobSummary ?? '',
+        notes: draft.notes ?? '',
+        paymentNotes: draft.paymentNotes ?? '',
+        extraNotes: draft.extraNotes ?? '',
+        accountName: draft.accountName ?? draft.businessName,
+        accountNumber: draft.accountNumber ?? '',
+        bsb: draft.bsb ?? '',
+        taxRate: typeof draft.taxRate === 'number' && Number.isFinite(draft.taxRate) ? draft.taxRate : 0.1,
+        lineItems: draft.lineItems.map((lineItem, index) => ({
+            id: lineItem.id ?? String(index + 1),
+            name: lineItem.name ?? 'Item',
+            details: lineItem.details ?? lineItem.name ?? 'Item',
+            quantity: typeof lineItem.quantity === 'number' && Number.isFinite(lineItem.quantity) ? lineItem.quantity : 1,
+            rate: typeof lineItem.rate === 'number' && Number.isFinite(lineItem.rate) ? lineItem.rate : 0,
+        })),
+    }, draft.theme === 'dark' ? 'dark' : 'light');
+
+    res.status(200).contentType('text/html').send(html);
 });
 
 export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
@@ -110,14 +190,7 @@ export const regenerateStoredInvoice = asyncHandler(async (req: Request, res: Re
 export const createInvoice = asyncHandler(async (req: Request, res: Response) => {
     validateCreateInvoiceRequest(req.body);
     const { orderXml, invoiceSupplement } = req.body;
-
-    validateUBL(orderXml, "Order");
-
-    const orderObj = (await service.createFullUblObject(orderXml)).data as OrderData;
-
-    const invoiceXml = service.convertJsonToUblInvoice(orderObj, invoiceSupplement);
-
-    validateUBL(invoiceXml, "Invoice");
+    const { orderObj, invoiceXml } = await service.buildInvoiceXmlFromOrderXml(orderXml, invoiceSupplement);
 
     const userId = req.user?.userId;
     const storedId = await persistInvoiceRequest({

@@ -7,7 +7,55 @@ const router = Router();
 // Apply authentication middleware to all invoice routes
 router.use(authMiddleware);
 
+/**
+ * @openapi
+ * /api/v2/invoices/dashboard-stats:
+ *   get:
+ *     summary: Retrieve invoice dashboard statistics
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Invoice dashboard statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get("/dashboard-stats", controller.getDashboardStats);
+
+/**
+ * @openapi
+ * /api/v2/invoices:
+ *   get:
+ *     summary: Retrieve stored invoices
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Stored invoices retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/InvoiceRecord'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get("/", controller.listStoredInvoices);
 
 /**
@@ -175,9 +223,214 @@ router.post("/", controller.createInvoice);
  */
 router.post("/validate", controller.validateInvoice);
 
+/**
+ * @openapi
+ * /api/v2/invoices/preview:
+ *   post:
+ *     summary: Build a preview invoice XML without persisting it
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateInvoiceRequest'
+ *     responses:
+ *       200:
+ *         description: Invoice preview generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PreviewInvoiceResponse'
+ *       400:
+ *         description: Invalid request or invalid UBL payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post("/preview", controller.previewInvoice);
+
+/**
+ * @openapi
+ * /api/v2/invoices/studio-preview:
+ *   post:
+ *     summary: Render a live HTML preview for the Invoice Studio draft
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/InvoiceStudioPreviewDraft'
+ *     responses:
+ *       200:
+ *         description: HTML preview rendered successfully
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Invalid studio draft payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post("/studio-preview", controller.previewStudioInvoice);
+
+/**
+ * @openapi
+ * /api/v2/invoices/{invoiceId}/validate:
+ *   post:
+ *     summary: Validate a stored invoice by ID
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: invoiceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the stored invoice to validate
+ *     responses:
+ *       200:
+ *         description: Stored invoice is valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessMessageResponse'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post("/:invoiceId/validate", controller.validateOneStoredInvoice);
+
+/**
+ * @openapi
+ * /api/v2/invoices/{invoiceId}/regenerate:
+ *   post:
+ *     summary: Regenerate a stored invoice by ID
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: invoiceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the stored invoice to regenerate
+ *     responses:
+ *       200:
+ *         description: Stored invoice regenerated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post("/:invoiceId/regenerate", controller.regenerateStoredInvoice);
+
+/**
+ * @openapi
+ * /api/v2/invoices/{invoiceId}:
+ *   patch:
+ *     summary: Patch a stored invoice by ID
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: invoiceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the stored invoice to patch
+ *     responses:
+ *       200:
+ *         description: Stored invoice updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: true
+ *       400:
+ *         description: Invalid invoice payload or invoice ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.patch("/:invoiceId", controller.patchStoredInvoice);
+
+/**
+ * @openapi
+ * /api/v2/invoices/{invoiceId}:
+ *   get:
+ *     summary: Retrieve a stored invoice by ID
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: invoiceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the stored invoice to retrieve
+ *     responses:
+ *       200:
+ *         description: Stored invoice retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/InvoiceRecord'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Invoice not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get("/:invoiceId", controller.getStoredInvoice);
 
 /**

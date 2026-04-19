@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { GenerateInvoicePage } from '@/pages/GenerateInvoicePage'
+import { InvoiceStudioPage } from '@/pages/InvoiceStudioPage'
 import { ValidateOrderPage } from '@/pages/ValidateOrderPage'
 import { InvoiceHistoryPage } from '@/pages/InvoiceHistoryPage'
 import { InvoiceDetailPage } from '@/pages/InvoiceDetailPage'
@@ -71,6 +72,7 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route path="/dashboard" element={<ProtectedRoute element={<DashboardPage />} />} />
         <Route path="/generate" element={<ProtectedRoute element={<GenerateInvoicePage />} />} />
+        <Route path="/invoice-studio" element={<ProtectedRoute element={<InvoiceStudioPage />} />} />
         <Route path="/validate" element={<ProtectedRoute element={<ValidateOrderPage />} />} />
         <Route path="/invoices" element={<ProtectedRoute element={<InvoiceHistoryPage />} />} />
         <Route path="/invoices/:invoiceId" element={<ProtectedRoute element={<InvoiceDetailPage />} />} />

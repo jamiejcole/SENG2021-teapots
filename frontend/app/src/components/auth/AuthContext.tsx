@@ -84,7 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(USER_KEY)
     }
 
-    if (storedToken && parsedUser && (parsedUser.phone === undefined || parsedUser.company === undefined)) {
+    if (
+      storedToken &&
+      parsedUser &&
+      (parsedUser.phone === undefined || parsedUser.company === undefined || parsedUser.businessAddress === undefined)
+    ) {
       void apiGetUserProfile()
         .then((profile) => {
           const hydratedUser: User = {
@@ -93,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             lastName: profile.lastName,
             phone: profile.phone,
             company: profile.company,
+            businessAddress: profile.businessAddress,
           }
           setUser(hydratedUser)
           localStorage.setItem(USER_KEY, JSON.stringify(hydratedUser))
@@ -153,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         lastName: result.lastName,
         phone: result.phone,
         company: result.company,
+        businessAddress: result.businessAddress,
       }
 
       setAccessToken(result.accessToken)

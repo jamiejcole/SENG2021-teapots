@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="2.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:inv="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
     xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
     xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
 
@@ -14,9 +15,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>
         <xsl:text>Invoice </xsl:text>
-        <xsl:value-of select="//cbc:ID"/>
+        <xsl:value-of select="(/inv:Invoice/cbc:ID)[1]"/>
     </title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet"/>
+    <link href="tailwind.min.css" rel="stylesheet"/>
 </head>
 
 <body>
@@ -28,7 +29,7 @@
                         Invoice
                     </span>
                     <div class="mt-2 text-xl font-bold">
-                        <xsl:value-of select="//cbc:ID"/>
+                        <xsl:value-of select="(/inv:Invoice/cbc:ID)[1]"/>
                     </div>
                 </div>
                 <div class="text-right space-y-1">

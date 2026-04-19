@@ -95,7 +95,7 @@ export function DashboardPage() {
   const ready = !loading && !!stats
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 w-full xl:w-4/5">
       <div
         className={cn('space-y-1', ready && 'dashboard-float-in')}
         style={floatStyle(0, ready)}

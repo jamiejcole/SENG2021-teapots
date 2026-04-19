@@ -112,7 +112,7 @@ function xmlHeaders() {
 function cancellationPayload(adviceId: string) {
 	return {
 		'advice-id': adviceId,
-		'order-cancellation-document': `<OrderCancellation><AdviceID>${adviceId}</AdviceID><Reason>Test cancellation</Reason></OrderCancellation>`,
+		'order-cancellation-document': `<?xml version="1.0" encoding="UTF-8"?><OrderCancellation xmlns="urn:oasis:names:specification:ubl:schema:xsd:OrderCancellation-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"><cbc:ID>1</cbc:ID><cbc:IssueDate>2026-04-06</cbc:IssueDate><cbc:Note>Test cancellation</cbc:Note><cac:OrderReference><cbc:ID>AEG012345</cbc:ID></cac:OrderReference></OrderCancellation>`,
 	};
 }
 
@@ -206,6 +206,19 @@ function expectFulfilmentCancellationResponse(body: FulfilmentCancellationRespon
 			'executed-at': expect.any(String),
 		}),
 	);
+}
+
+function expectValidateDocumentResponse(body: ValidateDocumentResponse) {
+	expect(body).toEqual(
+		expect.objectContaining({
+			valid: expect.any(Boolean),
+			errors: expect.any(Array),
+			'executed-at': expect.any(Number),
+		}),
+	);
+	for (const err of body.errors) {
+		expect(typeof err).toBe('string');
+	}
 }
 
 async function request(pathname: string, init: RequestInit = {}) {
@@ -359,6 +372,294 @@ describeIfLive('DevEx despatch advice external API smoke tests', () => {
 		expect(response.response.status).toBe(200);
 		expectCreateApiKeyResponse(response.body);
 	}, 30000);
+
+	// Security: invalid key
+	it('rejects protected routes with an invalid API key', async () => {
+		const response = await request('/despatch/list', {
+			headers: { 'Api-Key': 'invalid-key-that-does-not-exist' },
+		});
+
+		expect(response.status).toBe(401);
+		const body = (await response.json()) as ErrorResponse;
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+	}, 10000);
+
+	// Bad request: /despatch/create
+	it('rejects POST /despatch/create with an empty body', async () => {
+		const { response, body } = await requestJson<ErrorResponse>('/despatch/create', {
+			method: 'POST',
+			headers: xmlHeaders(),
+			body: '',
+		});
+
+		expect(response.status).toBe(400);
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+	}, 15000);
+
+	it('rejects POST /despatch/create with malformed XML', async () => {
+		const { response, body } = await requestJson<ErrorResponse>('/despatch/create', {
+			method: 'POST',
+			headers: xmlHeaders(),
+			body: '<this is not valid xml <<<',
+		});
+
+		// Spec says 400; API currently returns 500 (unhandled parse error — server-side bug, see findings report)
+		expect([400, 500]).toContain(response.status);
+		if (response.status === 400) {
+			expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+		}
+	}, 15000);
+
+	it('rejects POST /despatch/create with a JSON body', async () => {
+		const { response, body } = await requestJson<ErrorResponse>('/despatch/create', {
+			method: 'POST',
+			headers: jsonHeaders(),
+			body: JSON.stringify({ order: 'not xml' }),
+		});
+
+		expect(response.status).toBe(400);
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+	}, 15000);
+
+	// Bad request: /despatch/retrieve
+	it('rejects GET /despatch/retrieve with a missing search-type parameter', async () => {
+		const { response, body } = await requestJson<ErrorResponse>('/despatch/retrieve?query=anything', {
+			headers: apiKeyHeaders(),
+		});
+
+		expect(response.status).toBe(400);
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+	}, 10000);
+
+	it('rejects GET /despatch/retrieve with an invalid search-type value', async () => {
+		const { response, body } = await requestJson<ErrorResponse>(
+			'/despatch/retrieve?search-type=invalid&query=test',
+			{ headers: apiKeyHeaders() },
+		);
+
+		expect(response.status).toBe(400);
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+	}, 10000);
+
+	it('returns 404 for GET /despatch/retrieve with an unknown advice-id', async () => {
+		const { response, body } = await requestJson<ErrorResponse>(
+			'/despatch/retrieve?search-type=advice-id&query=a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+			{ headers: apiKeyHeaders() },
+		);
+
+		expect(response.status).toBe(404);
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+	}, 10000);
+
+	// Bad request: cancellations
+	it('rejects POST /despatch/cancel/order with a missing advice-id field', async () => {
+		const { response, body } = await requestJson<ErrorResponse>('/despatch/cancel/order', {
+			method: 'POST',
+			headers: jsonHeaders(),
+			body: JSON.stringify({ 'order-cancellation-document': '<OrderCancellation/>' }),
+		});
+
+		expect(response.status).toBe(400);
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+		expect(body.errors.some((e) => e.toLowerCase().includes('advice-id'))).toBe(true);
+	}, 15000);
+
+	it('rejects POST /despatch/cancel/fulfilment with a missing fulfilment-cancellation-reason', async () => {
+		const { response, body } = await requestJson<ErrorResponse>('/despatch/cancel/fulfilment', {
+			method: 'POST',
+			headers: jsonHeaders(),
+			body: JSON.stringify({ 'advice-id': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' }),
+		});
+
+		expect(response.status).toBe(400);
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+		expect(body.errors.some((e) => e.toLowerCase().includes('fulfilment-cancellation-reason'))).toBe(true);
+	}, 15000);
+
+	// Untested endpoint: retrieve by order XML
+	it('retrieves a despatch advice by order XML using search-type=order', async () => {
+		await createDespatchAdvice();
+
+		const { response, body } = await requestJson<DespatchRetrievalResponse>(
+			`/despatch/retrieve?search-type=order&query=${encodeURIComponent(orderXml)}`,
+			{ headers: apiKeyHeaders() },
+		);
+
+		expect(response.status).toBe(200);
+		expectDespatchRetrievalResponse(body);
+	}, 30000);
+
+	// Untested endpoint: /validate-doc
+	it('validates a valid order XML document via POST /validate-doc/order', async () => {
+		const { response, body } = await requestJson<ValidateDocumentResponse>('/validate-doc/order', {
+			method: 'POST',
+			headers: xmlHeaders(),
+			body: orderXml,
+		});
+
+		expect(response.status).toBe(200);
+		expectValidateDocumentResponse(body);
+	}, 15000);
+
+	it('returns valid=false with errors for an invalid order XML document', async () => {
+		const { response, body } = await requestJson<ValidateDocumentResponse>('/validate-doc/order', {
+			method: 'POST',
+			headers: xmlHeaders(),
+			body: '<Order><MissingRequiredFields/></Order>',
+		});
+
+		expect(response.status).toBe(200);
+		expect(body.valid).toBe(false);
+		expect(body.errors.length).toBeGreaterThan(0);
+		expectValidateDocumentResponse(body);
+	}, 15000);
+
+	it('rejects POST /validate-doc/order with an empty body', async () => {
+		const { response, body } = await requestJson<ErrorResponse>('/validate-doc/order', {
+			method: 'POST',
+			headers: xmlHeaders(),
+			body: '',
+		});
+
+		expect(response.status).toBe(400);
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+	}, 10000);
+
+	it('rejects POST /validate-doc with an unknown document type', async () => {
+		const { response, body } = await requestJson<ErrorResponse>('/validate-doc/not-a-real-type', {
+			method: 'POST',
+			headers: xmlHeaders(),
+			body: orderXml,
+		});
+
+		expect(response.status).toBe(400);
+		expect(body.errors).toEqual(expect.arrayContaining([expect.any(String)]));
+	}, 10000);
+
+	it('rejects POST /validate-doc/order without an API key', async () => {
+		const response = await request('/validate-doc/order', {
+			method: 'POST',
+			headers: { 'content-type': 'application/xml' },
+			body: orderXml,
+		});
+
+		expect(response.status).toBe(401);
+	}, 10000);
 });
 
-	export {};
+describeIfLive('DevEx despatch advice API benchmarks', () => {
+	const RUNS = 3;
+	const timings: Record<string, number[]> = {};
+	let benchmarkAdviceId: string;
+
+	function median(arr: number[]): number {
+		const sorted = [...arr].sort((a, b) => a - b);
+		const mid = Math.floor(sorted.length / 2);
+		return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+	}
+
+	async function timed(fn: () => Promise<unknown>): Promise<number> {
+		const start = performance.now();
+		await fn();
+		return performance.now() - start;
+	}
+
+	beforeAll(async () => {
+		if (!apiKey) {
+			throw new Error('DEVEX_DESPATCH_API_KEY is required to run these benchmarks');
+		}
+		const created = await createDespatchAdvice();
+		benchmarkAdviceId = created.adviceId;
+	}, 30000);
+
+	afterAll(() => {
+		const rows = Object.entries(timings).map(([label, samples]) => {
+			const mean = samples.reduce((a, b) => a + b, 0) / samples.length;
+			const med = median(samples);
+			const min = Math.min(...samples);
+			const max = Math.max(...samples);
+			return { label, mean, med, min, max };
+		});
+
+		console.log('\n| Endpoint | Mean (ms) | Median (ms) | Min (ms) | Max (ms) |');
+		console.log('|---|---|---|---|---|');
+		for (const r of rows) {
+			console.log(`| ${r.label} | ${r.mean.toFixed(1)} | ${r.med.toFixed(1)} | ${r.min.toFixed(1)} | ${r.max.toFixed(1)} |`);
+		}
+	});
+
+	it('benchmarks GET /health', async () => {
+		const label = 'GET /health';
+		timings[label] = [];
+		for (let i = 0; i < RUNS; i++) {
+			timings[label].push(await timed(() => request('/health')));
+		}
+		expect(timings[label].length).toBe(RUNS);
+	}, 30000);
+
+	it('benchmarks POST /despatch/create', async () => {
+		const label = 'POST /despatch/create';
+		timings[label] = [];
+		for (let i = 0; i < RUNS; i++) {
+			timings[label].push(
+				await timed(() => request('/despatch/create', { method: 'POST', headers: xmlHeaders(), body: orderXml })),
+			);
+		}
+		expect(timings[label].length).toBe(RUNS);
+	}, 60000);
+
+	it('benchmarks GET /despatch/list', async () => {
+		const label = 'GET /despatch/list';
+		timings[label] = [];
+		for (let i = 0; i < RUNS; i++) {
+			timings[label].push(await timed(() => request('/despatch/list', { headers: apiKeyHeaders() })));
+		}
+		expect(timings[label].length).toBe(RUNS);
+	}, 30000);
+
+	it('benchmarks GET /despatch/retrieve by advice-id', async () => {
+		const label = 'GET /despatch/retrieve?search-type=advice-id';
+		timings[label] = [];
+		for (let i = 0; i < RUNS; i++) {
+			timings[label].push(
+				await timed(() =>
+					request(`/despatch/retrieve?search-type=advice-id&query=${encodeURIComponent(benchmarkAdviceId)}`, {
+						headers: apiKeyHeaders(),
+					}),
+				),
+			);
+		}
+		expect(timings[label].length).toBe(RUNS);
+	}, 30000);
+
+	it('benchmarks POST /validate-doc/order', async () => {
+		const label = 'POST /validate-doc/order';
+		timings[label] = [];
+		for (let i = 0; i < RUNS; i++) {
+			timings[label].push(
+				await timed(() => request('/validate-doc/order', { method: 'POST', headers: xmlHeaders(), body: orderXml })),
+			);
+		}
+		expect(timings[label].length).toBe(RUNS);
+	}, 30000);
+
+	it('benchmarks POST /despatch/cancel/order', async () => {
+		const label = 'POST /despatch/cancel/order';
+		timings[label] = [];
+		for (let i = 0; i < RUNS; i++) {
+			const { adviceId } = await createDespatchAdvice();
+			timings[label].push(
+				await timed(() =>
+					request('/despatch/cancel/order', {
+						method: 'POST',
+						headers: jsonHeaders(),
+						body: JSON.stringify(cancellationPayload(adviceId)),
+					}),
+				),
+			);
+		}
+		expect(timings[label].length).toBe(RUNS);
+	}, 90000);
+});
+
+export {};

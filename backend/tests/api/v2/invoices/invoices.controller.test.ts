@@ -7,6 +7,7 @@ import * as mailgun from '../../../../src/utils/mailgun.service'
 jest.mock('../../../../src/api/v2/invoices/invoices.service', () => ({
   createFullUblObject: jest.fn(),
   convertJsonToUblInvoice: jest.fn(),
+  buildInvoiceXmlFromOrderXml: jest.fn(),
   storeInvoicePdf: jest.fn(),
   findInvoicePdfByHash: jest.fn(),
   deleteInvoiceById: jest.fn(),
@@ -61,8 +62,7 @@ describe('invoices.controller', () => {
   })
 
   it('creates invoices after validation and persistence', async () => {
-    mockedInvoicesService.createFullUblObject.mockResolvedValue({ data: { order: true } } as any)
-    mockedInvoicesService.convertJsonToUblInvoice.mockReturnValue('<Invoice />')
+    mockedInvoicesService.buildInvoiceXmlFromOrderXml.mockResolvedValue({ orderObj: { order: true }, invoiceXml: '<Invoice />' } as any)
     const response = createResponse()
     const next = jest.fn()
 
@@ -79,7 +79,9 @@ describe('invoices.controller', () => {
     await new Promise(process.nextTick)
 
     expect(mockedInvoicesValidation.validateCreateInvoiceRequest).toHaveBeenCalled()
-    expect(mockedInvoicesValidation.validateUBL).toHaveBeenCalledWith('<Order />', 'Order')
+    expect(mockedInvoicesService.buildInvoiceXmlFromOrderXml).toHaveBeenCalledWith('<Order />', {
+      invoiceNumber: 'INV-1',
+    })
     expect(mockedPersistInvoiceRequest.persistInvoiceRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         orderXml: '<Order />',
@@ -88,6 +90,36 @@ describe('invoices.controller', () => {
     )
     expect(response.status).toHaveBeenCalledWith(201)
     expect(response.send).toHaveBeenCalledWith('<Invoice />')
+  })
+
+  it('builds preview invoices without persistence', async () => {
+    mockedInvoicesService.buildInvoiceXmlFromOrderXml.mockResolvedValue({ orderObj: { order: true }, invoiceXml: '<Invoice />' } as any)
+    const response = createResponse()
+    const next = jest.fn()
+
+    await invoicesController.previewInvoice(
+      {
+        body: {
+          orderXml: '<Order />',
+          invoiceSupplement: {
+            currencyCode: 'AUD',
+            taxRate: 0.1,
+            taxScheme: { id: 'GST', taxTypeCode: 'GST' },
+            paymentMeans: { code: '30', payeeFinancialAccount: { id: '1', name: 'Main' } },
+          },
+        },
+      } as any,
+      response,
+      next,
+    )
+
+    expect(mockedInvoicesService.buildInvoiceXmlFromOrderXml).toHaveBeenCalledWith(
+      '<Order />',
+      expect.objectContaining({ currencyCode: 'AUD' }),
+    )
+    expect(response.status).toHaveBeenCalledWith(200)
+    expect(response.json).toHaveBeenCalledWith({ invoiceXml: '<Invoice />', previewOnly: true })
+    expect(mockedPersistInvoiceRequest.persistInvoiceRequest).not.toHaveBeenCalled()
   })
 
   it('validates invoices', async () => {

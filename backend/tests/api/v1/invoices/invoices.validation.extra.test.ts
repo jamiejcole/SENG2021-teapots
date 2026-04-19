@@ -1,6 +1,7 @@
 const parseXml = jest.fn()
 const saxonTransform = jest.fn()
 const puppeteerLaunch = jest.fn()
+let setContentMock: jest.Mock
 
 jest.mock('node:fs', () => {
   const actualFs = jest.requireActual('node:fs') as typeof import('node:fs')
@@ -37,6 +38,7 @@ describe('v1 invoices.validation extra coverage', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     process.env.PUPPETEER_EXECUTABLE_PATH = '/bin/true'
+    setContentMock = jest.fn().mockResolvedValue(undefined)
     parseXml.mockImplementation((xml: string) => {
       if (xml.includes('broken')) {
         throw new Error('invalid xml')
@@ -50,10 +52,12 @@ describe('v1 invoices.validation extra coverage', () => {
         validationErrors: [],
       }
     })
-    saxonTransform.mockReturnValue({ principalResult: '<html />' })
+    saxonTransform.mockReturnValue({
+      principalResult: '<html><head><link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet"/></head><body /></html>',
+    })
     puppeteerLaunch.mockResolvedValue({
       newPage: jest.fn().mockResolvedValue({
-        setContent: jest.fn().mockResolvedValue(undefined),
+        setContent: setContentMock,
         pdf: jest.fn().mockResolvedValue(Buffer.from('pdf-bytes')),
       }),
       close: jest.fn().mockResolvedValue(undefined),
@@ -82,6 +86,11 @@ describe('v1 invoices.validation extra coverage', () => {
       'sync',
     )
     expect(puppeteerLaunch).toHaveBeenCalledWith(expect.objectContaining({ headless: true }))
+    expect(setContentMock).toHaveBeenCalledWith(
+      expect.stringContaining('<style>'),
+      { waitUntil: 'domcontentloaded' },
+    )
+    expect(setContentMock.mock.calls[0][0]).not.toContain('cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css')
     expect(buffer.toString()).toBe('pdf-bytes')
   })
 })

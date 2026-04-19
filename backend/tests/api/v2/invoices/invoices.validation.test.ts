@@ -3,6 +3,7 @@ export {}
 const parseXml = jest.fn()
 const saxonTransform = jest.fn()
 const puppeteerLaunch = jest.fn()
+let setContentMock: jest.Mock
 
 jest.mock('node:fs', () => {
   const actualFs = jest.requireActual('node:fs') as typeof import('node:fs')
@@ -39,6 +40,7 @@ describe('v2 invoices.validation', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     process.env.PUPPETEER_EXECUTABLE_PATH = '/bin/true'
+    setContentMock = jest.fn().mockResolvedValue(undefined)
     parseXml.mockImplementation((xml: string) => {
       if (xml.includes('broken')) {
         throw new Error('invalid xml')
@@ -53,10 +55,12 @@ describe('v2 invoices.validation', () => {
         get: jest.fn(),
       }
     })
-    saxonTransform.mockReturnValue({ principalResult: '<html />' })
+    saxonTransform.mockReturnValue({
+      principalResult: '<html><head><link href="https://cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css" rel="stylesheet"/></head><body /></html>',
+    })
     puppeteerLaunch.mockResolvedValue({
       newPage: jest.fn().mockResolvedValue({
-        setContent: jest.fn().mockResolvedValue(undefined),
+        setContent: setContentMock,
         pdf: jest.fn().mockResolvedValue(Buffer.from('pdf-bytes')),
       }),
       close: jest.fn().mockResolvedValue(undefined),
@@ -72,6 +76,20 @@ describe('v2 invoices.validation', () => {
     expect(() => validateCreateInvoiceRequest({ orderXml: '   ' })).toThrow("'orderXml' cannot be empty")
     expect(() => validateCreateInvoiceRequest({ orderXml: '<Order />' })).toThrow("Request body is missing required field 'invoiceSupplement'")
     expect(() => validateCreateInvoiceRequest({ orderXml: '<Order />', invoiceSupplement: null })).toThrow("'invoiceSupplement' must be an object")
+
+    expect(() => validateCreateInvoiceRequest({
+      orderXml: '<Order />',
+      invoiceSupplement: {
+        currencyCode: 'AUD',
+        taxRate: 10,
+        taxScheme: { id: 'GST', taxTypeCode: 'VAT' },
+        paymentMeans: { code: '30', payeeFinancialAccount: { id: '1', name: 'Test', branchId: 'BR-1' } },
+        customizationId: 'urn:test:customization',
+        profileId: 'urn:test:profile',
+        supplierPartyTaxScheme: { taxSchemeId: 'GST', companyId: '123' },
+        customerPartyTaxScheme: { taxSchemeId: 'GST', companyId: '456' },
+      },
+    })).not.toThrow()
 
     expect(() => validateCreateInvoiceRequest({
       orderXml: '<Order />',
@@ -122,6 +140,11 @@ describe('v2 invoices.validation', () => {
         executablePath: '/bin/true',
       }),
     )
+    expect(setContentMock).toHaveBeenCalledWith(
+      expect.stringContaining('<style>'),
+      { waitUntil: 'domcontentloaded' },
+    )
+    expect(setContentMock.mock.calls[0][0]).not.toContain('cdn.jsdelivr.net/npm/tailwindcss@latest/dist/tailwind.min.css')
     expect(Buffer.isBuffer(buffer)).toBe(true)
     expect(buffer.toString()).toBe('pdf-bytes')
   })
