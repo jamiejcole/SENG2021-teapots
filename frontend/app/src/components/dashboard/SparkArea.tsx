@@ -141,7 +141,7 @@ export function SparkArea({
         <span className="text-xs text-muted-foreground tabular-nums">{invoicesInPeriod} invoices in window</span>
       </div>
 
-      <svg viewBox={`0 0 ${w} ${h}`} className="h-32 w-full" role="img" aria-label="Daily revenue chart">
+      <svg viewBox={`0 0 ${w} ${h}`} className="h-40 w-full" role="img" aria-label="Daily revenue chart">
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="hsl(var(--brand))" stopOpacity="0.35" />
