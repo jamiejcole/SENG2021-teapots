@@ -123,7 +123,10 @@ export function InvoiceStudioPage() {
         setPreviewError(null)
 
         try {
-          const html = await previewStudioInvoice(draft as InvoiceStudioPreviewDraft)
+          const html = await previewStudioInvoice({
+            ...(draft as InvoiceStudioPreviewDraft),
+            theme: previewTheme,
+          })
           if (!cancelled) {
             setPreviewHtml(html)
           }
@@ -145,7 +148,7 @@ export function InvoiceStudioPage() {
       cancelled = true
       window.clearTimeout(timeout)
     }
-  }, [draft])
+  }, [draft, previewTheme])
 
   return (
     <div className="min-h-0 w-full space-y-6 px-4 py-6 md:px-6 lg:px-8">

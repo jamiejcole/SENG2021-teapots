@@ -85,6 +85,7 @@ export const previewStudioInvoice = asyncHandler(async (req: Request, res: Respo
         notes?: string;
         paymentNotes?: string;
         taxRate?: number;
+        theme?: 'light' | 'dark';
         lineItems?: Array<{ id?: string; name?: string; details?: string; quantity?: number; rate?: number }>;
     };
 
@@ -117,7 +118,7 @@ export const previewStudioInvoice = asyncHandler(async (req: Request, res: Respo
             quantity: typeof lineItem.quantity === 'number' && Number.isFinite(lineItem.quantity) ? lineItem.quantity : 1,
             rate: typeof lineItem.rate === 'number' && Number.isFinite(lineItem.rate) ? lineItem.rate : 0,
         })),
-    });
+    }, draft.theme === 'dark' ? 'dark' : 'light');
 
     res.status(200).contentType('text/html').send(html);
 });

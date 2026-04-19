@@ -70,6 +70,8 @@ type StudioPreviewDraft = {
     lineItems: StudioLineItemDraft[];
   };
 
+type StudioPreviewTheme = 'light' | 'dark';
+
 function parseAddress(address: string) {
     const trimmed = address.trim();
     const parts = trimmed.split(',').map((part) => part.trim()).filter(Boolean);
@@ -175,11 +177,125 @@ function buildStudioInvoiceSupplement(draft: StudioPreviewDraft): InvoiceSupplem
     };
 }
 
-export async function buildStudioPreviewHtml(draft: StudioPreviewDraft) {
+function injectStudioPreviewTheme(html: string, theme: StudioPreviewTheme) {
+        if (theme !== 'dark') {
+                return html;
+        }
+
+        const darkThemeStyles = `
+<style id="studio-preview-dark-theme">
+    html, body {
+        background: #0b1220 !important;
+        color: #e5edf7 !important;
+    }
+
+    body {
+        background: #0b1220 !important;
+    }
+
+    #document {
+        background: #0f172a !important;
+        color: #e5edf7 !important;
+        border-left-color: #1e293b !important;
+        border-right-color: #1e293b !important;
+    }
+
+    #document {
+        text-shadow: none !important;
+    }
+
+    a {
+        color: #93c5fd !important;
+    }
+
+    #document h1,
+    #document h2,
+    #document h3,
+    #document h4,
+    #document h5,
+    #document h6,
+    #document p,
+    #document div,
+    #document span,
+    #document small,
+    #document strong,
+    #document em,
+    #document li,
+    #document dt,
+    #document dd,
+    #document th,
+    #document td {
+        color: #e5edf7 !important;
+    }
+
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"] {
+        background: #334155 !important;
+        color: #f8fafc !important;
+        border-color: #475569 !important;
+    }
+
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"] *,
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"] {
+        color: #f8fafc !important;
+    }
+
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"],
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"] * {
+        background-color: #334155 !important;
+    }
+
+    h3 {
+        border-bottom-color: #334155 !important;
+    }
+
+    hr {
+        border-top-color: #334155 !important;
+    }
+
+    .table,
+    #tax table,
+    .table td,
+    .table th,
+    #tax table td,
+    #tax table th {
+        border-color: #334155 !important;
+        background-color: transparent !important;
+    }
+
+    .text-muted,
+    small,
+    dt,
+    #footer,
+    #tax table th {
+        color: #94a3b8 !important;
+    }
+
+    .line,
+    div.linesupport,
+    div.linetotal,
+    div.total {
+        border-color: #334155 !important;
+        background-color: transparent !important;
+    }
+
+    #document .row,
+    #document .container,
+    #document .container-fluid {
+        background: transparent !important;
+    }
+</style>`;
+
+        return html.includes('</head>')
+                ? html.replace('</head>', `${darkThemeStyles}</head>`)
+                : `${darkThemeStyles}${html}`;
+}
+
+export async function buildStudioPreviewHtml(draft: StudioPreviewDraft, theme: StudioPreviewTheme = 'light') {
     const orderData = buildStudioOrderData(draft);
     const invoiceSupplement = buildStudioInvoiceSupplement(draft);
     const invoiceXml = convertJsonToUblInvoice(orderData, invoiceSupplement);
-    return await generateInvoiceHtml(invoiceXml);
+        const html = await generateInvoiceHtml(invoiceXml);
+        return injectStudioPreviewTheme(html, theme);
 }
 
 export async function buildInvoiceXmlFromOrderXml(orderXml: string, invoiceSupplement: InvoiceSupplement) {

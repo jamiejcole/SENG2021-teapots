@@ -45,6 +45,7 @@ export type InvoiceStudioPreviewDraft = {
   notes: string
   paymentNotes: string
   taxRate: number
+  theme?: 'light' | 'dark'
   lineItems: InvoiceStudioLineItem[]
 }
 
