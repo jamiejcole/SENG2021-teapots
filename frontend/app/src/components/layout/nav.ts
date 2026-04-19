@@ -10,18 +10,21 @@ import {
   FileText,
   Package,
   Truck,
+  FilePenLine,
 } from 'lucide-react'
 
 export type NavItem = {
   to: string
   label: string
   icon: React.ComponentType<{ className?: string }>
+  badge?: string
 }
 
 export const primaryNav: NavItem[] = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { to: '/orders', label: 'Orders', icon: Package },
   { to: '/generate', label: 'Generate invoice', icon: ReceiptText },
+  { to: '/invoice-studio', label: 'Invoice Studio', icon: FilePenLine, badge: 'BETA' },
   { to: '/despatch', label: 'Despatch', icon: Truck },
   { to: '/invoices', label: 'Invoice history', icon: History },
   { to: '/validate', label: 'Validate order', icon: ShieldCheck },

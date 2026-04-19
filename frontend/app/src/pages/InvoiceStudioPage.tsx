@@ -1,0 +1,363 @@
+import { useMemo, useState } from 'react'
+import { ArrowRight, BriefcaseBusiness, CalendarDays, Coins, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+
+type StudioLineItem = {
+  id: string
+  name: string
+  details: string
+  quantity: number
+  rate: number
+}
+
+type StudioDraft = {
+  businessName: string
+  businessPhone: string
+  businessEmail: string
+  customerName: string
+  customerAddress: string
+  invoiceNumber: string
+  issueDate: string
+  dueDate: string
+  jobSummary: string
+  notes: string
+  paymentNotes: string
+  taxRate: number
+  lineItems: StudioLineItem[]
+}
+
+const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'AUD' })
+
+function makeLineItem(id: string, name: string, details: string, quantity: number, rate: number): StudioLineItem {
+  return { id, name, details, quantity, rate }
+}
+
+function sampleDraft(): StudioDraft {
+  const today = new Date().toISOString().slice(0, 10)
+  return {
+    businessName: 'Northside Handyman Co.',
+    businessPhone: '0400 123 456',
+    businessEmail: 'hello@northsidehandyman.co',
+    customerName: 'Jordan Taylor',
+    customerAddress: '12 Station Street, Newcastle NSW 2300',
+    invoiceNumber: 'STUDIO-1001',
+    issueDate: today,
+    dueDate: '',
+    jobSummary: 'Fix loose gate latch, replace one damaged hinge, and do a quick tidy-up.',
+    notes: 'Thanks for supporting a local sole trader.',
+    paymentNotes: 'Pay by bank transfer within 7 days.',
+    taxRate: 0.1,
+    lineItems: [
+      makeLineItem('1', 'Call-out fee', 'Initial visit and diagnosis', 1, 85),
+      makeLineItem('2', 'Labour', '1.5 hours on site', 1.5, 72),
+      makeLineItem('3', 'Parts', 'Hinge and fixings', 1, 28.5),
+    ],
+  }
+}
+
+export function InvoiceStudioPage() {
+  const [draft, setDraft] = useState<StudioDraft>(sampleDraft)
+
+  const totals = useMemo(() => {
+    const subTotal = draft.lineItems.reduce((sum, item) => sum + item.quantity * item.rate, 0)
+    const tax = subTotal * draft.taxRate
+    return {
+      subTotal,
+      tax,
+      total: subTotal + tax,
+    }
+  }, [draft.lineItems, draft.taxRate])
+
+  function updateDraft<K extends keyof StudioDraft>(key: K, value: StudioDraft[K]) {
+    setDraft((current) => ({ ...current, [key]: value }))
+  }
+
+  function updateLineItem(id: string, patch: Partial<StudioLineItem>) {
+    setDraft((current) => ({
+      ...current,
+      lineItems: current.lineItems.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    }))
+  }
+
+  function addLineItem() {
+    setDraft((current) => ({
+      ...current,
+      lineItems: [
+        ...current.lineItems,
+        makeLineItem(String(Date.now()), 'New item', 'What was done?', 1, 0),
+      ],
+    }))
+  }
+
+  function removeLineItem(id: string) {
+    setDraft((current) => ({
+      ...current,
+      lineItems: current.lineItems.filter((item) => item.id !== id),
+    }))
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="relative overflow-hidden rounded-3xl border border-amber-200/70 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.22),_transparent_34%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(255,248,232,0.88))] p-6 shadow-sm dark:border-amber-900/40 dark:bg-[radial-gradient(circle_at_top_left,_rgba(120,53,15,0.4),_transparent_34%),linear-gradient(135deg,_rgba(15,23,42,0.96),_rgba(30,41,59,0.94))]">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.24)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.24)_1px,transparent_1px)] bg-[size:24px_24px] opacity-20 dark:opacity-10" />
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+              <Sparkles className="size-3.5" />
+              Invoice Studio
+              <Badge variant="secondary" className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-900 dark:bg-amber-900/60 dark:text-amber-100">
+                BETA
+              </Badge>
+            </div>
+            <h1 className="max-w-2xl font-display text-3xl tracking-tight text-balance sm:text-4xl">
+              Build an invoice like you would in the shed, on the ute, or at the kitchen table.
+            </h1>
+            <p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
+              This first pass is focused on tradies and sole traders: plain-language fields, live pricing, and a printed
+              invoice preview that updates as you type.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="rounded-full border-amber-300 bg-background/70">
+              <Link to="/generate">Use existing invoice flow</Link>
+            </Button>
+            <Button className="rounded-full bg-amber-400 font-semibold text-slate-900 hover:bg-amber-500" onClick={() => setDraft(sampleDraft())}>
+              <Sparkles className="size-4" />
+              Load sample job
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+        <div className="space-y-6">
+          <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
+            <CardHeader>
+              <CardTitle className="text-base">Job details</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="businessName">Your business</Label>
+                <Input id="businessName" value={draft.businessName} onChange={(e) => updateDraft('businessName', e.target.value)} className="h-9 rounded-lg" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="businessPhone">Phone</Label>
+                  <Input id="businessPhone" value={draft.businessPhone} onChange={(e) => updateDraft('businessPhone', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="businessEmail">Email</Label>
+                  <Input id="businessEmail" value={draft.businessEmail} onChange={(e) => updateDraft('businessEmail', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="customerName">Customer</Label>
+                <Input id="customerName" value={draft.customerName} onChange={(e) => updateDraft('customerName', e.target.value)} className="h-9 rounded-lg" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="customerAddress">Job address</Label>
+                <Input id="customerAddress" value={draft.customerAddress} onChange={(e) => updateDraft('customerAddress', e.target.value)} className="h-9 rounded-lg" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="invoiceNumber">Invoice number</Label>
+                  <Input id="invoiceNumber" value={draft.invoiceNumber} onChange={(e) => updateDraft('invoiceNumber', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="taxRate">GST / tax</Label>
+                  <Input id="taxRate" type="number" step="0.01" min="0" max="1" value={draft.taxRate} onChange={(e) => updateDraft('taxRate', Number(e.target.value) || 0)} className="h-9 rounded-lg" />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="issueDate" className="inline-flex items-center gap-2"><CalendarDays className="size-3.5" />Issue date</Label>
+                  <Input id="issueDate" type="date" value={draft.issueDate} onChange={(e) => updateDraft('issueDate', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="dueDate">Due date</Label>
+                  <Input id="dueDate" type="date" value={draft.dueDate} onChange={(e) => updateDraft('dueDate', e.target.value)} className="h-9 rounded-lg" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="jobSummary" className="inline-flex items-center gap-2"><BriefcaseBusiness className="size-3.5" />What was the job?</Label>
+                <Textarea id="jobSummary" value={draft.jobSummary} onChange={(e) => updateDraft('jobSummary', e.target.value)} className="min-h-24 rounded-xl resize-y" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">What you charged for</CardTitle>
+              <Button variant="outline" size="sm" className="rounded-lg border-amber-300" onClick={addLineItem}>
+                <Plus className="size-4" /> Add item
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {draft.lineItems.map((item, index) => (
+                <div key={item.id} className="rounded-2xl border border-border/60 bg-background/70 p-3 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">Item {index + 1}</p>
+                    <Button variant="ghost" size="icon" className="size-8 rounded-full text-muted-foreground hover:text-red-600" onClick={() => removeLineItem(item.id)}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label>Name</Label>
+                      <Input value={item.name} onChange={(e) => updateLineItem(item.id, { name: e.target.value })} className="h-9 rounded-lg" />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label>Details</Label>
+                      <Input value={item.details} onChange={(e) => updateLineItem(item.id, { details: e.target.value })} className="h-9 rounded-lg" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Qty</Label>
+                      <Input type="number" min="0" step="0.1" value={item.quantity} onChange={(e) => updateLineItem(item.id, { quantity: Number(e.target.value) || 0 })} className="h-9 rounded-lg" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Rate</Label>
+                      <Input type="number" min="0" step="0.01" value={item.rate} onChange={(e) => updateLineItem(item.id, { rate: Number(e.target.value) || 0 })} className="h-9 rounded-lg" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
+            <CardHeader>
+              <CardTitle className="text-base">Payment notes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="paymentNotes">How should they pay?</Label>
+                <Textarea id="paymentNotes" value={draft.paymentNotes} onChange={(e) => updateDraft('paymentNotes', e.target.value)} className="min-h-20 rounded-xl resize-y" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="notes">Extra notes</Label>
+                <Textarea id="notes" value={draft.notes} onChange={(e) => updateDraft('notes', e.target.value)} className="min-h-20 rounded-xl resize-y" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-[34px] border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/20 to-amber-50/60 p-3 shadow-2xl shadow-amber-500/10 dark:border-amber-900/40 dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/20">
+            <div className="rounded-[28px] bg-[linear-gradient(rgba(255,255,255,0.32)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.32)_1px,transparent_1px)] bg-[size:26px_26px] p-4 sm:p-6">
+              <div className="overflow-hidden rounded-[24px] border border-black/5 bg-white p-5 shadow-lg dark:bg-slate-950">
+                <div className="flex flex-col gap-4 border-b border-dashed border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-2">
+                    <Badge variant="secondary" className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+                      DRAFT
+                    </Badge>
+                    <div>
+                      <h2 className="font-display text-2xl tracking-tight">{draft.businessName}</h2>
+                      <p className="text-sm text-muted-foreground">{draft.businessPhone} · {draft.businessEmail}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-left sm:text-right">
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Invoice</p>
+                    <p className="font-mono text-lg font-semibold text-amber-800 dark:text-amber-300">{draft.invoiceNumber}</p>
+                    <p className="text-sm text-muted-foreground">Due {draft.dueDate || 'when you choose'}</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-5 border-b border-dashed border-border py-5 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Customer</p>
+                    <p className="mt-1 text-lg font-medium">{draft.customerName}</p>
+                    <p className="text-sm text-muted-foreground">{draft.customerAddress}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Job summary</p>
+                    <p className="mt-1 text-sm leading-6 text-foreground">{draft.jobSummary}</p>
+                  </div>
+                </div>
+
+                <div className="py-5">
+                  <div className="overflow-hidden rounded-2xl border border-border/70">
+                    <div className="grid grid-cols-[minmax(0,1fr)_72px_88px] gap-3 border-b border-border/70 bg-amber-50/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:bg-amber-950/20">
+                      <span>Work</span>
+                      <span className="text-right">Qty</span>
+                      <span className="text-right">Amount</span>
+                    </div>
+                    <div className="divide-y divide-border/70">
+                      {draft.lineItems.map((item) => {
+                        const amount = item.quantity * item.rate
+                        return (
+                          <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_72px_88px] gap-3 px-4 py-3 text-sm">
+                            <div className="min-w-0">
+                              <p className="font-medium">{item.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">{item.details}</p>
+                            </div>
+                            <p className="text-right tabular-nums">{item.quantity}</p>
+                            <p className="text-right tabular-nums">{money.format(amount)}</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 border-t border-dashed border-border pt-5 sm:grid-cols-[minmax(0,1fr)_240px]">
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Notes</p>
+                    <p className="text-sm leading-6 text-foreground">{draft.notes}</p>
+                    <div className="rounded-2xl bg-amber-50/70 p-4 text-sm text-amber-950 dark:bg-amber-950/20 dark:text-amber-100">
+                      <p className="font-semibold">Payment</p>
+                      <p className="mt-1 leading-6 text-amber-900/80 dark:text-amber-100/80">{draft.paymentNotes}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border/70 bg-slate-50 p-4 dark:bg-slate-900">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="font-medium tabular-nums">{money.format(totals.subTotal)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-muted-foreground">Tax</span>
+                        <span className="font-medium tabular-nums">{money.format(totals.tax)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 border-t border-border pt-2 text-base font-semibold">
+                        <span>Total</span>
+                        <span className="tabular-nums text-amber-700 dark:text-amber-300">{money.format(totals.total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-border pt-4 text-xs text-muted-foreground">
+                  <span>Designed for local jobs, small teams, and sole traders.</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Coins className="size-3.5" />
+                    Live preview updates instantly
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="outline" className="rounded-full border-amber-300" asChild>
+              <Link to="/generate">
+                Continue to invoice generation
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+            <p className="text-xs text-muted-foreground sm:max-w-sm">
+              This is the first slice of the editor. Next steps can connect the draft to the backend preview and PDF workflow.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

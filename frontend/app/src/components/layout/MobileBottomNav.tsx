@@ -17,6 +17,8 @@ export function MobileBottomNav() {
                 ? 'Invoices'
                 : item.label === 'Generate invoice'
                   ? 'Generate'
+                  : item.label === 'Invoice Studio'
+                    ? 'Studio'
                   : item.label === 'Validate order'
                     ? 'Validate'
                     : item.label

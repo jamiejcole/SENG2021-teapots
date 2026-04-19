@@ -13,12 +13,14 @@ function Item({
   to,
   label,
   icon: Icon,
+  badge,
   compact,
   onNavigate,
 }: {
   to: string
   label: string
   icon: React.ComponentType<{ className?: string }>
+  badge?: string
   compact: boolean
   onNavigate?: () => void
 }) {
@@ -38,7 +40,19 @@ function Item({
       title={compact ? label : undefined}
     >
       <Icon className={cn('size-4 shrink-0', compact && 'size-5')} />
-      {!compact && <span className="truncate">{label}</span>}
+      {!compact && (
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="truncate">{label}</span>
+          {badge && (
+            <Badge
+              variant="secondary"
+              className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold tracking-[0.16em] text-amber-800 dark:bg-amber-950/50 dark:text-amber-200"
+            >
+              {badge}
+            </Badge>
+          )}
+        </span>
+      )}
     </NavLink>
   )
 }
