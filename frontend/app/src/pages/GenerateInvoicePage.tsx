@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { XmlUploadButton } from '@/components/XmlUploadButton'
+import { DocumentUploader } from '@/components/ai/DocumentUploader'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
 
@@ -493,6 +494,13 @@ export function GenerateInvoicePage() {
                 <Input id="invoiceNote" value={invoiceNote} onChange={(e) => setInvoiceNote(e.target.value)} className="h-8 rounded-lg" />
               </div>
             </div>
+
+            <DocumentUploader
+              onExtracted={(fields) => {
+                if (fields.currency) setCurrencyCode(fields.currency)
+                if (fields.issueDate) setIssueDate(fields.issueDate)
+              }}
+            />
 
             <div className="mx-auto grid w-full max-w-full grid-cols-1 gap-2 sm:grid-cols-3">
               <div className="min-w-0">

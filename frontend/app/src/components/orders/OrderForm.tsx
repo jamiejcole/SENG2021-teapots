@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import type { StoredOrderSummary } from '@/api/orders'
 import type { CreateOrderPayload, OrderLineDto } from '@/types/orders'
+import { DocumentUploader } from '@/components/ai/DocumentUploader'
+import type { ExtractedFields } from '@/api/ai'
 
 const card =
   'rounded-xl border border-amber-200/60 bg-white/80 p-4 dark:border-amber-900/40 dark:bg-slate-900/40'
@@ -87,6 +89,58 @@ function PartyBlock({
   )
 }
 
+function applyExtractedFields(payload: CreateOrderPayload, fields: ExtractedFields): CreateOrderPayload {
+  const next = { ...payload }
+
+  if (fields.buyer) {
+    next.buyer = {
+      ...next.buyer,
+      ...(fields.buyer.name ? { name: fields.buyer.name } : {}),
+      ...(fields.buyer.address
+        ? {
+            address: {
+              street: fields.buyer.address.street ?? next.buyer.address.street,
+              city: fields.buyer.address.city ?? next.buyer.address.city,
+              postalCode: fields.buyer.address.postalCode ?? next.buyer.address.postalCode,
+              country: fields.buyer.address.country ?? next.buyer.address.country,
+            },
+          }
+        : {}),
+    }
+  }
+
+  if (fields.seller) {
+    next.seller = {
+      ...next.seller,
+      ...(fields.seller.name ? { name: fields.seller.name } : {}),
+      ...(fields.seller.address
+        ? {
+            address: {
+              street: fields.seller.address.street ?? next.seller.address.street,
+              city: fields.seller.address.city ?? next.seller.address.city,
+              postalCode: fields.seller.address.postalCode ?? next.seller.address.postalCode,
+              country: fields.seller.address.country ?? next.seller.address.country,
+            },
+          }
+        : {}),
+    }
+  }
+
+  if (fields.currency) next.currency = fields.currency
+  if (fields.issueDate) next.issueDate = fields.issueDate
+
+  if (fields.lines && fields.lines.length > 0) {
+    next.lines = fields.lines.map((l, i) => ({
+      description: l.description ?? `Item ${i + 1}`,
+      quantity: l.quantity ?? 1,
+      unitPrice: l.unitPrice ?? 0,
+      unitCode: 'C62',
+    }))
+  }
+
+  return next
+}
+
 export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; onChange: (p: CreateOrderPayload) => void }) {
   const updateLine = (idx: number, patch: Partial<OrderLineDto>) => {
     const lines = payload.lines.map((l, i) => (i === idx ? { ...l, ...patch } : l))
@@ -110,6 +164,9 @@ export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; 
 
   return (
     <div className="space-y-6">
+      <DocumentUploader
+        onExtracted={(fields) => onChange(applyExtractedFields(payload, fields))}
+      />
       <div className={cn(card, 'grid gap-3 sm:grid-cols-2')}>
         <div className="space-y-1.5">
           <Label>Order ID</Label>
