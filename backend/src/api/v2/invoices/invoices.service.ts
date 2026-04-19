@@ -153,11 +153,13 @@ function buildStudioOrderData(draft: StudioPreviewDraft): OrderData {
             Party: {
                 PartyName: { Name: draft.businessName.trim() || 'Business' },
                 PostalAddress: parseAddress(draft.businessAddress || draft.businessName),
-                ...(draft.businessPhone.trim()
-                    ? { Contact: { Telephone: draft.businessPhone.trim() } }
-                    : {}),
-                ...(draft.businessEmail.trim()
-                    ? { Contact: { ElectronicMail: draft.businessEmail.trim() } }
+                ...((draft.businessPhone.trim() || draft.businessEmail.trim())
+                    ? {
+                        Contact: {
+                            ...(draft.businessPhone.trim() ? { Telephone: draft.businessPhone.trim() } : {}),
+                            ...(draft.businessEmail.trim() ? { ElectronicMail: draft.businessEmail.trim() } : {}),
+                        },
+                    }
                     : {}),
             },
         },

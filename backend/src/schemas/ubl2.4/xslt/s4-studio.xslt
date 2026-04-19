@@ -95,12 +95,12 @@
                                 </xsl:if>
                             </div>
                             <div class="text-gray-600">
-                                <span class="text-gray-400">Contact email: </span>
-                                <xsl:value-of select="//cac:AccountingCustomerParty//cac:Contact/cbc:ElectronicMail"/>
+                                <span class="text-gray-400">Phone: </span>
+                                <xsl:value-of select="//cac:AccountingCustomerParty//cac:Contact/cbc:Telephone"/>
                             </div>
                             <div class="text-gray-600">
-                                <span class="text-gray-400">Contact phone: </span>
-                                <xsl:value-of select="//cac:AccountingCustomerParty//cac:Contact/cbc:Telephone"/>
+                                <span class="text-gray-400">Email: </span>
+                                <xsl:value-of select="//cac:AccountingCustomerParty//cac:Contact/cbc:ElectronicMail"/>
                             </div>
                         </div>
                     </div>
