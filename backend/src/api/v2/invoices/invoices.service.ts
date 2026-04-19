@@ -11,7 +11,8 @@ import { InvoicePdfModel } from '../../../models/invoicePdf.model';
 import { sha256 } from '../../../models/hash';
 import { buildInvoiceSetFields } from '../../../db/persistInvoiceRequest';
 import { HttpError } from '../../../errors/HttpError';
-import { validateUBL } from './invoices.validation';
+import { generateStudioInvoiceHtml, validateUBL } from './invoices.validation';
+import { InvoiceCalculator } from '../../../domain/InvoiceCalculator';
 
 /**
  * Returns a JSON obj based on a UBL XML String.
@@ -42,6 +43,283 @@ export function convertJsonToUblInvoice(orderData: OrderData, invoiceSupplement:
         .addLegalMonetaryTotal()
         .addInvoiceLines()
         .build();
+}
+
+type StudioLineItemDraft = {
+    id: string;
+    name: string;
+    details: string;
+    quantity: number;
+    rate: number;
+};
+
+type StudioPreviewDraft = {
+    businessName: string;
+    businessPhone: string;
+    businessEmail: string;
+    businessAddress: string;
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string;
+    customerAddress: string;
+    invoiceNumber: string;
+    issueDate: string;
+    dueDate?: string;
+    jobSummary: string;
+    notes: string;
+    paymentNotes: string;
+    extraNotes: string;
+        accountName: string;
+        accountNumber: string;
+        bsb: string;
+    taxRate: number;
+    lineItems: StudioLineItemDraft[];
+  };
+
+type StudioPreviewTheme = 'light' | 'dark';
+
+function parseAddress(address: string) {
+    const trimmed = address.trim();
+    const parts = trimmed.split(',').map((part) => part.trim()).filter(Boolean);
+
+    const street = parts[0] || trimmed || 'Unknown street';
+    const city = parts[1] || 'Unknown city';
+    const postalMatch = trimmed.match(/\b\d{4,6}\b/);
+    const postalCode = postalMatch?.[0] || '0000';
+
+    return {
+        StreetName: street,
+        CityName: city,
+        PostalZone: postalCode,
+        CountrySubentity: 'Australia',
+    };
+}
+
+function buildStudioOrderData(draft: StudioPreviewDraft): OrderData {
+    const rawLines = draft.lineItems.map((lineItem, index) => ({
+        LineItem: {
+            ID: { value: String(lineItem.id || index + 1) },
+            Quantity: {
+                value: String(lineItem.quantity),
+                '@unitCode': 'EA',
+            },
+            Price: {
+                PriceAmount: {
+                    value: String(lineItem.rate),
+                    '@currencyID': 'AUD',
+                },
+            },
+            Item: {
+                Name: { value: lineItem.name },
+                Description: { value: lineItem.details || lineItem.name },
+            },
+        },
+    }));
+
+    const calculator = new InvoiceCalculator(rawLines as any[], draft.taxRate);
+
+    const lineItems = rawLines.map((line, index) => {
+        const totals = calculator.lineTotals[index];
+        return {
+            LineItem: {
+                ...line.LineItem,
+                LineExtensionAmount: {
+                    value: totals.lineExtensionAmount,
+                    '@currencyID': 'AUD',
+                },
+            },
+        };
+    });
+
+    return {
+        ID: { value: draft.invoiceNumber.trim() || `STUDIO-${Date.now()}` },
+        IssueDate: { value: draft.issueDate.trim() },
+        DocumentCurrencyCode: { value: 'AUD' },
+        BuyerCustomerParty: {
+            Party: {
+                PartyName: { Name: draft.customerName.trim() || 'Customer' },
+                PostalAddress: parseAddress(draft.customerAddress || draft.jobSummary),
+                ...((draft.customerPhone.trim() || draft.customerEmail.trim())
+                    ? {
+                        Contact: {
+                            ...(draft.customerPhone.trim() ? { Telephone: draft.customerPhone.trim() } : {}),
+                            ...(draft.customerEmail.trim() ? { ElectronicMail: draft.customerEmail.trim() } : {}),
+                        },
+                    }
+                    : {}),
+            },
+        },
+        SellerSupplierParty: {
+            Party: {
+                PartyName: { Name: draft.businessName.trim() || 'Business' },
+                PostalAddress: parseAddress(draft.businessAddress || draft.businessName),
+                ...((draft.businessPhone.trim() || draft.businessEmail.trim())
+                    ? {
+                        Contact: {
+                            ...(draft.businessPhone.trim() ? { Telephone: draft.businessPhone.trim() } : {}),
+                            ...(draft.businessEmail.trim() ? { ElectronicMail: draft.businessEmail.trim() } : {}),
+                        },
+                    }
+                    : {}),
+            },
+        },
+        OrderLine: lineItems.length === 1 ? lineItems[0] : lineItems,
+    };
+}
+
+function buildStudioInvoiceSupplement(draft: StudioPreviewDraft): InvoiceSupplement {
+    const paymentTermsNote = [draft.paymentNotes.trim(), draft.extraNotes.trim()].filter(Boolean).join('\n\n') || undefined;
+
+    return {
+        invoiceNumber: draft.invoiceNumber.trim() || undefined,
+        issueDate: draft.issueDate.trim() || undefined,
+        dueDate: draft.dueDate?.trim() || undefined,
+        note: draft.jobSummary.trim() || undefined,
+        currencyCode: 'AUD',
+        taxRate: draft.taxRate,
+        taxScheme: { id: 'GST', taxTypeCode: 'GST' },
+        paymentMeans: {
+            code: '30',
+            payeeFinancialAccount: {
+                id: draft.accountNumber.trim() || '00000000',
+                name: draft.accountName.trim() || draft.businessName.trim() || 'Bank account',
+                ...(draft.bsb.trim() ? { branchId: draft.bsb.trim() } : {}),
+            },
+        },
+        ...(paymentTermsNote ? { paymentTerms: { note: paymentTermsNote } } : {}),
+    };
+}
+
+function injectStudioPreviewTheme(html: string, theme: StudioPreviewTheme) {
+        if (theme !== 'dark') {
+                return html;
+        }
+
+        const darkThemeStyles = `
+<style id="studio-preview-dark-theme">
+    html, body {
+        background: #0b1220 !important;
+        color: #e5edf7 !important;
+    }
+
+    body {
+        background: #0b1220 !important;
+    }
+
+    #document {
+        background: #0f172a !important;
+        color: #e5edf7 !important;
+        border-left-color: #1e293b !important;
+        border-right-color: #1e293b !important;
+    }
+
+    #document {
+        text-shadow: none !important;
+    }
+
+    a {
+        color: #93c5fd !important;
+    }
+
+    #document h1,
+    #document h2,
+    #document h3,
+    #document h4,
+    #document h5,
+    #document h6,
+    #document p,
+    #document div,
+    #document span,
+    #document small,
+    #document strong,
+    #document em,
+    #document li,
+    #document dt,
+    #document dd,
+    #document th,
+    #document td {
+        color: #e5edf7 !important;
+    }
+
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"] {
+        background: #334155 !important;
+        color: #f8fafc !important;
+        border-color: #475569 !important;
+    }
+
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"] *,
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"] {
+        color: #f8fafc !important;
+    }
+
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"],
+    #document span[class~="inline-block"][class~="px-2.5"][class~="py-1"][class~="text-xs"][class~="font-bold"][class~="uppercase"][class~="tracking-wider"][class~="rounded"][class~="bg-gray-100"][class~="text-gray-700"] * {
+        background-color: #334155 !important;
+    }
+
+    h3 {
+        border-bottom-color: #334155 !important;
+    }
+
+    hr {
+        border-top-color: #334155 !important;
+    }
+
+    .table,
+    #tax table,
+    .table td,
+    .table th,
+    #tax table td,
+    #tax table th {
+        border-color: #334155 !important;
+        background-color: transparent !important;
+    }
+
+    .text-muted,
+    small,
+    dt,
+    #footer,
+    #tax table th {
+        color: #94a3b8 !important;
+    }
+
+    .line,
+    div.linesupport,
+    div.linetotal,
+    div.total {
+        border-color: #334155 !important;
+        background-color: transparent !important;
+    }
+
+    #document .row,
+    #document .container,
+    #document .container-fluid {
+        background: transparent !important;
+    }
+</style>`;
+
+        return html.includes('</head>')
+                ? html.replace('</head>', `${darkThemeStyles}</head>`)
+                : `${darkThemeStyles}${html}`;
+}
+
+export async function buildStudioPreviewHtml(draft: StudioPreviewDraft, theme: StudioPreviewTheme = 'light') {
+    const orderData = buildStudioOrderData(draft);
+    const invoiceSupplement = buildStudioInvoiceSupplement(draft);
+    const invoiceXml = convertJsonToUblInvoice(orderData, invoiceSupplement);
+    const html = await generateStudioInvoiceHtml(invoiceXml);
+        return injectStudioPreviewTheme(html, theme);
+}
+
+export async function buildInvoiceXmlFromOrderXml(orderXml: string, invoiceSupplement: InvoiceSupplement) {
+    validateUBL(orderXml, 'Order');
+
+    const orderObj = (await createFullUblObject(orderXml)).data as OrderData;
+    const invoiceXml = convertJsonToUblInvoice(orderObj, invoiceSupplement);
+
+    validateUBL(invoiceXml, 'Invoice');
+
+    return { orderObj, invoiceXml };
 }
 
 /**

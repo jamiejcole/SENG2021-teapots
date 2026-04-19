@@ -25,6 +25,7 @@ export type LoginResponse = {
   lastName?: string
   phone?: string | null
   company?: string | null
+  businessAddress?: string | null
   message: string
 }
 
@@ -45,6 +46,7 @@ export type UserProfileResponse = {
   lastName: string
   phone?: string | null
   company?: string | null
+  businessAddress?: string | null
   message: string
 }
 
@@ -53,6 +55,7 @@ export type UpdateUserProfileRequest = {
   lastName?: string
   phone?: string
   company?: string
+  businessAddress?: string
 }
 
 export type RequestPasswordResetRequest = {

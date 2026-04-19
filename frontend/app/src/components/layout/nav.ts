@@ -1,7 +1,5 @@
 import {
   LayoutDashboard,
-  ReceiptText,
-  ShieldCheck,
   History,
   UserRound,
   Settings2,
@@ -10,21 +8,23 @@ import {
   FileText,
   Package,
   Truck,
+  FilePenLine,
 } from 'lucide-react'
 
 export type NavItem = {
   to: string
   label: string
   icon: React.ComponentType<{ className?: string }>
+  badge?: string
 }
 
 export const primaryNav: NavItem[] = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { to: '/invoice-studio', label: 'Invoice Studio', icon: FilePenLine, badge: 'BETA' },
   { to: '/orders', label: 'Orders', icon: Package },
-  { to: '/generate', label: 'Generate invoice', icon: ReceiptText },
-  { to: '/despatch', label: 'Despatch', icon: Truck },
-  { to: '/invoices', label: 'Invoice history', icon: History },
-  { to: '/validate', label: 'Validate order', icon: ShieldCheck },
+  { to: '/despatch', label: 'Despatches', icon: Truck },
+  // { to: '/generate', label: 'Invoices', icon: ReceiptText },
+  { to: '/invoices', label: 'Invoices', icon: History },
 ]
 
 export const secondaryNav: NavItem[] = [

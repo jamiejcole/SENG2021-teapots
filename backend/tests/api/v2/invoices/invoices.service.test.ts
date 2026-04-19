@@ -4,6 +4,11 @@ import { InvoiceBuilder } from '../../../../src/domain/InvoiceBuilder'
 import { InvoiceModel } from '../../../../src/models/invoice.model'
 import { InvoicePdfModel } from '../../../../src/models/invoicePdf.model'
 
+jest.mock('../../../../src/api/v2/invoices/invoices.validation', () => ({
+  validateUBL: jest.fn(),
+  generateInvoicePdf: jest.fn(),
+}))
+
 jest.mock('../../../../src/domain/InvoiceBuilder', () => ({
   InvoiceBuilder: jest.fn().mockImplementation(() => ({
     addHeader: jest.fn().mockReturnThis(),
@@ -54,6 +59,27 @@ describe('invoices.service', () => {
 
     expect(xml).toBe('<Invoice />')
     expect(mockedInvoiceBuilder).toHaveBeenCalled()
+  })
+
+  it('builds invoice xml from order xml', async () => {
+    const mockedValidation = await import('../../../../src/api/v2/invoices/invoices.validation')
+    const validateUBL = mockedValidation.validateUBL as jest.Mock
+    validateUBL.mockReturnValue(true)
+
+    const result = await invoiceService.buildInvoiceXmlFromOrderXml(
+      `<?xml version="1.0" encoding="UTF-8"?><Order xmlns="urn:oasis:names:specification:ubl:schema:xsd:Order-2"><cbc:ID xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">ORD-1</cbc:ID></Order>`,
+      {
+        currencyCode: 'AUD',
+        taxRate: 0.1,
+        taxScheme: { id: 'GST', taxTypeCode: 'GST' },
+        paymentMeans: { code: '30', payeeFinancialAccount: { id: '1', name: 'Main' } },
+      } as any,
+    )
+
+    expect(result.orderObj).toBeDefined()
+    expect(result.invoiceXml).toBe('<Invoice />')
+    expect(validateUBL).toHaveBeenCalledWith(expect.stringContaining('<Order'), 'Order')
+    expect(validateUBL).toHaveBeenCalledWith('<Invoice />', 'Invoice')
   })
 
   it('rejects invalid invoice IDs when deleting', async () => {

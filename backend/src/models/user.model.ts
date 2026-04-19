@@ -52,6 +52,11 @@ const UserSchema = new Schema(
       default: null,
       trim: true,
     },
+    businessAddress: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     twoFactor: {
       type: TwoFactorSchema,
       default: () => ({}),

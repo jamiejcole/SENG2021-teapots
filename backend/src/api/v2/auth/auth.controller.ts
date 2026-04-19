@@ -49,9 +49,11 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
     return res.status(401).json({ message: "Not authenticated" });
   }
 
-  const { firstName, lastName, phone, company } = req.body;
-
-  const result = await authService.updateUserProfile(req.user.userId, firstName, lastName, phone, company);
+  const { firstName, lastName, phone, company, businessAddress } = req.body;
+  const result =
+    businessAddress !== undefined
+      ? await authService.updateUserProfile(req.user.userId, firstName, lastName, phone, company, businessAddress)
+      : await authService.updateUserProfile(req.user.userId, firstName, lastName, phone, company);
 
   res.status(200).json(result);
 });

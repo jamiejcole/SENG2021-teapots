@@ -42,7 +42,7 @@ export function TopNav({ onOpenMobileNav }: TopNavProps) {
       >
         Skip to content
       </a>
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-4 md:gap-3">
+      <div className="flex h-14 w-full items-center gap-2 px-4 md:gap-3">
         <div className="flex shrink-0 items-center gap-2 md:hidden">
           <Button
             variant="ghost"

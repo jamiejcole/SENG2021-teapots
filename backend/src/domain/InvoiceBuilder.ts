@@ -47,11 +47,13 @@ export class InvoiceBuilder {
     addHeader(): this {
         const { supplement, invoice } = this;
         const issueDate = supplement.issueDate ?? new Date().toISOString().split('T')[0];
+        const customizationId = supplement.customizationId ?? INVOICE_CUSTOMIZATION_ID;
+        const profileId = supplement.profileId ?? INVOICE_PROFILE_ID;
 
         invoice
             .ele('cbc:UBLVersionID').txt('2.1').up()
-            .ele('cbc:CustomizationID').txt(INVOICE_CUSTOMIZATION_ID).up()
-            .ele('cbc:ProfileID').txt(INVOICE_PROFILE_ID).up()
+            .ele('cbc:CustomizationID').txt(customizationId).up()
+            .ele('cbc:ProfileID').txt(profileId).up()
             .ele('cbc:ID').txt(`INV-${supplement.invoiceNumber ?? Date.now()}`).up()
             .ele('cbc:IssueDate').txt(issueDate).up();
 
@@ -76,7 +78,7 @@ export class InvoiceBuilder {
             this.invoice
                 .ele('cac:OrderReference')
                 .ele('cbc:ID')
-                .txt(this.order.ID as string).up()
+                .txt(this.textValue(this.order.ID)).up()
                 .up();
         }
         return this;
@@ -203,7 +205,7 @@ export class InvoiceBuilder {
             .up();
 
             const cacItem = iLine.ele('cac:Item');
-            cacItem.ele('cbc:Name').txt(item.Item?.Name).up();
+            cacItem.ele('cbc:Name').txt(this.textValue(item.Item?.Name)).up();
             cacItem.ele('cac:ClassifiedTaxCategory')
                 .ele('cbc:ID').txt('S').up()
                 .ele('cbc:Percent').txt(taxPercent).up()
@@ -247,5 +249,16 @@ export class InvoiceBuilder {
     private normalizeOrderLines(): any[] {
         const lines = this.order.OrderLine;
         return Array.isArray(lines) ? lines : [lines];
+    }
+
+    private textValue(value: unknown): string {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            return String(value);
+        }
+        if (typeof value === 'object' && value !== null && 'value' in (value as { value?: unknown })) {
+            return this.textValue((value as { value?: unknown }).value);
+        }
+        return String(value);
     }
 }

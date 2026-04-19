@@ -225,6 +225,78 @@ router.post("/validate", controller.validateInvoice);
 
 /**
  * @openapi
+ * /api/v2/invoices/preview:
+ *   post:
+ *     summary: Build a preview invoice XML without persisting it
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateInvoiceRequest'
+ *     responses:
+ *       200:
+ *         description: Invoice preview generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PreviewInvoiceResponse'
+ *       400:
+ *         description: Invalid request or invalid UBL payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post("/preview", controller.previewInvoice);
+
+/**
+ * @openapi
+ * /api/v2/invoices/studio-preview:
+ *   post:
+ *     summary: Render a live HTML preview for the Invoice Studio draft
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/InvoiceStudioPreviewDraft'
+ *     responses:
+ *       200:
+ *         description: HTML preview rendered successfully
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Invalid studio draft payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized - missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post("/studio-preview", controller.previewStudioInvoice);
+
+/**
+ * @openapi
  * /api/v2/invoices/{invoiceId}/validate:
  *   post:
  *     summary: Validate a stored invoice by ID

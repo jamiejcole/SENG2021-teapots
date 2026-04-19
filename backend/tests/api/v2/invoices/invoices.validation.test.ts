@@ -83,6 +83,20 @@ describe('v2 invoices.validation', () => {
         currencyCode: 'AUD',
         taxRate: 10,
         taxScheme: { id: 'GST', taxTypeCode: 'VAT' },
+        paymentMeans: { code: '30', payeeFinancialAccount: { id: '1', name: 'Test', branchId: 'BR-1' } },
+        customizationId: 'urn:test:customization',
+        profileId: 'urn:test:profile',
+        supplierPartyTaxScheme: { taxSchemeId: 'GST', companyId: '123' },
+        customerPartyTaxScheme: { taxSchemeId: 'GST', companyId: '456' },
+      },
+    })).not.toThrow()
+
+    expect(() => validateCreateInvoiceRequest({
+      orderXml: '<Order />',
+      invoiceSupplement: {
+        currencyCode: 'AUD',
+        taxRate: 10,
+        taxScheme: { id: 'GST', taxTypeCode: 'VAT' },
         paymentMeans: { code: '30', payeeFinancialAccount: { id: '1', name: 'Test' } },
       },
     })).not.toThrow()
