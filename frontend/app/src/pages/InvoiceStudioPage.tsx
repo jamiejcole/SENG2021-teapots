@@ -275,6 +275,10 @@ export function InvoiceStudioPage() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
+              <div className="space-y-1.5 sm:max-w-xs">
+                <Label htmlFor="invoiceNumber">Invoice number</Label>
+                <Input id="invoiceNumber" value={draft.invoiceNumber} onChange={(e) => updateDraft('invoiceNumber', e.target.value)} className="h-9 rounded-lg" />
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="jobSummary">Job description</Label>
                 <Textarea id="jobSummary" value={draft.jobSummary} onChange={(e) => updateDraft('jobSummary', e.target.value)} className="min-h-20 rounded-xl resize-y" />

@@ -88,10 +88,10 @@ function parseAddress(address: string) {
     const postalCode = postalMatch?.[0] || '0000';
 
     return {
-        street,
-        city,
-        postalCode,
-        country: 'Australia',
+        StreetName: street,
+        CityName: city,
+        PostalZone: postalCode,
+        CountrySubentity: 'Australia',
     };
 }
 
