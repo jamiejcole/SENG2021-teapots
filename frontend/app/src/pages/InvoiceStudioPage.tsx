@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, BriefcaseBusiness, CalendarDays, Check, CloudMoon, CloudSun, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowRight, BriefcaseBusiness, CalendarDays, CloudMoon, CloudSun, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -85,14 +85,14 @@ function themePanelClass(theme: 'light' | 'dark') {
 
 function themeInnerClass(theme: 'light' | 'dark') {
   return theme === 'dark'
-    ? 'rounded-[28px] bg-slate-900/70 p-4 sm:p-6'
-    : 'rounded-[28px] bg-[linear-gradient(rgba(255,255,255,0.32)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.32)_1px,transparent_1px)] bg-[size:26px_26px] p-4 sm:p-6'
+    ? 'rounded-[28px] bg-slate-900/70'
+    : 'rounded-[28px]'
 }
 
 function previewShellClass(theme: 'light' | 'dark') {
   return theme === 'dark'
-    ? 'overflow-hidden rounded-[24px] border border-slate-700 bg-slate-950 shadow-lg lg:min-h-[calc(100dvh-14rem)]'
-    : 'overflow-hidden rounded-[24px] border border-black/5 bg-white shadow-lg dark:bg-slate-950 lg:min-h-[calc(100dvh-14rem)]'
+    ? 'overflow-hidden rounded-[24px] border border-slate-700 bg-slate-950 shadow-lg'
+    : 'overflow-hidden rounded-[24px] border border-black/5 bg-white shadow-lg dark:bg-slate-950'
 }
 
 export function InvoiceStudioPage() {
@@ -175,11 +175,11 @@ export function InvoiceStudioPage() {
                 BETA
               </Badge>
             </div>
-            <h1 className="max-w-2xl text-balance font-display text-3xl tracking-tight sm:text-4xl">
-              Build an invoice like you would in the garage, on the ute, or at the kitchen table.
+            <h1 className="max-w-3xl text-balance font-display text-3xl tracking-tight sm:text-4xl">
+              Build an invoice like you would on-site.
             </h1>
-            <p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
-              Focused on sole traders: plain-language fields, live pricing, and a live invoice preview that updates as you type.
+            <p className="max-w-4xl text-sm text-muted-foreground sm:text-base">
+              No messing around with UBL XML. Focused on sole traders; instant live preview for real-time invoice creation.
             </p>
           </div>
 
@@ -346,19 +346,11 @@ export function InvoiceStudioPage() {
           </Card>
         </div>
 
-        <div className="min-w-0 lg:sticky lg:top-24 lg:h-[calc(100dvh-9rem)] lg:overflow-y-auto lg:self-start">
+        <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
           <div className={themePanelClass(previewTheme)}>
             <div className={themeInnerClass(previewTheme)}>
               <div className={previewShellClass(previewTheme)}>
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-4 sm:p-6">
-                  <div>
-                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
-                      <Check className="size-3.5" />
-                      Exact PDF preview
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">Rendered from the same XSLT HTML used by export.</p>
-                  </div>
-
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-3 pb-2">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="previewTheme" className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                       Viewer
@@ -395,13 +387,13 @@ export function InvoiceStudioPage() {
 
                 <div className={previewTheme === 'dark' ? 'bg-slate-900 p-3 sm:p-4' : 'bg-slate-100 p-3 sm:p-4'}>
                   {previewLoading && !previewHtml ? (
-                    <Skeleton className="h-[72rem] w-full rounded-[20px]" />
+                    <Skeleton className="aspect-[210/297] w-full rounded-[20px]" />
                   ) : previewError ? (
-                    <div className="flex min-h-[32rem] items-center justify-center rounded-[20px] border border-dashed border-border bg-background/80 p-8 text-center text-sm text-muted-foreground">
+                    <div className="flex aspect-[210/297] w-full items-center justify-center rounded-[20px] border border-dashed border-border bg-background/80 p-8 text-center text-sm text-muted-foreground">
                       {previewError}
                     </div>
                   ) : (
-                    <iframe title="Invoice preview" className="h-[72rem] w-full rounded-[20px] border-0 bg-transparent" srcDoc={previewHtml} />
+                    <iframe title="Invoice preview" className="aspect-[210/297] w-full rounded-[20px] border-0 bg-transparent" srcDoc={previewHtml} />
                   )}
                 </div>
               </div>
