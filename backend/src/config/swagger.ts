@@ -30,6 +30,7 @@ const swaggerDefinition = {
     { name: "V1 Invoices", description: "Invoice generation and validation (v1)" },
     { name: "V1 Orders", description: "Order validation (v1)" },
     { name: "V2 Auth", description: "Authentication and 2FA (v2)" },
+    { name: "V2 AI", description: "AI-powered document extraction and chat assistance (v2)" },
     { name: "V2 Invoices", description: "Invoice generation and validation (v2)" },
     { name: "V2 Orders", description: "Order validation (v2)" },
     { name: "V2 Despatch", description: "Despatch generation, cancellation, and email flows (v2)" },
@@ -303,6 +304,66 @@ const swaggerDefinition = {
           $ref: "#/components/schemas/InvoiceRecord",
         },
       },
+      AIDocumentExtractionResponse: {
+        type: "object",
+        properties: {
+          fields: {
+            type: "object",
+            additionalProperties: true,
+            description: "Structured invoice or order fields extracted from the uploaded document",
+          },
+        },
+        required: ["fields"],
+      },
+      AIChatMessage: {
+        type: "object",
+        required: ["role", "content"],
+        properties: {
+          role: {
+            type: "string",
+            enum: ["user", "assistant"],
+          },
+          content: {
+            type: "string",
+          },
+        },
+      },
+      AIChatRequest: {
+        type: "object",
+        required: ["messages"],
+        properties: {
+          messages: {
+            type: "array",
+            minItems: 1,
+            items: {
+              $ref: "#/components/schemas/AIChatMessage",
+            },
+          },
+        },
+      },
+      AIChatStreamEvent: {
+        type: "object",
+        properties: {
+          text: {
+            type: "string",
+            description: "Assistant text chunk streamed as server-sent events",
+          },
+          navigation: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: true,
+            },
+            description: "Optional navigation suggestions emitted during the chat",
+          },
+          done: {
+            type: "boolean",
+          },
+          error: {
+            type: "string",
+          },
+        },
+      },
     },
   },
 };
@@ -325,6 +386,7 @@ const versionedTagMap: Record<string, Record<string, string>> = {
   },
   "/api/v2/": {
     Auth: "V2 Auth",
+    AI: "V2 AI",
     Invoices: "V2 Invoices",
     Orders: "V2 Orders",
     Despatch: "V2 Despatch",

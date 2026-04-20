@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 import * as despatchService from '../../../../src/api/v2/despatch/despatch.service';
 import { OrderModel } from '../../../../src/models/order.model';
 import { DespatchModel } from '../../../../src/models/despatch.model';
-import { HttpError } from '../../../../src/errors/HttpError';
 
 jest.mock('../../../../src/models/order.model', () => ({
   OrderModel: {

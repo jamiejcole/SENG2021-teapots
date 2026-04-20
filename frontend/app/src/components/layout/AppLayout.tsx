@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { TopNav } from '@/components/layout/TopNav'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { InvoiceSearchProvider } from '@/context/InvoiceSearchContext'
+import { ChatWidget } from '@/components/ai/ChatWidget'
 
 export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -49,6 +50,8 @@ export function AppLayout() {
             <Sidebar onNavigate={() => setMobileOpen(false)} />
           </SheetContent>
         </Sheet>
+
+        <ChatWidget />
       </div>
     </InvoiceSearchProvider>
   )

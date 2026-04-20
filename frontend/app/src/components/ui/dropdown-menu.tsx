@@ -97,7 +97,7 @@ const DropdownMenuContent = React.forwardRef<
     <div
       ref={mergedRef}
       className={cn(
-        "absolute top-full z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+        "absolute top-full z-50 min-w-[8rem] overflow-hidden rounded-xl border border-border/80 bg-popover p-1 text-popover-foreground shadow-md",
         align === "end" && "right-0",
         align === "start" && "left-0",
         className
@@ -122,7 +122,7 @@ const DropdownMenuItem = React.forwardRef<
       role="menuitem"
       tabIndex={-1}
       className={cn(
-        "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0",
+        "relative flex cursor-default select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none transition-colors hover:bg-amber-50 hover:text-foreground focus:bg-amber-50 focus:text-foreground dark:hover:bg-amber-950/35 dark:focus:bg-amber-950/35 [&>svg]:size-4 [&>svg]:shrink-0",
         inset && "pl-8",
         className
       )}

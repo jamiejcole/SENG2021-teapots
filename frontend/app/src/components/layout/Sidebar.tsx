@@ -78,7 +78,7 @@ export function Sidebar({ variant = 'full', onNavigate }: SidebarProps) {
             variant="secondary"
             className={cn('rounded-full bg-amber-100 text-[11px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-200', compact && 'px-2')}
           >
-            v2
+            v3
           </Badge>
         </div>
       </div>

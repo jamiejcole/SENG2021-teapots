@@ -71,3 +71,7 @@ export async function sendDespatchEmail(despatchId: string, to: string) {
     body: JSON.stringify({ despatchId, to }),
   })
 }
+
+export async function deleteDespatch(despatchId: string): Promise<void> {
+  await apiJson<{ message: string }>(`/despatch/${encodeURIComponent(despatchId)}`, { method: 'DELETE' })
+}

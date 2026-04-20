@@ -12,6 +12,8 @@ import { useAuth } from '@/components/auth/AuthContext'
 import { ApiError } from '@/api/client'
 import { previewStudioInvoice, type InvoiceStudioPreviewDraft } from '@/api/invoices'
 import { toast } from '@/lib/toast'
+import { DocumentUploader } from '@/components/ai/DocumentUploader'
+import type { ExtractedFields } from '@/api/ai'
 
 type StudioLineItem = {
   id: string
@@ -86,6 +88,50 @@ function buildBusinessDraftFromUser(user: { email: string; firstName?: string; l
     ...(user?.email?.trim() ? { businessEmail: user.email.trim() } : {}),
     ...(user?.businessAddress?.trim() ? { businessAddress: user.businessAddress.trim() } : {}),
   }
+}
+
+function formatAddress(addr?: { street?: string; city?: string; postalCode?: string; country?: string }): string {
+  if (!addr) return ''
+  return [addr.street, addr.city, addr.postalCode, addr.country].filter(Boolean).join(', ')
+}
+
+function applyExtractedToStudio(draft: StudioDraft, fields: ExtractedFields): StudioDraft {
+  const next = { ...draft }
+
+  // Seller → business details
+  if (fields.seller?.name) next.businessName = fields.seller.name
+  if (fields.seller?.address) {
+    const addr = formatAddress(fields.seller.address)
+    if (addr) next.businessAddress = addr
+  }
+
+  // Buyer → customer details
+  if (fields.buyer?.name) next.customerName = fields.buyer.name
+  if (fields.buyer?.address) {
+    const addr = formatAddress(fields.buyer.address)
+    if (addr) next.customerAddress = addr
+  }
+
+  // Dates & invoice ref
+  if (fields.issueDate) next.issueDate = fields.issueDate
+  if (fields.orderReference) next.invoiceNumber = fields.orderReference
+
+  // Tax rate from first line item (if present)
+  const firstTax = fields.lines?.find((l) => l.taxRate != null && l.taxRate > 0)?.taxRate
+  if (firstTax != null) next.taxRate = firstTax
+
+  // Line items
+  if (fields.lines && fields.lines.length > 0) {
+    next.lineItems = fields.lines.map((l, i) => ({
+      id: String(Date.now() + i),
+      name: l.description ?? `Item ${i + 1}`,
+      details: '',
+      quantity: l.quantity ?? 1,
+      rate: l.unitPrice ?? 0,
+    }))
+  }
+
+  return next
 }
 
 function themePanelClass(theme: 'light' | 'dark') {
@@ -221,6 +267,10 @@ export function InvoiceStudioPage() {
 
       <div className="grid min-h-[calc(100dvh-18rem)] gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="space-y-6 lg:sticky lg:top-24 lg:h-[calc(100dvh-9rem)] lg:overflow-y-auto lg:pr-1">
+          <DocumentUploader
+            onExtracted={(fields) => setDraft((current) => applyExtractedToStudio(current, fields))}
+          />
+
           <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
             <CardHeader>
               <CardTitle className="inline-flex items-center gap-2 text-base">

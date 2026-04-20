@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Select } from '@/components/ui/select'
+import { CollapsibleSection } from '@/components/shared/CollapsibleSection'
 import { cn } from '@/lib/utils'
 import type { OrderPartyDto } from '@/types/orders'
 import type { CreateDespatchPayload, DespatchLineDto } from '@/types/despatch'
@@ -17,13 +19,11 @@ function emptyParty(): OrderPartyDto {
   }
 }
 
-function PartyBlock({
-  title,
+function PartyFields({
   prefix,
   payload,
   onChange,
 }: {
-  title: string
   prefix: 'supplierParty' | 'deliveryParty'
   payload: CreateDespatchPayload
   onChange: (next: CreateDespatchPayload) => void
@@ -36,59 +36,47 @@ function PartyBlock({
     })
   }
   return (
-    <div className={cn(card, 'space-y-3')}>
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Name</Label>
-          <Input
-            value={p.name}
-            onChange={(e) => onChange({ ...payload, [prefix]: { ...p, name: e.target.value } })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Endpoint / ID</Label>
-          <Input
-            value={p.id ?? ''}
-            onChange={(e) => onChange({ ...payload, [prefix]: { ...p, id: e.target.value } })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Email</Label>
-          <Input
-            type="email"
-            value={p.email ?? ''}
-            onChange={(e) => onChange({ ...payload, [prefix]: { ...p, email: e.target.value } })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Street</Label>
-          <Input value={p.address.street} onChange={(e) => setAddr('street', e.target.value)} className="h-9 rounded-lg" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>City</Label>
-          <Input value={p.address.city} onChange={(e) => setAddr('city', e.target.value)} className="h-9 rounded-lg" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Postal code</Label>
-          <Input
-            value={p.address.postalCode}
-            onChange={(e) => setAddr('postalCode', e.target.value)}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Country</Label>
-          <Input
-            value={p.address.country}
-            onChange={(e) => setAddr('country', e.target.value)}
-            className="h-9 rounded-lg"
-            placeholder="AU"
-          />
-        </div>
+    <div className="grid gap-2 sm:grid-cols-2">
+      <div className="space-y-1.5 sm:col-span-2">
+        <Label>Name</Label>
+        <Input
+          value={p.name}
+          onChange={(e) => onChange({ ...payload, [prefix]: { ...p, name: e.target.value } })}
+          className="h-9 rounded-lg"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Endpoint / ID</Label>
+        <Input
+          value={p.id ?? ''}
+          onChange={(e) => onChange({ ...payload, [prefix]: { ...p, id: e.target.value } })}
+          className="h-9 rounded-lg"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Email</Label>
+        <Input
+          type="email"
+          value={p.email ?? ''}
+          onChange={(e) => onChange({ ...payload, [prefix]: { ...p, email: e.target.value } })}
+          className="h-9 rounded-lg"
+        />
+      </div>
+      <div className="space-y-1.5 sm:col-span-2">
+        <Label>Street</Label>
+        <Input value={p.address.street} onChange={(e) => setAddr('street', e.target.value)} className="h-9 rounded-lg" />
+      </div>
+      <div className="space-y-1.5">
+        <Label>City</Label>
+        <Input value={p.address.city} onChange={(e) => setAddr('city', e.target.value)} className="h-9 rounded-lg" />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Postal code</Label>
+        <Input value={p.address.postalCode} onChange={(e) => setAddr('postalCode', e.target.value)} className="h-9 rounded-lg" />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Country</Label>
+        <Input value={p.address.country} onChange={(e) => setAddr('country', e.target.value)} className="h-9 rounded-lg" placeholder="AU" />
       </div>
     </div>
   )
@@ -179,7 +167,8 @@ export function DespatchForm({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Core fields — always visible */}
       <div className={cn(card, 'grid gap-3 sm:grid-cols-2')}>
         <div className="space-y-1.5">
           <Label>Order reference (UBL Order ID)</Label>
@@ -210,50 +199,64 @@ export function DespatchForm({
         </div>
         <div className="space-y-1.5">
           <Label>Despatch status</Label>
-          <select
-            className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          <Select
             value={payload.despatchStatus ?? 'despatched'}
-            onChange={(e) =>
+            onValueChange={(v) =>
               onChange({
                 ...payload,
-                despatchStatus: e.target.value as CreateDespatchPayload['despatchStatus'],
+                despatchStatus: v as CreateDespatchPayload['despatchStatus'],
               })
             }
-          >
-            <option value="despatched">Despatched</option>
-            <option value="partially_despatched">Partially despatched</option>
-            <option value="not_despatched">Not despatched</option>
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Carrier</Label>
-          <Input
-            value={payload.carrierName ?? ''}
-            onChange={(e) => onChange({ ...payload, carrierName: e.target.value })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Tracking ID</Label>
-          <Input
-            value={payload.trackingId ?? ''}
-            onChange={(e) => onChange({ ...payload, trackingId: e.target.value })}
-            className="h-9 rounded-lg"
-          />
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Notes</Label>
-          <Textarea
-            value={payload.notes ?? ''}
-            onChange={(e) => onChange({ ...payload, notes: e.target.value })}
-            className="min-h-[72px] rounded-lg"
+            options={[
+              { value: 'despatched', label: 'Despatched' },
+              { value: 'partially_despatched', label: 'Partially despatched' },
+              { value: 'not_despatched', label: 'Not despatched' },
+            ]}
           />
         </div>
       </div>
 
-      <PartyBlock title="Supplier / despatch party" prefix="supplierParty" payload={payload} onChange={onChange} />
-      <PartyBlock title="Delivery party / ship-to" prefix="deliveryParty" payload={payload} onChange={onChange} />
+      {/* Shipping details — collapsible */}
+      <CollapsibleSection title="Shipping details" defaultOpen={false}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Carrier</Label>
+            <Input
+              value={payload.carrierName ?? ''}
+              onChange={(e) => onChange({ ...payload, carrierName: e.target.value })}
+              className="h-9 rounded-lg"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Tracking ID</Label>
+            <Input
+              value={payload.trackingId ?? ''}
+              onChange={(e) => onChange({ ...payload, trackingId: e.target.value })}
+              className="h-9 rounded-lg"
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>Notes</Label>
+            <Textarea
+              value={payload.notes ?? ''}
+              onChange={(e) => onChange({ ...payload, notes: e.target.value })}
+              className="min-h-[72px] rounded-lg"
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
 
+      {/* Supplier party — collapsible */}
+      <CollapsibleSection title="Supplier party" defaultOpen={false}>
+        <PartyFields prefix="supplierParty" payload={payload} onChange={onChange} />
+      </CollapsibleSection>
+
+      {/* Delivery party — collapsible */}
+      <CollapsibleSection title="Delivery party" defaultOpen={false}>
+        <PartyFields prefix="deliveryParty" payload={payload} onChange={onChange} />
+      </CollapsibleSection>
+
+      {/* Line items — always visible */}
       <div className={cn(card, 'space-y-3')}>
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">Despatch line items</h3>
@@ -266,37 +269,19 @@ export function DespatchForm({
             <div key={idx} className="grid gap-2 rounded-lg border border-amber-200/40 p-3 sm:grid-cols-12 dark:border-amber-900/30">
               <div className="sm:col-span-2">
                 <Label className="text-xs">Line ID</Label>
-                <Input
-                  value={line.lineId}
-                  onChange={(e) => updateLine(idx, { lineId: e.target.value })}
-                  className="h-8 rounded-md text-sm"
-                />
+                <Input value={line.lineId} onChange={(e) => updateLine(idx, { lineId: e.target.value })} className="h-8 rounded-md text-sm" />
               </div>
               <div className="sm:col-span-5">
                 <Label className="text-xs">Description</Label>
-                <Input
-                  value={line.description}
-                  onChange={(e) => updateLine(idx, { description: e.target.value })}
-                  className="h-8 rounded-md text-sm"
-                />
+                <Input value={line.description} onChange={(e) => updateLine(idx, { description: e.target.value })} className="h-8 rounded-md text-sm" />
               </div>
               <div className="sm:col-span-2">
                 <Label className="text-xs">Qty</Label>
-                <Input
-                  type="number"
-                  value={line.quantity}
-                  onChange={(e) => updateLine(idx, { quantity: Number(e.target.value) })}
-                  className="h-8 rounded-md text-sm"
-                />
+                <Input type="number" value={line.quantity} onChange={(e) => updateLine(idx, { quantity: Number(e.target.value) })} className="h-8 rounded-md text-sm" />
               </div>
               <div className="sm:col-span-2">
                 <Label className="text-xs">Unit</Label>
-                <Input
-                  value={line.unitCode ?? ''}
-                  onChange={(e) => updateLine(idx, { unitCode: e.target.value })}
-                  className="h-8 rounded-md text-sm"
-                  placeholder="C62"
-                />
+                <Input value={line.unitCode ?? ''} onChange={(e) => updateLine(idx, { unitCode: e.target.value })} className="h-8 rounded-md text-sm" placeholder="C62" />
               </div>
               <div className="flex items-end sm:col-span-1">
                 <Button
