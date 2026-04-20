@@ -45,6 +45,36 @@ export type ChatMessage = { role: 'user' | 'assistant'; content: string }
 /** Whitelisted app routes from the chat API — safe to pass to the router. */
 export type ChatNavSuggestion = { to: string; label: string }
 
+const ALLOWED_NAV_PATHS = new Set([
+  '/dashboard',
+  '/invoice-studio',
+  '/orders',
+  '/orders/create',
+  '/despatch',
+  '/invoices',
+  '/generate',
+  '/validate',
+  '/account',
+  '/settings',
+  '/support',
+  '/privacy',
+  '/terms',
+])
+
+function sanitizeNavSuggestions(items: ChatNavSuggestion[], max = 3): ChatNavSuggestion[] {
+  const out: ChatNavSuggestion[] = []
+  const seen = new Set<string>()
+  for (const item of items) {
+    if (!item || typeof item.to !== 'string' || typeof item.label !== 'string') continue
+    const to = item.to.trim()
+    if (!ALLOWED_NAV_PATHS.has(to) || seen.has(to)) continue
+    seen.add(to)
+    out.push({ to, label: item.label.trim().slice(0, 60) || 'Open page' })
+    if (out.length >= max) break
+  }
+  return out
+}
+
 export async function streamChat(
   messages: ChatMessage[],
   onChunk: (text: string) => void,
@@ -102,7 +132,10 @@ export async function streamChat(
           }
           if (parsed.text) onChunk(parsed.text)
           if (parsed.navigation?.length && onNavigation) {
-            onNavigation(parsed.navigation)
+            const safeNavigation = sanitizeNavSuggestions(parsed.navigation)
+            if (safeNavigation.length > 0) {
+              onNavigation(safeNavigation)
+            }
           }
           if (parsed.done) {
             onDone()

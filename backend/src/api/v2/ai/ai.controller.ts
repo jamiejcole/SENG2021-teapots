@@ -4,6 +4,19 @@ import { asyncHandler } from "../../../utils/asyncHandler";
 import { HttpError } from "../../../errors/HttpError";
 import { extractDocumentFields, streamChatCompletion } from "./ai.service";
 
+const MAX_CHAT_MESSAGES = 20;
+const MAX_MESSAGE_CHARS = 4000;
+const MAX_TOTAL_CHAT_CHARS = 20000;
+
+type IncomingChatMessage = { role: string; content: string };
+
+function sanitizeChatText(input: string): string {
+    return input
+        .replace(/\u0000/g, "")
+        .replace(/\r/g, "")
+        .trim();
+}
+
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -49,7 +62,7 @@ export const chat = asyncHandler(async (req: Request, res: Response) => {
     if (!userId) throw new HttpError(401, "Authentication required");
 
     const { messages } = req.body as {
-        messages?: Array<{ role: string; content: string }>;
+        messages?: IncomingChatMessage[];
     };
 
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -59,10 +72,24 @@ export const chat = asyncHandler(async (req: Request, res: Response) => {
     const validRoles = new Set(["user", "assistant"]);
     const cleaned = messages
         .filter((m) => validRoles.has(m.role) && typeof m.content === "string")
-        .slice(-20) as Array<{ role: "user" | "assistant"; content: string }>;
+        .slice(-MAX_CHAT_MESSAGES)
+        .map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: sanitizeChatText(m.content).slice(0, MAX_MESSAGE_CHARS),
+        }))
+        .filter((m) => m.content.length > 0);
 
     if (cleaned.length === 0) {
         throw new HttpError(400, "No valid messages found.");
+    }
+
+    const totalChars = cleaned.reduce((sum, m) => sum + m.content.length, 0);
+    if (totalChars > MAX_TOTAL_CHAT_CHARS) {
+        throw new HttpError(400, "Message history is too large.");
+    }
+
+    if (cleaned[cleaned.length - 1]?.role !== "user") {
+        throw new HttpError(400, "The final message must be from the user.");
     }
 
     const userName = req.user?.email ?? "User";
