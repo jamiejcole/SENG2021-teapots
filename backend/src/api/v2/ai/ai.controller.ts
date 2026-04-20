@@ -12,7 +12,7 @@ type IncomingChatMessage = { role: string; content: string };
 
 function sanitizeChatText(input: string): string {
     return input
-        .replace(/\u0000/g, "")
+    .split("\0").join("")
         .replace(/\r/g, "")
         .trim();
 }

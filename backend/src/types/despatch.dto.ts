@@ -1,4 +1,4 @@
-import type { OrderAddressDto, OrderPartyDto } from "./order.dto";
+import type { OrderPartyDto } from "./order.dto";
 
 export type DespatchLineDto = {
     lineId: string;

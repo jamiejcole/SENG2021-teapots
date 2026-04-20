@@ -39,8 +39,9 @@ export const listOrders = asyncHandler(async (req: Request, res: Response) => {
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     const userId = requireUserId(req);
     const doc = await service.createOrderFromPayload(userId, req.body);
-    const { orderXml, ...rest } = doc as Record<string, unknown>;
-    res.status(201).json(rest);
+    const responseDoc = { ...(doc as Record<string, unknown>) };
+    delete responseDoc.orderXml;
+    res.status(201).json(responseDoc);
 });
 
 export const getOrder = asyncHandler(async (req: Request, res: Response) => {
