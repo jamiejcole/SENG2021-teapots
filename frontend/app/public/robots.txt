@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Block authenticated app surfaces from indexing.
+Disallow: /dashboard
+Disallow: /generate
+Disallow: /invoice-studio
+Disallow: /validate
+Disallow: /invoices
+Disallow: /orders
+Disallow: /despatch
+Disallow: /account
+Disallow: /settings
+
+Sitemap: https://teapotinvoicing.app/sitemap.xml
