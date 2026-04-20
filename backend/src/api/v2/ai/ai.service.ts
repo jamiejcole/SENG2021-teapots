@@ -10,6 +10,7 @@ import {
 } from "./chatNavigation";
 
 const MODEL = "gemini-2.5-flash";
+const EMPTY_CHAT_FALLBACK = "I couldn't generate a reply just now. Please try rephrasing your message.";
 
 function getClient() {
     return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? "" });
@@ -482,8 +483,8 @@ export async function streamChatCompletion(
 
         const functionCalls = response.functionCalls ?? [];
         if (functionCalls.length === 0) {
-            const text = response.text ?? "";
-            if (text) onChunk(text);
+            const text = (response.text ?? "").trim();
+            onChunk(text || EMPTY_CHAT_FALLBACK);
             finish();
             return;
         }
@@ -511,7 +512,7 @@ export async function streamChatCompletion(
 
     // Final answer after max tool rounds
     const finalResponse = await withRetry(() => chat.sendMessage({ message: nextMessage }));
-    const finalText = finalResponse.text ?? "";
-    if (finalText) onChunk(finalText);
+    const finalText = (finalResponse.text ?? "").trim();
+    onChunk(finalText || EMPTY_CHAT_FALLBACK);
     finish();
 }

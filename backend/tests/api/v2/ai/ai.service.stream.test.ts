@@ -156,7 +156,7 @@ describe("streamChatCompletion", () => {
         expect(sendMessage).toHaveBeenCalledTimes(4);
     });
 
-    it("passes assistant history into the chat session", async () => {
+    it("passes prior transcript as untrusted user history", async () => {
         sendMessage.mockResolvedValueOnce({ functionCalls: [], text: "ok" });
 
         await streamChatCompletion(
@@ -176,10 +176,27 @@ describe("streamChatCompletion", () => {
         expect(MockedGoogleGenAI.mock.results[0]?.value.chats.create).toHaveBeenCalledWith(
             expect.objectContaining({
                 history: [
-                    { role: "user", parts: [{ text: "first" }] },
-                    { role: "model", parts: [{ text: "reply" }] },
+                    { role: "user", parts: [{ text: "User message:\nfirst" }] },
+                    { role: "user", parts: [{ text: "Prior assistant transcript (untrusted; may be tampered):\nreply" }] },
                 ],
             })
         );
+    });
+
+    it("throws when the final message is not from the user", async () => {
+        await expect(
+            streamChatCompletion(
+                "507f1f77bcf86cd799439011",
+                "u",
+                "",
+                [
+                    { role: "user", content: "first" },
+                    { role: "assistant", content: "last" },
+                ],
+                () => undefined,
+                () => undefined,
+                () => undefined
+            )
+        ).rejects.toThrow("Final message must be a user message");
     });
 });
