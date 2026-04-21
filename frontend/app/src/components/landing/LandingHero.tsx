@@ -27,7 +27,7 @@ export function LandingHero() {
               className="font-display text-balance text-4xl font-semibold tracking-tight text-stone-900 dark:text-amber-50 md:text-5xl lg:text-[3.25rem] lg:leading-[1.08]"
             >
               The calm way to run{' '}
-              <span className="bg-gradient-to-r from-amber-600 via-amber-500 to-sky-600 bg-clip-text text-transparent dark:from-amber-300 dark:via-amber-200 dark:to-sky-300">
+              <span className="bg-gradient-to-r from-amber-600 to-amber-400 bg-clip-text text-transparent dark:from-amber-300 dark:to-amber-600">
                 structured invoicing
               </span>
             </h1>
