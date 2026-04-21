@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 
 # Block authenticated app surfaces from indexing.
+Disallow: /auth
 Disallow: /dashboard
 Disallow: /generate
 Disallow: /invoice-studio
