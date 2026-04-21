@@ -74,7 +74,7 @@
   }
 
   body {
-    @apply bg-amber-50/30 font-sans text-foreground antialiased dark:bg-slate-950;
+    @apply bg-stone-50 font-sans text-foreground antialiased dark:bg-slate-950;
     text-rendering: geometricPrecision;
   }
 }
@@ -155,6 +155,16 @@
   * {
     scroll-behavior: auto !important;
   }
+}
+
+/* Landing page: smooth anchor scrolling (respects reduced motion above) */
+.landing-root {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+.dark .landing-root {
+  color-scheme: dark;
 }
 
 /* ── Custom scrollbars (theme-aware) ── */

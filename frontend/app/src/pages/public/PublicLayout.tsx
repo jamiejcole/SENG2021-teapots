@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { teapotLogoUrl } from '@/brand/teapotLogo'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 export function PublicLayout() {
@@ -13,7 +14,7 @@ export function PublicLayout() {
           <div className="relative flex min-h-dvh flex-col justify-between p-12">
             <div>
               <div className="inline-flex items-center gap-3">
-                <img src="/logo.png" alt="Teapots" className="size-12 rounded-2xl object-contain" />
+                <img src={teapotLogoUrl} alt="Teapots Invoicing logo" className="size-12 object-contain" />
                 <div>
                   <div className="font-display text-xl font-semibold tracking-tight">Teapots Invoicing</div>
                   <div className="text-sm text-slate-500 dark:text-slate-400">Fintech-grade invoicing</div>

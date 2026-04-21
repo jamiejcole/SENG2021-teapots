@@ -23,6 +23,7 @@ import { PublicLayout } from '@/pages/public/PublicLayout'
 import { PrivacyPage } from '@/pages/public/PrivacyPage'
 import { SupportPage } from '@/pages/public/SupportPage'
 import { TermsPage } from '@/pages/public/TermsPage'
+import { LandingPage } from '@/pages/LandingPage'
 
 // Protected route wrapper
 function ProtectedRoute({ element }: { element: React.ReactNode }) {
@@ -49,8 +50,8 @@ export default function App() {
 
   return (
     <Routes>
-      {/* Root route - redirect based on auth status */}
-      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/auth/sign-in" replace />} />
+      {/* Marketing landing for guests; app users go straight to dashboard */}
+      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
 
       {/* Auth routes */}
       <Route path="/auth" element={<AuthLayout />}>
