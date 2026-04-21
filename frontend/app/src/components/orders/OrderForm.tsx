@@ -609,6 +609,7 @@ export function OrderForm({ payload, onChange }: { payload: CreateOrderPayload; 
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function defaultOrderPayload(): CreateOrderPayload {
   const today = new Date().toISOString().slice(0, 10)
   const addr = { street: '', city: '', postalCode: '', country: 'AU' }
@@ -625,6 +626,7 @@ export function defaultOrderPayload(): CreateOrderPayload {
 }
 
 /** Realistic demo payload for UBL / XSD validation (new order flow). */
+// eslint-disable-next-line react-refresh/only-export-components
 export function sampleOrderPayload(): CreateOrderPayload {
   const today = new Date().toISOString().slice(0, 10)
   const end = new Date()
@@ -695,6 +697,7 @@ export function sampleOrderPayload(): CreateOrderPayload {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function orderSummaryToPayload(row: StoredOrderSummary): CreateOrderPayload {
   return {
     orderId: row.orderId,

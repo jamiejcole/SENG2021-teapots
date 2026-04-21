@@ -93,6 +93,7 @@ export function Select({
   }, [open, searchable])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHighlighted((h) => {
       if (filtered.length === 0) return 0
       return Math.min(h, filtered.length - 1)
@@ -102,6 +103,7 @@ export function Select({
   useEffect(() => {
     if (!open) return
     const idx = filtered.findIndex((o) => o.value === value)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (idx >= 0) setHighlighted(idx)
   }, [open, filtered, value])
 
@@ -109,6 +111,10 @@ export function Select({
     const el = optionRefs.current[highlighted]
     el?.scrollIntoView({ block: 'nearest' })
   }, [highlighted, open])
+
+  useEffect(() => {
+    optionRefs.current = []
+  }, [open, filtered])
 
   const selectIndex = (i: number) => {
     const opt = filtered[i]
@@ -189,8 +195,6 @@ export function Select({
 
   const displayLabel = selected ? selected.label : placeholder
   const displaySecondary = selected?.secondary
-
-  optionRefs.current = []
 
   return (
     <div ref={rootRef} className={cn('relative w-full', className)}>

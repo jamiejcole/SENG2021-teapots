@@ -82,6 +82,7 @@ function PartyFields({
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function defaultDespatchPayload(): CreateDespatchPayload {
   const today = new Date().toISOString().slice(0, 10)
   return {
@@ -98,6 +99,7 @@ export function defaultDespatchPayload(): CreateDespatchPayload {
 }
 
 /** Map a stored order into despatch parties/lines (seller → supplier, buyer/delivery → consignee). */
+// eslint-disable-next-line react-refresh/only-export-components
 export function despatchPayloadFromOrder(order: {
   orderId: string
   buyer: OrderPartyDto
