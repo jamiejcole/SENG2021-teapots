@@ -13,6 +13,7 @@ export function InvoiceSearchProvider({ children }: { children: ReactNode }) {
   return <InvoiceSearchContext.Provider value={value}>{children}</InvoiceSearchContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useInvoiceSearch() {
   const ctx = useContext(InvoiceSearchContext)
   if (!ctx) {

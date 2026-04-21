@@ -110,6 +110,10 @@ export function Select({
     el?.scrollIntoView({ block: 'nearest' })
   }, [highlighted, open])
 
+  useEffect(() => {
+    optionRefs.current = []
+  }, [open, filtered])
+
   const selectIndex = (i: number) => {
     const opt = filtered[i]
     if (!opt) return
@@ -189,8 +193,6 @@ export function Select({
 
   const displayLabel = selected ? selected.label : placeholder
   const displaySecondary = selected?.secondary
-
-  optionRefs.current = []
 
   return (
     <div ref={rootRef} className={cn('relative w-full', className)}>
