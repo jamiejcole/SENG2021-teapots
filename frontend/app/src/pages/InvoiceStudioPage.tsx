@@ -262,6 +262,9 @@ export function InvoiceStudioPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" className="rounded-full border-amber-300 bg-background/70">
+              <Link to="/generate">Use existing invoice flow</Link>
+            </Button>
             <Button className="rounded-full bg-amber-400 font-semibold text-slate-900 hover:bg-amber-500" onClick={() => setDraft(sampleStudioDraft())}>
               <Sparkles className="size-4" />
               Load sample job
