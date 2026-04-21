@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { teapotLogoUrl } from '@/brand/teapotLogo'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useInvoiceSearch } from '@/context/InvoiceSearchContext'
@@ -53,7 +54,7 @@ export function TopNav({ onOpenMobileNav }: TopNavProps) {
           >
             <Menu className="size-4" />
           </Button>
-          <img src="/logo.png" alt="Teapots" className="size-8 rounded-lg object-contain" />
+          <img src={teapotLogoUrl} alt="Teapots Invoicing logo" className="size-8 object-contain" />
         </div>
 
         <div className="relative min-w-0 flex-1">

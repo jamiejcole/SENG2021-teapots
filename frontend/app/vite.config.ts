@@ -14,6 +14,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(path.dirname(fileURLToPath(import.meta.url)), './src'),
+      '@media': path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../media'),
     },
   },
 })

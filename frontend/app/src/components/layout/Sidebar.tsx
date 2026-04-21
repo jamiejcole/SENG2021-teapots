@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { teapotLogoUrl } from '@/brand/teapotLogo'
 import { cn } from '@/lib/utils'
 import { primaryNav, publicNav, secondaryNav } from '@/components/layout/nav'
 import { Badge } from '@/components/ui/badge'
@@ -66,14 +67,14 @@ export function Sidebar({ variant = 'full', onNavigate }: SidebarProps) {
         <div className={cn('flex items-center gap-3', compact ? 'justify-center' : 'justify-between')}>
           {!compact && (
             <div className="flex items-center gap-3">
-              <img src={"/logo.png"} alt="Teapots" className="size-9 rounded-lg object-contain" />
+              <img src={teapotLogoUrl} alt="Teapots Invoicing logo" className="size-9 object-contain" />
               <div>
                 <div className="font-display text-lg leading-none tracking-tight">Teapots</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">Admin dashboard</div>
               </div>
             </div>
           )}
-          {compact && <img src={"/logo.png"} alt="Teapots" className="size-8 rounded-lg object-contain" />}
+          {compact && <img src={teapotLogoUrl} alt="Teapots Invoicing logo" className="size-8 object-contain" />}
           <Badge
             variant="secondary"
             className={cn('rounded-full bg-amber-100 text-[11px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-200', compact && 'px-2')}
