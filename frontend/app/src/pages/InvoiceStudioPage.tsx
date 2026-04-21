@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, BriefcaseBusiness, CalendarDays, CloudMoon, CloudSun, Plus, Sparkles, Trash2 } from 'lucide-react'
+import {
+  BriefcaseBusiness,
+  CalendarDays,
+  CloudMoon,
+  CloudSun,
+  Download,
+  Loader2,
+  Mail,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,77 +22,27 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/components/auth/AuthContext'
 import { ApiError } from '@/api/client'
-import { previewStudioInvoice, type InvoiceStudioPreviewDraft } from '@/api/invoices'
+import {
+  buildStudioOrderPayload,
+  createInvoice,
+  createInvoicePdf,
+  previewInvoiceXml,
+  previewStudioInvoice,
+  sendInvoiceEmail,
+} from '@/api/invoices'
 import { toast } from '@/lib/toast'
-import { DocumentUploader } from '@/components/ai/DocumentUploader'
-import type { ExtractedFields } from '@/api/ai'
+import { makeLineItem, sampleStudioDraft, studioDraftToPreviewPayload, type StudioDraft, type StudioLineItem } from '@/lib/invoiceStudio'
+import { downloadBlob } from '@/lib/download'
+import { cn } from '@/lib/utils'
 
-type StudioLineItem = {
-  id: string
-  name: string
-  details: string
-  quantity: number
-  rate: number
-}
-
-type StudioDraft = {
-  businessName: string
-  businessPhone: string
-  businessEmail: string
-  businessAddress: string
-  customerName: string
-  customerPhone: string
-  customerEmail: string
-  customerAddress: string
-  invoiceNumber: string
-  issueDate: string
-  dueDate: string
-  jobSummary: string
-  notes: string
-  paymentNotes: string
-  extraNotes: string
-  accountName: string
-  accountNumber: string
-  bsb: string
-  taxRate: number
-  lineItems: StudioLineItem[]
-}
-
-function makeLineItem(id: string, name: string, details: string, quantity: number, rate: number): StudioLineItem {
-  return { id, name, details, quantity, rate }
-}
-
-function sampleDraft(): StudioDraft {
-  const today = new Date().toISOString().slice(0, 10)
-  return {
-    businessName: 'Northside Handyman Co.',
-    businessPhone: '0400 123 456',
-    businessEmail: 'hello@northsidehandyman.co',
-    businessAddress: '14 Workshop Lane, Newcastle NSW 2300',
-    customerName: 'John Doe',
-    customerPhone: '+61 400 000 000',
-    customerEmail: 'johndoe@example.com',
-    customerAddress: '12 Station Street, Newcastle NSW 2300',
-    invoiceNumber: 'STUDIO-1001',
-    issueDate: today,
-    dueDate: '',
-    jobSummary: 'Fix loose gate latch, replace one damaged hinge, and do a quick tidy-up.',
-    notes: 'Thanks for supporting a local sole trader.',
-    paymentNotes: 'Pay by bank transfer within 7 days.',
-    extraNotes: 'Please call before arrival.',
-    accountName: 'Northside Handyman Co.',
-    accountNumber: '12345678',
-    bsb: '123-456',
-    taxRate: 0.1,
-    lineItems: [
-      makeLineItem('1', 'Call-out fee', 'Initial visit and diagnosis', 1, 85),
-      makeLineItem('2', 'Labour', '1.5 hours on site', 1.5, 72),
-      makeLineItem('3', 'Parts', 'Hinge and fixings', 1, 28.5),
-    ],
-  }
-}
-
-function buildBusinessDraftFromUser(user: { email: string; firstName?: string; lastName?: string; phone?: string | null; company?: string | null; businessAddress?: string | null } | null) {
+function buildBusinessDraftFromUser(user: {
+  email: string
+  firstName?: string
+  lastName?: string
+  phone?: string | null
+  company?: string | null
+  businessAddress?: string | null
+} | null) {
   return {
     ...(user?.company?.trim() ? { businessName: user.company.trim() } : {}),
     ...(user?.company?.trim() ? { accountName: user.company.trim() } : {}),
@@ -90,50 +52,6 @@ function buildBusinessDraftFromUser(user: { email: string; firstName?: string; l
   }
 }
 
-function formatAddress(addr?: { street?: string; city?: string; postalCode?: string; country?: string }): string {
-  if (!addr) return ''
-  return [addr.street, addr.city, addr.postalCode, addr.country].filter(Boolean).join(', ')
-}
-
-function applyExtractedToStudio(draft: StudioDraft, fields: ExtractedFields): StudioDraft {
-  const next = { ...draft }
-
-  // Seller → business details
-  if (fields.seller?.name) next.businessName = fields.seller.name
-  if (fields.seller?.address) {
-    const addr = formatAddress(fields.seller.address)
-    if (addr) next.businessAddress = addr
-  }
-
-  // Buyer → customer details
-  if (fields.buyer?.name) next.customerName = fields.buyer.name
-  if (fields.buyer?.address) {
-    const addr = formatAddress(fields.buyer.address)
-    if (addr) next.customerAddress = addr
-  }
-
-  // Dates & invoice ref
-  if (fields.issueDate) next.issueDate = fields.issueDate
-  if (fields.orderReference) next.invoiceNumber = fields.orderReference
-
-  // Tax rate from first line item (if present)
-  const firstTax = fields.lines?.find((l) => l.taxRate != null && l.taxRate > 0)?.taxRate
-  if (firstTax != null) next.taxRate = firstTax
-
-  // Line items
-  if (fields.lines && fields.lines.length > 0) {
-    next.lineItems = fields.lines.map((l, i) => ({
-      id: String(Date.now() + i),
-      name: l.description ?? `Item ${i + 1}`,
-      details: '',
-      quantity: l.quantity ?? 1,
-      rate: l.unitPrice ?? 0,
-    }))
-  }
-
-  return next
-}
-
 function themePanelClass(theme: 'light' | 'dark') {
   return theme === 'dark'
     ? 'rounded-[34px] border border-slate-800 bg-slate-950 p-3 shadow-2xl shadow-black/30'
@@ -141,9 +59,7 @@ function themePanelClass(theme: 'light' | 'dark') {
 }
 
 function themeInnerClass(theme: 'light' | 'dark') {
-  return theme === 'dark'
-    ? 'rounded-[28px] bg-slate-900/70'
-    : 'rounded-[28px]'
+  return theme === 'dark' ? 'rounded-[28px] bg-slate-900/70' : 'rounded-[28px]'
 }
 
 function previewShellClass(theme: 'light' | 'dark') {
@@ -154,11 +70,19 @@ function previewShellClass(theme: 'light' | 'dark') {
 
 export function InvoiceStudioPage() {
   const { user } = useAuth()
-  const [draft, setDraft] = useState<StudioDraft>(sampleDraft)
+  const [draft, setDraft] = useState<StudioDraft>(sampleStudioDraft)
   const [previewTheme, setPreviewTheme] = useState<'light' | 'dark'>('light')
   const [previewHtml, setPreviewHtml] = useState('')
   const [previewLoading, setPreviewLoading] = useState(true)
   const [previewError, setPreviewError] = useState<string | null>(null)
+
+  const [emailTo, setEmailTo] = useState('')
+  const [generatedXml, setGeneratedXml] = useState<string | null>(null)
+  const [storedInvoiceId, setStoredInvoiceId] = useState<string | null>(null)
+
+  const [isSaving, setIsSaving] = useState(false)
+  const [isPdfLoading, setIsPdfLoading] = useState(false)
+  const [isEmailSending, setIsEmailSending] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -197,6 +121,93 @@ export function InvoiceStudioPage() {
     }))
   }
 
+  const formReadyForInvoice =
+    Boolean(draft.businessName?.trim()) &&
+    Boolean(draft.customerName?.trim()) &&
+    Boolean(draft.invoiceNumber?.trim()) &&
+    draft.lineItems.length > 0
+
+  const canSaveToAccount = !isSaving && formReadyForInvoice
+
+  async function onSaveToAccount() {
+    setIsSaving(true)
+    setGeneratedXml(null)
+    setStoredInvoiceId(null)
+    try {
+      const base = studioDraftToPreviewPayload(draft)
+      const { orderXml, invoiceSupplement } = await buildStudioOrderPayload(base)
+      const { invoiceXml: xml, storedInvoiceId: sid } = await createInvoice(orderXml, invoiceSupplement)
+      setGeneratedXml(xml)
+      setStoredInvoiceId(sid)
+      toast.success('Invoice saved', {
+        description: sid ? 'Stored in your account.' : 'Invoice XML created.',
+      })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Save failed'
+      toast.error('Save failed', { description: msg })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function onDownloadPdf() {
+    if (!formReadyForInvoice) return
+    setIsPdfLoading(true)
+    try {
+      let xml = generatedXml?.trim()
+      if (!xml) {
+        const base = studioDraftToPreviewPayload(draft)
+        const { orderXml, invoiceSupplement } = await buildStudioOrderPayload(base)
+        const pre = await previewInvoiceXml(orderXml, invoiceSupplement)
+        xml = pre.invoiceXml
+      }
+      const pdf = await createInvoicePdf(xml)
+      downloadBlob('invoice.pdf', pdf)
+      toast.success('PDF downloaded')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to create PDF'
+      toast.error('PDF failed', { description: msg })
+    } finally {
+      setIsPdfLoading(false)
+    }
+  }
+
+  async function onEmail() {
+    const to = emailTo.trim()
+    if (!to) {
+      toast.error('Enter an email address')
+      return
+    }
+    if (!formReadyForInvoice) {
+      toast.error('Add business name, customer, invoice number, and at least one line item.')
+      return
+    }
+
+    setIsEmailSending(true)
+    try {
+      let xml = generatedXml?.trim() ?? null
+      let sid = storedInvoiceId
+
+      if (!xml) {
+        const base = studioDraftToPreviewPayload(draft)
+        const { orderXml, invoiceSupplement } = await buildStudioOrderPayload(base)
+        const created = await createInvoice(orderXml, invoiceSupplement)
+        xml = created.invoiceXml
+        sid = created.storedInvoiceId
+        setGeneratedXml(xml)
+        setStoredInvoiceId(sid)
+      }
+
+      const result = await sendInvoiceEmail(xml, to, sid)
+      toast.success('Invoice email sent', { description: `Sent to ${result.to}` })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to send invoice email'
+      toast.error('Email send failed', { description: msg })
+    } finally {
+      setIsEmailSending(false)
+    }
+  }
+
   useEffect(() => {
     let cancelled = false
     const timeout = window.setTimeout(() => {
@@ -205,10 +216,7 @@ export function InvoiceStudioPage() {
         setPreviewError(null)
 
         try {
-          const html = await previewStudioInvoice({
-            ...(draft as InvoiceStudioPreviewDraft),
-            theme: previewTheme,
-          })
+          const html = await previewStudioInvoice(studioDraftToPreviewPayload(draft, previewTheme))
           if (!cancelled) {
             setPreviewHtml(html)
           }
@@ -249,15 +257,12 @@ export function InvoiceStudioPage() {
               Build an invoice like you would on-site.
             </h1>
             <p className="max-w-4xl text-sm text-muted-foreground sm:text-base">
-              No messing around with UBL XML. Focused on sole traders; instant live preview for real-time invoice creation.
+              Live preview with the same generation and delivery pipeline as Generate — drafts saved in this browser.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" className="rounded-full border-amber-300 bg-background/70">
-              <Link to="/generate">Use existing invoice flow</Link>
-            </Button>
-            <Button className="rounded-full bg-amber-400 font-semibold text-slate-900 hover:bg-amber-500" onClick={() => setDraft(sampleDraft())}>
+            <Button className="rounded-full bg-amber-400 font-semibold text-slate-900 hover:bg-amber-500" onClick={() => setDraft(sampleStudioDraft())}>
               <Sparkles className="size-4" />
               Load sample job
             </Button>
@@ -267,10 +272,6 @@ export function InvoiceStudioPage() {
 
       <div className="grid min-h-[calc(100dvh-18rem)] gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="space-y-6 lg:sticky lg:top-24 lg:h-[calc(100dvh-9rem)] lg:overflow-y-auto lg:pr-1">
-          <DocumentUploader
-            onExtracted={(fields) => setDraft((current) => applyExtractedToStudio(current, fields))}
-          />
-
           <Card className="border-amber-200/60 bg-gradient-to-br from-white to-amber-50/30 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20">
             <CardHeader>
               <CardTitle className="inline-flex items-center gap-2 text-base">
@@ -416,6 +417,16 @@ export function InvoiceStudioPage() {
                 <Label htmlFor="extraNotes">Extra notes</Label>
                 <Textarea id="extraNotes" value={draft.extraNotes} onChange={(e) => updateDraft('extraNotes', e.target.value)} className="min-h-20 rounded-xl resize-y" />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="notes">Order / internal notes</Label>
+                <Textarea
+                  id="notes"
+                  value={draft.notes}
+                  onChange={(e) => updateDraft('notes', e.target.value)}
+                  className="min-h-16 rounded-xl resize-y"
+                  placeholder="Included on the UBL order when saving"
+                />
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -424,39 +435,125 @@ export function InvoiceStudioPage() {
           <div className={themePanelClass(previewTheme)}>
             <div className={themeInnerClass(previewTheme)}>
               <div className={previewShellClass(previewTheme)}>
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-3 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="previewTheme" className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                      Viewer
-                    </Label>
-                    <div className="inline-flex items-center rounded-full border border-border/70 bg-background p-1 shadow-sm">
-                      <button
+                <div className="flex flex-col gap-2 border-b border-border/60 px-2 pb-2 pt-1.5 sm:px-3 sm:pb-2.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-between">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <Label htmlFor="previewTheme" className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        Viewer
+                      </Label>
+                      <div className="inline-flex items-center rounded-full border border-border/70 bg-background p-1 shadow-sm">
+                        <button
+                          type="button"
+                          id="previewTheme"
+                          className={
+                            previewTheme === 'light'
+                              ? 'inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-900'
+                              : 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground'
+                          }
+                          onClick={() => setPreviewTheme('light')}
+                        >
+                          <CloudSun className="size-3.5" />
+                          Light
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            previewTheme === 'dark'
+                              ? 'inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white'
+                              : 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground'
+                          }
+                          onClick={() => setPreviewTheme('dark')}
+                        >
+                          <CloudMoon className="size-3.5" />
+                          Dark
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-1.5 sm:ml-auto sm:w-auto sm:max-w-[min(100%,28rem)] sm:justify-end sm:pl-2">
+                      <Button
                         type="button"
-                        id="previewTheme"
-                        className={
-                          previewTheme === 'light'
-                            ? 'inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-3 py-1.5 text-xs font-semibold text-slate-900'
-                            : 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground'
-                        }
-                        onClick={() => setPreviewTheme('light')}
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:bg-amber-100/80 hover:text-foreground dark:hover:bg-slate-800"
+                        disabled={!canSaveToAccount}
+                        title="Save invoice"
+                        aria-label="Save invoice"
+                        onClick={() => void onSaveToAccount()}
                       >
-                        <CloudSun className="size-3.5" />
-                        Light
-                      </button>
-                      <button
+                        {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                      </Button>
+                      <Button
                         type="button"
-                        className={
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:bg-amber-100/80 hover:text-foreground dark:hover:bg-slate-800"
+                        disabled={!formReadyForInvoice || isPdfLoading}
+                        title={!formReadyForInvoice ? 'Add required fields to build a PDF.' : 'Download PDF'}
+                        aria-label="Download PDF"
+                        onClick={() => void onDownloadPdf()}
+                      >
+                        {isPdfLoading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                      </Button>
+                      <div
+                        className={cn(
+                          'ml-0.5 flex h-9 min-w-0 flex-1 items-center gap-0 overflow-hidden rounded-full border pl-3 pr-1 sm:min-w-[13rem] sm:flex-initial sm:max-w-[16rem]',
                           previewTheme === 'dark'
-                            ? 'inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white'
-                            : 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground'
-                        }
-                        onClick={() => setPreviewTheme('dark')}
+                            ? 'border-slate-600/55 bg-slate-900/95'
+                            : 'border-border/70 bg-muted/50 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/40',
+                        )}
                       >
-                        <CloudMoon className="size-3.5" />
-                        Dark
-                      </button>
+                        <Label htmlFor="studio-email-to" className="sr-only">
+                          Email invoice
+                        </Label>
+                        <input
+                          id="studio-email-to"
+                          type="email"
+                          name="studio-email-to"
+                          autoComplete="email"
+                          placeholder="Send via email"
+                          value={emailTo}
+                          onChange={(e) => setEmailTo(e.target.value)}
+                          className={cn(
+                            'min-h-0 min-w-0 flex-1 border-0 bg-transparent py-0 pl-0 pr-2 text-xs shadow-none outline-none ring-0 ring-offset-0',
+                            'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0',
+                            'placeholder:text-muted-foreground',
+                            previewTheme === 'dark' &&
+                              'text-slate-100 placeholder:text-slate-500 [&:-webkit-autofill]:[-webkit-text-fill-color:rgb(241_245_249)] [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_rgb(15_23_42)]',
+                          )}
+                        />
+                        <button
+                          type="button"
+                          className={cn(
+                            'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
+                            'disabled:pointer-events-none disabled:opacity-40',
+                            previewTheme === 'dark'
+                              ? 'text-slate-400 hover:bg-white/10 hover:text-slate-50'
+                              : 'text-muted-foreground hover:bg-amber-100/80 hover:text-foreground',
+                          )}
+                          disabled={!formReadyForInvoice || isEmailSending || isSaving || !emailTo.trim()}
+                          title={
+                            !emailTo.trim()
+                              ? 'Enter a recipient email'
+                              : !formReadyForInvoice
+                                ? 'Add required invoice fields first'
+                                : 'Saves the invoice if needed, then sends email'
+                          }
+                          aria-label="Send invoice by email"
+                          onClick={() => void onEmail()}
+                        >
+                          {isEmailSending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
+                  {storedInvoiceId && (
+                    <p className="text-[11px] leading-snug text-muted-foreground sm:text-xs">
+                      Stored invoice:{' '}
+                      <Link className="font-medium text-amber-700 underline dark:text-amber-400" to={`/invoices/${storedInvoiceId}`}>
+                        open detail
+                      </Link>
+                    </p>
+                  )}
                 </div>
 
                 <div className={previewTheme === 'dark' ? 'bg-slate-900 p-3 sm:p-4' : 'bg-slate-100 p-3 sm:p-4'}>
@@ -473,17 +570,9 @@ export function InvoiceStudioPage() {
               </div>
             </div>
           </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="outline" className="rounded-full border-amber-300" asChild>
-              <Link to="/generate">
-                Continue to invoice generation
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-          </div>
         </div>
       </div>
+
     </div>
-    )
-  }
+  )
+}

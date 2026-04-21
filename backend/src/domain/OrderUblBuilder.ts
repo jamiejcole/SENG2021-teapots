@@ -176,3 +176,76 @@ function serializeOrderXml(payload: CreateOrderPayload, orderLines: any[], calc:
 
     return ob.end({ prettyPrint: true });
 }
+
+/**
+ * Serialize {@link OrderData} built for the invoice pipeline (e.g. Invoice Studio)
+ * into UBL Order XML using the same layout as {@link buildOrderFromPayload}.
+ */
+export function serializeOrderDataToOrderXml(
+    orderData: OrderData,
+    orderLines: any[],
+    currency: string,
+    calc: InvoiceCalculator,
+): string {
+    const cur = currency.trim().toUpperCase();
+    const ob = create({ version: "1.0", encoding: "UTF-8" }).ele("Order", UBL_ORDER_NS);
+
+    const id =
+        typeof orderData.ID === "object" && orderData.ID && "value" in orderData.ID
+            ? String((orderData.ID as { value: string }).value)
+            : String(orderData.ID ?? "");
+    const issueDate =
+        typeof orderData.IssueDate === "object" && orderData.IssueDate && "value" in orderData.IssueDate
+            ? String((orderData.IssueDate as { value: string }).value)
+            : String(orderData.IssueDate ?? "");
+
+    ob.ele("cbc:UBLVersionID").txt("2.1").up();
+    ob.ele("cbc:CustomizationID").txt(ORDER_CUSTOMIZATION_ID).up();
+    ob.ele("cbc:ProfileID").txt(ORDER_PROFILE_ID).up();
+    ob.ele("cbc:ID").txt(id.trim()).up();
+    ob.ele("cbc:IssueDate").txt(issueDate.trim()).up();
+    if (
+        orderData.Note &&
+        typeof orderData.Note === "object" &&
+        "value" in (orderData.Note as object) &&
+        String((orderData.Note as { value: string }).value).trim()
+    ) {
+        ob.ele("cbc:Note").txt(String((orderData.Note as { value: string }).value).trim()).up();
+    }
+    ob.ele("cbc:DocumentCurrencyCode").txt(cur).up();
+
+    const buyer = ob.ele("cac:BuyerCustomerParty");
+    mapParty(buyer, orderData.BuyerCustomerParty.Party as any);
+    buyer.up();
+
+    const seller = ob.ele("cac:SellerSupplierParty");
+    mapParty(seller, orderData.SellerSupplierParty.Party as any);
+    seller.up();
+
+    const amt = ob.ele("cac:AnticipatedMonetaryTotal");
+    amt.ele("cbc:LineExtensionAmount", { currencyID: cur }).txt(calc.summary.lineExtensionTotal).up();
+    amt.ele("cbc:PayableAmount", { currencyID: cur }).txt(calc.summary.payableAmount).up();
+    amt.up();
+
+    const lines = Array.isArray(orderLines) ? orderLines : [orderLines];
+    for (const ol of lines) {
+        const lineEl = ob.ele("cac:OrderLine");
+        const li = lineEl.ele("cac:LineItem");
+        const item = ol.LineItem;
+        li.ele("cbc:ID").txt(String(item.ID?.value ?? item.ID)).up();
+        li.ele("cbc:Quantity", { unitCode: item.Quantity["@unitCode"] || "C62" }).txt(String(item.Quantity.value)).up();
+        li.ele("cbc:LineExtensionAmount", { currencyID: cur }).txt(item.LineExtensionAmount.value).up();
+        li.ele("cbc:TotalTaxAmount", { currencyID: cur }).txt(item.TotalTaxAmount.value).up();
+        const price = li.ele("cac:Price");
+        price.ele("cbc:PriceAmount", { currencyID: cur }).txt(item.Price.PriceAmount.value).up();
+        price.up();
+        const it = li.ele("cac:Item");
+        it.ele("cbc:Description").txt(item.Item.Description?.value ?? item.Item.Name?.value ?? "").up();
+        it.ele("cbc:Name").txt(item.Item.Name?.value ?? "").up();
+        it.up();
+        li.up();
+        lineEl.up();
+    }
+
+    return ob.end({ prettyPrint: true });
+}

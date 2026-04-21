@@ -3,6 +3,7 @@ import { OrderData } from '../../../types/order.types';
 import { mapElementToJson } from '../../../utils/jsonUblTransformer';
 import { InvoiceSupplement } from '../../../types/invoice.types';
 import { InvoiceBuilder } from '../../../domain/InvoiceBuilder';
+import { serializeOrderDataToOrderXml } from '../../../domain/OrderUblBuilder';
 import mongoose from 'mongoose';
 import { InvoiceModel } from '../../../models/invoice.model';
 import { OrderModel } from '../../../models/order.model';
@@ -92,10 +93,11 @@ function parseAddress(address: string) {
         CityName: city,
         PostalZone: postalCode,
         CountrySubentity: 'Australia',
+        Country: { IdentificationCode: 'AU' },
     };
 }
 
-function buildStudioOrderData(draft: StudioPreviewDraft): OrderData {
+export function buildStudioOrderAssembly(draft: StudioPreviewDraft) {
     const rawLines = draft.lineItems.map((lineItem, index) => ({
         LineItem: {
             ID: { value: String(lineItem.id || index + 1) },
@@ -127,14 +129,20 @@ function buildStudioOrderData(draft: StudioPreviewDraft): OrderData {
                     value: totals.lineExtensionAmount,
                     '@currencyID': 'AUD',
                 },
+                TotalTaxAmount: {
+                    value: totals.lineTaxAmount,
+                    '@currencyID': 'AUD',
+                },
             },
         };
     });
 
-    return {
+    const note = draft.notes?.trim();
+    const orderData: OrderData = {
         ID: { value: draft.invoiceNumber.trim() || `STUDIO-${Date.now()}` },
         IssueDate: { value: draft.issueDate.trim() },
         DocumentCurrencyCode: { value: 'AUD' },
+        ...(note ? { Note: { value: note } } : {}),
         BuyerCustomerParty: {
             Party: {
                 PartyName: { Name: draft.customerName.trim() || 'Customer' },
@@ -165,6 +173,12 @@ function buildStudioOrderData(draft: StudioPreviewDraft): OrderData {
         },
         OrderLine: lineItems.length === 1 ? lineItems[0] : lineItems,
     };
+
+    return { orderData, orderLines: lineItems, calculator };
+}
+
+function buildStudioOrderData(draft: StudioPreviewDraft): OrderData {
+    return buildStudioOrderAssembly(draft).orderData;
 }
 
 function buildStudioInvoiceSupplement(draft: StudioPreviewDraft): InvoiceSupplement {
@@ -187,6 +201,27 @@ function buildStudioInvoiceSupplement(draft: StudioPreviewDraft): InvoiceSupplem
             },
         },
         ...(paymentTermsNote ? { paymentTerms: { note: paymentTermsNote } } : {}),
+    };
+}
+
+/**
+ * UBL Order XML + supplement for {@link createInvoice} — same pipeline as /generate with pasted order XML.
+ */
+export function studioDraftToOrderXmlAndSupplement(draft: StudioPreviewDraft): {
+    orderXml: string;
+    invoiceSupplement: InvoiceSupplement;
+} {
+    const { orderData, orderLines, calculator } = buildStudioOrderAssembly(draft);
+    const cur =
+        typeof orderData.DocumentCurrencyCode === "object" &&
+        orderData.DocumentCurrencyCode &&
+        "value" in orderData.DocumentCurrencyCode
+            ? String((orderData.DocumentCurrencyCode as { value: string }).value)
+            : "AUD";
+    const orderXml = serializeOrderDataToOrderXml(orderData, orderLines, cur, calculator);
+    return {
+        orderXml,
+        invoiceSupplement: buildStudioInvoiceSupplement(draft),
     };
 }
 

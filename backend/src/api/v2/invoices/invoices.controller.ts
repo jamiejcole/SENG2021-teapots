@@ -66,73 +66,121 @@ export const previewInvoice = asyncHandler(async (req: Request, res: Response) =
     });
 });
 
-export const previewStudioInvoice = asyncHandler(async (req: Request, res: Response) => {
-    if (!req.body || typeof req.body !== 'object') {
+type StudioDraftRequest = {
+    businessName?: string;
+    businessPhone?: string;
+    businessEmail?: string;
+    businessAddress?: string;
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    customerAddress?: string;
+    invoiceNumber?: string;
+    issueDate?: string;
+    dueDate?: string;
+    jobSummary?: string;
+    notes?: string;
+    paymentNotes?: string;
+    extraNotes?: string;
+    accountName?: string;
+    accountNumber?: string;
+    bsb?: string;
+    taxRate?: number;
+    theme?: 'light' | 'dark';
+    lineItems?: Array<{ id?: string; name?: string; details?: string; quantity?: number; rate?: number }>;
+};
+
+/**
+ * Normalizes Invoice Studio JSON body for preview, UBL order serialization, and generation.
+ */
+function normalizeStudioDraftRequestBody(body: unknown): {
+    draft: {
+        businessName: string;
+        businessPhone: string;
+        businessEmail: string;
+        businessAddress: string;
+        customerName: string;
+        customerPhone: string;
+        customerEmail: string;
+        customerAddress: string;
+        invoiceNumber: string;
+        issueDate: string;
+        dueDate?: string;
+        jobSummary: string;
+        notes: string;
+        paymentNotes: string;
+        extraNotes: string;
+        accountName: string;
+        accountNumber: string;
+        bsb: string;
+        taxRate: number;
+        lineItems: Array<{ id: string; name: string; details: string; quantity: number; rate: number }>;
+    };
+    theme: 'light' | 'dark';
+} {
+    if (!body || typeof body !== 'object') {
         throw new HttpError(400, 'Request body must be a JSON object');
     }
 
-    const draft = req.body as {
-        businessName?: string;
-        businessPhone?: string;
-        businessEmail?: string;
-        businessAddress?: string;
-        customerName?: string;
-        customerPhone?: string;
-        customerEmail?: string;
-        customerAddress?: string;
-        invoiceNumber?: string;
-        issueDate?: string;
-        dueDate?: string;
-        jobSummary?: string;
-        notes?: string;
-        paymentNotes?: string;
-        extraNotes?: string;
-        accountName?: string;
-        accountNumber?: string;
-        bsb?: string;
-        taxRate?: number;
-        theme?: 'light' | 'dark';
-        lineItems?: Array<{ id?: string; name?: string; details?: string; quantity?: number; rate?: number }>;
-    };
+    const raw = body as StudioDraftRequest;
 
-    if (!draft.businessName?.trim() || !draft.customerName?.trim() || !draft.invoiceNumber?.trim()) {
+    if (!raw.businessName?.trim() || !raw.customerName?.trim() || !raw.invoiceNumber?.trim()) {
         throw new HttpError(400, 'Studio draft must include businessName, customerName, and invoiceNumber');
     }
 
-    if (!Array.isArray(draft.lineItems) || draft.lineItems.length === 0) {
+    if (!Array.isArray(raw.lineItems) || raw.lineItems.length === 0) {
         throw new HttpError(400, 'Studio draft must include at least one line item');
     }
 
-    const html = await service.buildStudioPreviewHtml({
-        businessName: draft.businessName,
-        businessPhone: draft.businessPhone ?? '',
-        businessEmail: draft.businessEmail ?? '',
-        businessAddress: draft.businessAddress ?? '',
-        customerName: draft.customerName,
-        customerPhone: draft.customerPhone ?? '',
-        customerEmail: draft.customerEmail ?? '',
-        customerAddress: draft.customerAddress ?? '',
-        invoiceNumber: draft.invoiceNumber,
-        issueDate: draft.issueDate ?? new Date().toISOString().slice(0, 10),
-        dueDate: draft.dueDate,
-        jobSummary: draft.jobSummary ?? '',
-        notes: draft.notes ?? '',
-        paymentNotes: draft.paymentNotes ?? '',
-        extraNotes: draft.extraNotes ?? '',
-        accountName: draft.accountName ?? draft.businessName,
-        accountNumber: draft.accountNumber ?? '',
-        bsb: draft.bsb ?? '',
-        taxRate: typeof draft.taxRate === 'number' && Number.isFinite(draft.taxRate) ? draft.taxRate : 0.1,
-        lineItems: draft.lineItems.map((lineItem, index) => ({
-            id: lineItem.id ?? String(index + 1),
-            name: lineItem.name ?? 'Item',
-            details: lineItem.details ?? lineItem.name ?? 'Item',
-            quantity: typeof lineItem.quantity === 'number' && Number.isFinite(lineItem.quantity) ? lineItem.quantity : 1,
-            rate: typeof lineItem.rate === 'number' && Number.isFinite(lineItem.rate) ? lineItem.rate : 0,
-        })),
-    }, draft.theme === 'dark' ? 'dark' : 'light');
+    return {
+        draft: {
+            businessName: raw.businessName,
+            businessPhone: raw.businessPhone ?? '',
+            businessEmail: raw.businessEmail ?? '',
+            businessAddress: raw.businessAddress ?? '',
+            customerName: raw.customerName,
+            customerPhone: raw.customerPhone ?? '',
+            customerEmail: raw.customerEmail ?? '',
+            customerAddress: raw.customerAddress ?? '',
+            invoiceNumber: raw.invoiceNumber,
+            issueDate: raw.issueDate ?? new Date().toISOString().slice(0, 10),
+            dueDate: raw.dueDate,
+            jobSummary: raw.jobSummary ?? '',
+            notes: raw.notes ?? '',
+            paymentNotes: raw.paymentNotes ?? '',
+            extraNotes: raw.extraNotes ?? '',
+            accountName: raw.accountName ?? raw.businessName,
+            accountNumber: raw.accountNumber ?? '',
+            bsb: raw.bsb ?? '',
+            taxRate: typeof raw.taxRate === 'number' && Number.isFinite(raw.taxRate) ? raw.taxRate : 0.1,
+            lineItems: raw.lineItems.map((lineItem, index) => ({
+                id: lineItem.id ?? String(index + 1),
+                name: lineItem.name ?? 'Item',
+                details: lineItem.details ?? lineItem.name ?? 'Item',
+                quantity: typeof lineItem.quantity === 'number' && Number.isFinite(lineItem.quantity) ? lineItem.quantity : 1,
+                rate: typeof lineItem.rate === 'number' && Number.isFinite(lineItem.rate) ? lineItem.rate : 0,
+            })),
+        },
+        theme: raw.theme === 'dark' ? 'dark' : 'light',
+    };
+}
+
+export const previewStudioInvoice = asyncHandler(async (req: Request, res: Response) => {
+    const { draft, theme } = normalizeStudioDraftRequestBody(req.body);
+
+    const html = await service.buildStudioPreviewHtml(draft, theme);
 
     res.status(200).contentType('text/html').send(html);
+});
+
+/**
+ * Build UBL Order XML + invoice supplement from an Invoice Studio draft (same inputs as studio-preview).
+ * Used with POST /invoices to generate — mirrors loading order XML from /orders then supplementing on /generate.
+ */
+export const studioBuildOrderPayload = asyncHandler(async (req: Request, res: Response) => {
+    const { draft } = normalizeStudioDraftRequestBody(req.body);
+    const payload = service.studioDraftToOrderXmlAndSupplement(draft);
+    res.status(200).json(payload);
 });
 
 export const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {

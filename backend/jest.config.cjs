@@ -4,6 +4,10 @@ module.exports = {
   roots: ['<rootDir>/tests'],
   testMatch: ['**/*.test.ts'],
   clearMocks: true,
+  /** Avoid native libxmljs2 xmljs.node ABI mismatches in CI; runtime still uses real libxml. */
+  moduleNameMapper: {
+    '^libxmljs2$': '<rootDir>/tests/libxmljs2-jest-shim.ts',
+  },
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/server.ts',
@@ -23,7 +27,7 @@ module.exports = {
     global: {
       statements: 90,
       lines: 90,
-      functions: 88,
+      functions: 90,
       branches: 72,
     },
   },
