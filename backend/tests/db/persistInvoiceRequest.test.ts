@@ -18,7 +18,10 @@ jest.mock('../../src/models/order.model', () => ({
 jest.mock('../../src/models/invoice.model', () => ({
   InvoiceModel: {
     findOne: jest.fn(),
-    create: jest.fn().mockResolvedValue({ _id: 'new-invoice-id' }),
+    create: jest.fn().mockResolvedValue({ _id: { toString: () => '507f191e810c19729de860ea' } }),
+    updateOne: jest.fn().mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ acknowledged: true }),
+    }),
   },
 }));
 
@@ -97,6 +100,9 @@ describe('persistInvoiceRequest', () => {
     (InvoiceModel.create as jest.Mock).mockResolvedValue({
       _id: { toString: () => '507f191e810c19729de860ea' },
     });
+    (InvoiceModel.updateOne as jest.Mock).mockReturnValue({
+      exec: jest.fn().mockResolvedValue({ acknowledged: true }),
+    });
   });
 
   it('creates order and invoice docs when hashes do not exist', async () => {
@@ -142,6 +148,26 @@ describe('persistInvoiceRequest', () => {
     expect(OrderModel.create).not.toHaveBeenCalled();
     expect(OrderModel.updateOne).not.toHaveBeenCalled();
     expect(InvoiceModel.create).not.toHaveBeenCalled();
+  });
+
+  it('updates same invoice row when authenticated user reuses the same business invoice ID (new XML)', async () => {
+    (InvoiceModel.findOne as jest.Mock).mockImplementation((query: Record<string, unknown>) => ({
+      exec: jest.fn().mockResolvedValue(
+        query.xmlSha256 != null ? null : { _id: { toString: () => 'existing-invoice-mongo-id' } },
+      ),
+    }));
+
+    const id = await persistInvoiceRequest({
+      orderXml: '<Order></Order>',
+      orderObj,
+      invoiceXml,
+      invoiceSupplement,
+      userId: '507f1f77bcf86cd799439011',
+    });
+
+    expect(InvoiceModel.create).not.toHaveBeenCalled();
+    expect(InvoiceModel.updateOne).toHaveBeenCalled();
+    expect(id).toBe('existing-invoice-mongo-id');
   });
 
   it('falls back to UNKNOWN defaults when party data is sparse', async () => {

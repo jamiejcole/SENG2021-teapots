@@ -154,6 +154,14 @@ export async function createInvoice(orderXml: string, invoiceSupplement: Invoice
   return { invoiceXml: text, storedInvoiceId }
 }
 
+/** Build invoice UBL XML without persisting (same payload as create). */
+export async function previewInvoiceXml(orderXml: string, invoiceSupplement: InvoiceSupplement) {
+  return await apiJson<{ invoiceXml: string; previewOnly?: boolean }>('/invoices/preview', {
+    method: 'POST',
+    body: JSON.stringify({ orderXml, invoiceSupplement }),
+  })
+}
+
 export async function createInvoicePdf(invoiceXml: string) {
   return await apiBlob('/invoices/pdf', {
     method: 'POST',
@@ -171,6 +179,14 @@ export async function previewStudioInvoice(draft: InvoiceStudioPreviewDraft) {
     headers: {
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify(draft),
+  })
+}
+
+/** Same inputs as studio-preview; returns UBL Order XML + supplement for POST /invoices (Generate flow). */
+export async function buildStudioOrderPayload(draft: InvoiceStudioPreviewDraft) {
+  return await apiJson<{ orderXml: string; invoiceSupplement: InvoiceSupplement }>('/invoices/studio-order-payload', {
+    method: 'POST',
     body: JSON.stringify(draft),
   })
 }

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextFunction, Request, Response } from "express";
 import { HttpError } from "../errors/HttpError";
+import { parseForwardedFor } from "../utils/parseForwardedFor";
 
 const getStatusName = (code: number): string => {
     const map: Record<number, string> = {
@@ -14,18 +15,6 @@ const getStatusName = (code: number): string => {
 };
 
 const isTestEnvironment = process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID !== undefined;
-
-const parseForwardedFor = (value: string | string[] | undefined): string | undefined => {
-    if (typeof value === "string" && value.trim()) {
-        return value.split(",")[0].trim();
-    }
-
-    if (Array.isArray(value) && value.length > 0) {
-        return value[0].split(",")[0].trim();
-    }
-
-    return undefined;
-};
 
 export const errorMiddleware = (
     err: any, 

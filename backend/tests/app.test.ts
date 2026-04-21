@@ -35,6 +35,23 @@ describe('app routes', () => {
     expect(response.headers['access-control-allow-origin']).toBe('https://teapotinvoicing.app');
   });
 
+  it('allows the staging and alternate production origins for CORS', async () => {
+    for (const origin of ['https://www.teapotinvoicing.app', 'https://seng2021.jamiecole.dev'] as const) {
+      const response = await request(app).get('/api/v1/health').set('Origin', origin);
+      expect(response.status).toBe(200);
+      expect(response.headers['access-control-allow-origin']).toBe(origin);
+    }
+  });
+
+  it('does not allow arbitrary third-party origins for CORS', async () => {
+    const response = await request(app)
+      .get('/api/v1/health')
+      .set('Origin', 'https://untrusted.example.com');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   it.each([
     'http://localhost:5173',
     'http://127.0.0.1:5173',

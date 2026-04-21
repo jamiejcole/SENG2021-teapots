@@ -297,6 +297,37 @@ router.post("/studio-preview", controller.previewStudioInvoice);
 
 /**
  * @openapi
+ * /api/v2/invoices/studio-order-payload:
+ *   post:
+ *     summary: Build UBL Order XML and invoice supplement from an Invoice Studio draft (for POST /invoices)
+ *     tags: [Invoices]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/InvoiceStudioPreviewDraft'
+ *     responses:
+ *       200:
+ *         description: Order XML and supplement for invoice generation
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 orderXml:
+ *                   type: string
+ *                 invoiceSupplement:
+ *                   type: object
+ *       400:
+ *         description: Invalid studio draft payload
+ */
+router.post("/studio-order-payload", controller.studioBuildOrderPayload);
+
+/**
+ * @openapi
  * /api/v2/invoices/{invoiceId}/validate:
  *   post:
  *     summary: Validate a stored invoice by ID

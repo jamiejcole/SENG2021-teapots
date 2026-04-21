@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { parseForwardedFor } from "../utils/parseForwardedFor";
 
 type ActorContext = {
   userId?: string;
@@ -24,18 +25,6 @@ type LogPayload = {
 };
 
 const isTestEnvironment = process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID !== undefined;
-
-const parseForwardedFor = (value: string | string[] | undefined): string | undefined => {
-  if (typeof value === "string" && value.trim()) {
-    return value.split(",")[0].trim();
-  }
-
-  if (Array.isArray(value) && value.length > 0) {
-    return value[0].split(",")[0].trim();
-  }
-
-  return undefined;
-};
 
 const writeLog = (payload: LogPayload): void => {
   console.log(JSON.stringify(payload));

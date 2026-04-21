@@ -238,11 +238,49 @@ export async function persistInvoiceRequest(args: PersistInvoiceRequestArgs): Pr
     ...coreFields,
   };
 
-  const existingInvoice = await InvoiceModel.findOne({ xmlSha256: coreFields.xmlSha256 }).exec();
-  if (existingInvoice === null) {
-    const doc = await InvoiceModel.create(invoiceDoc);
-    return doc._id.toString();
+  const existingByXmlHash = await InvoiceModel.findOne({ xmlSha256: coreFields.xmlSha256 }).exec();
+  if (existingByXmlHash !== null) {
+    return existingByXmlHash._id.toString();
   }
-  return existingInvoice._id.toString();
+
+  /**
+   * `invoiceId` is unique in Mongo, but idempotency above only keys on `xmlSha256`.
+   * Regenerating with the **same business invoice number** (e.g. Invoice Studio default "STUDIO-1001")
+   * produces new XML → new hash → insert attempt → E11000 duplicate `invoiceId`.
+   * For authenticated creates, replace the row for the same user + same `invoiceId`.
+   */
+  if (createdBy) {
+    const sameBizIdForUser = await InvoiceModel.findOne({
+      createdBy,
+      invoiceId: coreFields.invoiceId,
+    }).exec();
+
+    if (sameBizIdForUser !== null) {
+      const { activity: _a, ...docWithoutActivity } = invoiceDoc;
+      await InvoiceModel.updateOne(
+        { _id: sameBizIdForUser._id },
+        {
+          $set: {
+            ...docWithoutActivity,
+            status: "UPDATED",
+            lifecycleStatus: "SAVED",
+            invoiceXml: normalizedInvoiceXml,
+            xmlSha256: coreFields.xmlSha256,
+          },
+          $push: {
+            activity: {
+              at: new Date(),
+              type: "REGENERATED",
+              message: "Invoice regenerated and stored (same business invoice ID for this account)",
+            },
+          },
+        }
+      ).exec();
+      return sameBizIdForUser._id.toString();
+    }
+  }
+
+  const doc = await InvoiceModel.create(invoiceDoc);
+  return doc._id.toString();
 }
 
